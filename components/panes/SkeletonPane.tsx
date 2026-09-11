@@ -143,11 +143,12 @@ export function SkeletonPane({
    * and nothing competes with them. No caller sets this to `false` today: `/build`'s stage
    * stopped mounting this pane once it collapsed to a tablist (see `linkToCard`'s own doc
    * comment below, on the prop that recorded the same departure), so the archive is the
-   * only place this renders now and the number is always on. Same standing as
-   * `ChoiceGraphPane.tsx`'s `choice` slot (see its own doc comment): kept rather than
-   * dropped, because a caller that needs the ordinal off — one drawing this pane behind a
-   * tablist that already names it, the way `/build`'s did — has nowhere else to say so. The
-   * id stays either way, because `aria-labelledby` points at it.
+   * only place this renders now and the number is always on. It had the same standing as
+   * `ChoiceGraphPane.tsx`'s `choice` slot, which is no longer readable: that file went with
+   * `/build` and `components/build` when the owner deleted the tree on 2026-09-06. The prop
+   * is kept rather than dropped, because a caller that needs the ordinal off — one drawing
+   * this pane behind a tablist that already names it, the way `/build`'s did — has nowhere
+   * else to say so. The id stays either way, because `aria-labelledby` points at it.
    */
   showNumber?: boolean;
   model: PaneModel;
@@ -164,14 +165,15 @@ export function SkeletonPane({
   onSelectAbsence: (absenceId: string) => void;
   /**
    * Blueprint detail page's merged panel: the focused card's ref becomes a real
-   * `<Link>` to that card's own `/nodes/<id>` page, via the same `nodeHref` helper
-   * `BundlePanel` uses for its own per-card links. Off by default, because a card is only
+   * `<Link>` to that card's own `/nodes/<id>` page, via the shared `nodeHref` helper.
+   * Off by default, because a card is only
    * linkable when it is published: `SynchronisedPanes` switches it on for the archive's
    * merged panel, where every card has its own `/nodes/<id>` page, and the default is what
    * any caller drawing cards that are not in the registry needs. `/build` was that caller
-   * until its stage stopped mounting this pane — the cards there are generated in the
+   * until its stage stopped mounting this pane — the cards there were generated in the
    * reader's own browser from three choices and a link would have pointed at a 404 every
-   * time. There is nothing to link to for an absence-focused state either way, `card` being
+   * time. The route was deleted on 2026-09-06, so the default is now unexercised and the
+   * reason for it is recorded here rather than demonstrable by opening a page. There is nothing to link to for an absence-focused state either way, `card` being
    * `undefined` covers that.
    */
   linkToCard?: boolean;
@@ -259,8 +261,8 @@ export function SkeletonPane({
         <p className="px-4 py-6 text-sm leading-relaxed text-muted">
           The DOT pins a card for{" "}
           <code className="font-mono text-[12px] text-fg">{focus.node.nodeId}</code> that
-          this bundle does not carry, so there is no document to lay over the slots. The
-          resolver reports it against the line that pins it.
+          this blueprint does not carry. There is no document to lay over the slots. The
+          check reports it against the line that pins it.
         </p>
       ) : (
         <>
@@ -273,7 +275,7 @@ export function SkeletonPane({
               // header carries the doc reference and the block's purpose, and a screen
               // reader announcing all of that on entry, once per block, buries the one
               // word that says where the reader is.
-              <div key={block.id} role="group" aria-label={`${block.label}, ${block.ref}`}>
+              <div key={block.id} role="group" aria-label={block.label}>
                 <div
                   role="presentation"
                   className={cx(
@@ -284,7 +286,12 @@ export function SkeletonPane({
                   <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-copper-line">
                     {block.label}
                   </span>
-                  <span className="font-mono text-[11px] text-dim">{block.ref}</span>
+                  <Link
+                    href={block.ref.href}
+                    className="font-mono text-[11px] text-dim underline-offset-4 transition-colors hover:text-amber hover:underline"
+                  >
+                    {block.ref.label} →
+                  </Link>
                   <span className="w-full text-[11px] leading-snug text-dim">
                     {block.purpose}
                   </span>
@@ -346,7 +353,7 @@ export function SkeletonPane({
                                 720px on a desktop and 304px on a phone, so the 88
                                 characters the `action` slot used to be cut at were one
                                 line on one and two on the other. A line count is the same
-                                promise at both widths. Two rather than three because 23
+                                promise at both widths. Two rather than three because 22
                                 rows share a `max-h-[26rem]` box.
 
                                 `Ticked` for the same reason the note below it gets one:
@@ -453,13 +460,14 @@ export function SkeletonPane({
             <span className="font-mono text-copper-line" aria-hidden>
               ▪
             </span>{" "}
-            the card writes a value.{" "}
+            filled,{" "}
             <span className="font-mono" aria-hidden>
               ◌
             </span>{" "}
-            it does not, which is an answer as much as the other. Every row opens onto
-            what its field is for, and a value cut off at two lines finishes there. Pinned
-            by <Pins model={model} ref_={card.ref} />.
+            left empty; both are valid. The skeleton is the card&rsquo;s fields with what
+            each one is for: open a row to read it. Long values are cut at two lines until
+            the row is opened. This card is pinned by{" "}
+            <Pins model={model} ref_={card.ref} />.
           </p>
         </>
       )}
@@ -485,7 +493,7 @@ function Pins({ model, ref_ }: { model: PaneModel; ref_: string }) {
           {i > 0 && ", "}
           <span className="font-mono text-muted">{node.nodeId}</span>
           {node.dotLine !== undefined && (
-            <span className="font-mono text-dim"> at DOT line {node.dotLine}</span>
+            <span className="font-mono text-dim"> at {model.dotFile} line {node.dotLine}</span>
           )}
         </Fragment>
       ))}

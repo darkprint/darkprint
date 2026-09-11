@@ -1,4 +1,4 @@
-import type { MetricSource, AgentNodeKind } from "./types";
+import type { AutonomyClass, MetricSource, AgentNodeKind } from "./types";
 
 /** Compact number formatting: 1200 -> "1.2k". */
 export function compact(n: number): string {
@@ -59,14 +59,28 @@ export function monthYear(iso: string): string {
  * stay blue and land ΔE2000 5.1 apart, while emerald leaves the blue axis entirely for a
  * warm tan at 34.2 from cyan and 37.1 from violet. That is exactly the separation amber
  * used to provide, which is why amber worked here and why the replacement had to be warm.
- * On the void ground emerald reads 10.52:1, so the axis name it paints still clears AA.
+ * ── The measured clearance for all three, kept here because it lost its last home ──
+ * On the void ground: cyan 9.44:1, emerald 10.52:1, violet 7.43:1. All three clear AA.
+ *
+ * These three numbers were measured together and lived in `components/ui/ScoreRadar.tsx`,
+ * which the owner deleted on 2026-09-06. Only the emerald figure was restated anywhere else,
+ * so cyan's and violet's clearance had no record in the tree at all for the length of that
+ * change. They are claims about a surface that STILL SHIPS — `METRIC_SOURCE_META` below is
+ * what `components/ui/Badge.tsx` paints `meta.color` from, so all three are still drawn on
+ * this ground — which is why they move here rather than going with the chart. A measurement
+ * outlives the component that happened to be measured in.
+ *
+ * The sentence that carried the emerald figure said it clears AA for "the axis name it
+ * paints". It paints no axis name now; the axes were the radar's. It paints a badge pill,
+ * at a smaller size than the axis labels were, so the clearance is unchanged and the
+ * surface it is claimed for is not.
  *
  * It does not say "verified". Emerald is a *provenance* here, and the honesty is carried
- * where it always was: the badge prints the word `reported`, its `title` says the figure
- * is seeded because nothing has run, and the `○ not built` lines on `/reading-the-radar`
- * name
- * the axes. Colour never carries a claim alone on this site — that rule is what makes it
- * safe to reuse a hue for a second, adjacent meaning.
+ * where it always was: the badge prints the word `reported` and its `title` says the figure
+ * is seeded because nothing has run. The third carrier was the `○ not built` axis list on
+ * `/reading-the-radar`, and that route was deleted on 2026-09-04, so the badge and its
+ * `title` are now the whole of it. Colour never carries a claim alone on this site — that
+ * rule is what makes it safe to reuse a hue for a second, adjacent meaning.
  */
 export const METRIC_SOURCE_META: Record<
   MetricSource,
@@ -102,6 +116,38 @@ export const AUTONOMY_LABELS: Record<1 | 2 | 3 | 4, string> = {
   4: "Closed-loop",
 };
 
+
+/* Moved from `lib/content/view.ts` (D-260-30): exported there first, but the only consumable
+   path was the deep import `@/lib/content/view`, whose specifier contains `@/lib/content` as a
+   substring — and D-260-05(a) reds a route file on that token. The one consumer imports back
+   from here over an edge that already existed. */
+/**
+ * What each class says about the design, in the register the gallery already uses. The
+ * engine owns the class and its label; this is the sentence that goes under them.
+ *
+ * Each one states a decision an author made. None of them states a shortfall, names a
+ * next class up, or reads as a step towards anything, because doc 2 §1.1 rules that out
+ * and because it is false: the four are co-ordinate readings of a graph's shape. The old
+ * table was keyed on the 1-to-4 band and its top row ("no human in the loop") also said
+ * something the band cannot promise, since the top band is a fraction above 0.90 and a
+ * graph of eleven nodes reaches it with a person still standing in it. That claim now
+ * belongs to `isDarkFactory` alone, which counts the human nodes rather than the share.
+ *
+ * `assisted` says "in most of this graph" rather than "at most of the nodes" because the
+ * band now reads the weaker of two shares (`analysis/autonomy.ts`): a graph whose workers
+ * all run alone while a person makes every routing call lands here too, and the older
+ * sentence was a headcount claim that would have been false about it.
+ */
+export const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
+  assisted:
+    "A person is in most of this graph, at the nodes or at the calls that decide what the nodes do.",
+  supervised:
+    "Agents do the work, and a person approves the moves this graph treats as critical.",
+  conditional:
+    "The graph runs inside the guardrails its author drew and calls a person for the cases it names.",
+  "closed-loop":
+    "The line runs from the specification to the delivery without stopping for an approval.",
+};
 /**
  * The engine's autonomy sentence, with the band ordinal taken out.
  *
@@ -124,7 +170,9 @@ export const AUTONOMY_LABELS: Record<1 | 2 | 3 | 4, string> = {
  * the engine's wording that left an ordinal standing fails there rather than in a build.
  */
 export function autonomyStatement(rationale: string): string {
-  return rationale.replace(/→\s*level\s*[1-4]\s*\(([^)]*)\)/g, "→ $1");
+  // \u2192 escaped in the pattern for the same reason as DotBreakdown: a literal glyph
+  // here fails to match silently. The replacement is a string, which the bundler escapes.
+  return rationale.replace(/\u2192\s*level\s*[1-4]\s*\(([^)]*)\)/g, "→ $1");
 }
 
 /**

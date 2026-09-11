@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { AUTONOMY_LABELS, autonomyStatement } from "@/lib/format";
-import { AUTHOR_LIST } from "@/lib/data/users";
-import { COMMUNITY } from "@/lib/data/community";
+import { communityFor } from "@/lib/data/community";
 import { parseCardRef } from "@/lib/core";
 import type { MetricKey } from "@/lib/types";
 
@@ -26,6 +25,7 @@ const SLUGS = [
   "guarded-merge-bot",
   "incident-commander",
   "nightly-data-janitor",
+  "pipeline-observability",
   "schema-forge-etl",
   // Doc 2 §5.2's canonical factory, and the only bundle in the archive that gives doc 3
   // §4.1's `criteria-leak` check something to anchor on: `spec-planner` is the one card
@@ -45,7 +45,7 @@ const METRIC_ORDER: MetricKey[] = [
 const blueprints = allBlueprints();
 
 describe("allBlueprints", () => {
-  it("resolves all nine, sorted by slug", () => {
+  it("resolves all ten, sorted by slug", () => {
     expect(blueprints.map((b) => b.slug)).toEqual(SLUGS);
   });
 
@@ -97,6 +97,9 @@ describe("allBlueprints", () => {
     "guarded-merge-bot": ["warning analysis/criteria-leak-unanchored"],
     "incident-commander": ["warning analysis/criteria-leak-unanchored"],
     "nightly-data-janitor": ["warning analysis/criteria-leak-unanchored"],
+    // `gate` judges `summariser` and no node types a criteria port: the observability line
+    // sits on top of a pipeline somebody else wrote, so the criteria live in that graph.
+    "pipeline-observability": ["warning analysis/criteria-leak-unanchored"],
     "schema-forge-etl": ["warning analysis/criteria-leak-unanchored"],
     // Doc 2 §5.2's canonical factory, and the only bundle where the check runs end to
     // end: `spec-planner` types its `criteria` port, `planner -> builder` is absent, and
@@ -153,9 +156,11 @@ describe("allBlueprints", () => {
     }
   });
 
-  it("attributes every blueprint to a real author", () => {
-    const known = new Set(AUTHOR_LIST.map((a) => a.username));
-    for (const bp of blueprints) expect(known).toContain(bp.author.username);
+  // The archive's blueprints are generated examples, credited to the registry account that
+  // owns them. The assertion is about the credit: a handle outside `lib/data`'s fixture list
+  // still renders, under its own name.
+  it("attributes every blueprint to the registry handle", () => {
+    for (const bp of blueprints) expect([bp.slug, bp.author.username]).toEqual([bp.slug, "autogen"]);
   });
 });
 
@@ -164,8 +169,11 @@ describe("derived metrics", () => {
     for (const bp of blueprints) {
       expect(bp.metrics.map((m) => m.key)).toEqual(METRIC_ORDER);
       for (const metric of bp.metrics) {
-        expect(Number.isFinite(metric.value)).toBe(true);
-        expect(Number.isInteger(metric.value)).toBe(true);
+        // `Metric.value` widened to `number | undefined` for the live cost row (D-180-01,
+        // lib/content/view.ts); the fixture path this suite reads never takes that branch,
+        // so `?? NaN` only satisfies the type checker and never masks a real absence here.
+        expect(Number.isFinite(metric.value ?? NaN)).toBe(true);
+        expect(Number.isInteger(metric.value ?? NaN)).toBe(true);
         expect(metric.value).toBeGreaterThanOrEqual(0);
         expect(metric.value).toBeLessThanOrEqual(100);
         expect(metric.label.trim()).not.toBe("");
@@ -200,7 +208,9 @@ describe("derived metrics", () => {
 
   it("takes the subjective and measured metrics from the index, unchanged", () => {
     for (const bp of blueprints) {
-      const row = COMMUNITY[bp.slug];
+      // `communityFor` rather than `COMMUNITY[slug]`: the index zero-fills a blueprint nobody
+      // has voted on, and the view has to carry that zero through unchanged as well.
+      const row = communityFor(bp.slug);
       expect(bp.metrics[1].value).toBe(row.efficacy);
       expect(bp.metrics[2].value).toBe(row.reliability);
       expect(bp.metrics[3].value).toBe(row.transparency);
@@ -403,18 +413,27 @@ describe("the registry", () => {
     // list used to say 1.1.0 for all four, which is what an archive looks like when
     // nothing holds it to the rule the site teaches. `cardLibraryProblems` in
     // `lib/content/read.ts` now fails the build on it; this asserts the outcome.
-    const newest: Record<string, string> = {
-      "acceptance-verifier": "2.0.0",
-      "bounded-retry": "2.0.0",
-      "intent-router": "2.0.0",
-      "schema-gate": "1.1.0",
+    //
+    // The OLDEST is named per id too, as of 2026-09-05. It was a shared "1.0.0" and that
+    // was a second claim riding on the first: three of these four still open at 1.0.0, but
+    // `intent-router` was RENAMED 1.0.0 -> 1.1.0 and 2.0.0 -> 2.1.0 when its spec took on
+    // the `lane` emission (§11.0 Q17), so the archive holds no 1.0.0 of it to keep alive.
+    // What this cell is about survives that untouched — `intent-router` still carries two
+    // versions and `frontline-triage` still pins the older of them, which is the whole
+    // claim — so the pair is re-derived from `content/cards/intent-router@*.yaml` rather
+    // than the cell being loosened to stop naming an exact version at either end.
+    const span: Record<string, readonly [newest: string, oldest: string]> = {
+      "acceptance-verifier": ["2.0.0", "1.0.0"],
+      "bounded-retry": ["2.0.0", "1.0.0"],
+      "intent-router": ["2.1.0", "1.1.0"],
+      "schema-gate": ["1.1.0", "1.0.0"],
     };
-    for (const [id, top] of Object.entries(newest)) {
+    for (const [id, [top, bottom]] of Object.entries(span)) {
       const versions = registry.versionsOf(id);
       expect(versions.length).toBeGreaterThanOrEqual(2);
       // Newest first.
       expect([id, versions[0].version]).toEqual([id, top]);
-      expect([id, versions[versions.length - 1].version]).toEqual([id, "1.0.0"]);
+      expect([id, versions[versions.length - 1].version]).toEqual([id, bottom]);
       for (const version of versions) expect(version.usedIn.length).toBeGreaterThan(0);
     }
   });
@@ -440,7 +459,10 @@ describe("raw source", () => {
       expect(source.cards).toHaveLength(bp.graph.nodes.length);
       for (const card of source.cards) {
         expect(card.file).toMatch(/^content\/cards\/.+@\d+\.\d+\.\d+\.yaml$/);
-        expect(card.text).toContain("ontology_version");
+        /* `version:` and not `ontology_version:`. This asserts the text really is the card
+           DOCUMENT rather than an empty string or a path, so it needs a key every card
+           carries; `ontology_version` was that key until it left the schema. */
+        expect(card.text).toContain("version:");
       }
     }
     expect(bundleSource("nope")).toEqual({ dot: "", cards: [] });
@@ -459,9 +481,11 @@ describe("the vocabulary", () => {
   it("is structurally sound and is the one every bundle was read against", () => {
     const ontology = getOntologyView();
     expect(ontology.validate()).toEqual([]);
-    // Doc 3 §8. `0.1.0` is doc 3's own number, and the `1.0.0` this assertion used to
-    // carry named the pre-contract vocabulary that was never a published contract.
-    expect(ontology.ontology.version).toBe("0.1.0");
+    /* The version assertion that stood here is gone with the field. What made it worth
+       asserting was that every bundle is read against ONE vocabulary, and that is checked
+       by identity in `read.test.ts`; here the claim left is that the vocabulary is sound
+       and that it is the shipped core with the archive's terms on top. */
+    expect(ontology.get("agent")?.kind).toBe("node-type");
   });
 
   it("carries the archive's one local term, rooted and weighted (doc 3 §7)", () => {
@@ -474,7 +498,7 @@ describe("the vocabulary", () => {
     expect(local?.defaultWeight).toBeGreaterThan(0);
   });
 
-  it("declares exactly the five phases and the six node types of doc 3", () => {
+  it("declares exactly the five phases and the ten concrete node types", () => {
     const ontology = getOntologyView();
     expect(ontology.byKind("phase").map((t) => t.id).sort()).toEqual([
       "debugging",
@@ -483,15 +507,22 @@ describe("the vocabulary", () => {
       "planning",
       "testing",
     ]);
+    // The three abstract categories are dropped by name: a card may not declare one
+    // (`card/validate.ts` refuses it), so what is left is the set an author can write.
+    const abstract = new Set(["human-in-the-loop", "evaluative", "orchestration"]);
     const concrete = ontology
       .byKind("node-type")
-      .filter((t) => t.id !== "human-in-the-loop" && t.id !== "evaluative")
+      .filter((t) => !abstract.has(t.id))
       .map((t) => t.id);
     expect(concrete).toEqual([
       "agent",
       "decision",
       "human-gate",
       "human-input",
+      "manager-loop",
+      "parallel",
+      "parallel.fan-in",
+      "shell-tool",
       "tool",
       "validation",
     ]);

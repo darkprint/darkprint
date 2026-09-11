@@ -9,21 +9,26 @@ import { MCP_CLIENTS } from "./clients";
 export function InstallTabs({ className }: { className?: string } = {}) {
   const [active, setActive] = useState<string>(MCP_CLIENTS[0].id);
   const current = MCP_CLIENTS.find((c) => c.id === active) ?? MCP_CLIENTS[0];
-  // Ties each tab to the one panel it discloses, the same `id`/`aria-controls`/
-  // `aria-labelledby` triangle `components/build/WorkspaceStage.tsx` uses for the five
-  // tabs of `/build`'s stage.
+  // Ties each tab to the one panel it discloses, the `id`/`aria-controls`/`aria-labelledby`
+  // triangle this site's tablists are all built on. It was written first for the five tabs
+  // of `/build`'s stage, in `components/build/WorkspaceStage.tsx`, which was deleted with
+  // that route on 2026-09-06. Compare against `components/capabilities/SurfaceTabs.tsx`,
+  // the other tablist on the site, rather than looking for the file that is gone.
   const tabsId = useId();
 
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   /**
-   * Arrow keys across the tablist, with selection following focus — the same
-   * automatic-activation rule `components/build/tablist.ts` holds for every other tablist
-   * on the site, written out here rather than imported. It was ported from `/build`'s own
-   * tablist before that rule was factored out, and `tablist.ts`'s docblock records why this
-   * copy was left where it is: `nextTabIndex(key, at, MCP_CLIENTS.length, "horizontal")` is
-   * exactly the branch below, and swapping to it is a change worth making the day this file
-   * is open for another reason.
+   * Arrow keys across the tablist, with selection following focus: the automatic-activation
+   * rule every tablist on this site follows, written out here rather than imported.
+   *
+   * It was ported from `/build`'s own tablist, and the shared helper it was meant to be
+   * swapped back onto was `components/build/tablist.ts`, whose signature was
+   * `nextTabIndex(key, at, count, "horizontal")` and whose branch is exactly the one below.
+   * Both went with `/build` when the owner deleted the route and its tree on 2026-09-06, so
+   * there is nothing left to swap onto and this copy is now the definition rather than a
+   * duplicate of one. `components/capabilities/SurfaceTabs.tsx` writes the same rule out a
+   * second time; if a helper is factored out again, those two are what it has to cover.
    */
   function onTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const at = MCP_CLIENTS.findIndex((client) => client.id === active);

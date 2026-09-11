@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { stringify as stringifyYaml } from "yaml";
 import { allBlueprints, bundleSource, bundleVocabulary, getRegistry } from "@/lib/content";
+import { getSharedDbClient } from "@/lib/db";
+import { actorFrom } from "@/lib/server/accounts";
+import { draftBundle } from "@/lib/server/registry";
 import { SKILL_ROUTE } from "@/lib/skill";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
+import { readSession } from "@/components/profile/session";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
-import { UploadFlow, type ExampleBundle } from "@/components/upload/UploadFlow";
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-95) (cited at line 138): folded into SEAM-27
+import { UploadFlow, type ExampleBundle, type PublishTarget } from "@/components/upload/UploadFlow";
 
 /**
  * The house style for a link written inside a sentence, copied rather than imported.
@@ -27,17 +28,22 @@ export const metadata: Metadata = {
      and the words are now "Upload blueprint". They were "Validate a bundle" for a
      release, and before that this page answered to "Share a blueprint" in 48px display
      type under an eyebrow reading CONTRIBUTE, which was a promise of publishing the site
-     has no backend for.
+     had no backend for at the time. It has one now, which is what T263 changed and why
+     the sentences below it moved.
 
-     "Upload blueprint" is the author's name for the route and it is the honest one,
-     provided the page keeps saying where the file goes: nowhere. It is uploaded into
-     this tab, read by a parser compiled into the page, and never sent. The `description`
-     below, the paragraph beside the wizard's Publish button and the eyebrow all carry
-     that, and none of them may be dropped for pace — two HIGH findings in this project
-     were exactly that. `components/site/nav.test.ts` holds the chrome to this name. */
-  title: "Validate and publish",
+     "Upload blueprint" is the author's name for the route and it is the honest one, and
+     since T263 it is honest in the plain way: a bundle IS read in this tab, and pressing
+     Publish sends it to the registry and stores a release. That was not true when this
+     note was written, and the sentences that said so came off in the change that made
+     them false rather than in a later tidy (D-78, D-263-02). What still may not be
+     dropped for pace is the divergence between the reading taken here and the registry's
+     own, and the sentence naming the other door: the DarkPrint skill publishes the folder
+     from the terminal it runs in.
+     Two HIGH findings in this project were disclaimers going missing during a length
+     pass. `components/site/nav.test.ts` holds the chrome to this name. */
+  title: "Publish",
   description:
-    "Validate and publish a blueprint bundle. DarkPrint resolves it in your browser, names its autonomy class, and reports static risk exposure before a release is created.",
+    "Check a blueprint folder in your browser, then publish it to the DarkPrint registry as a numbered release. Every problem the check finds says where and why. Publishing needs an account.",
 };
 
 /**
@@ -59,7 +65,7 @@ function exampleBundle(): ExampleBundle {
   if (record !== undefined) {
     files.push({ name: "blueprint.yaml", text: stringifyYaml(record.manifest) });
   }
-  files.push({ name: "blueprint.dot", text: source.dot });
+  files.push({ name: "topology.dot", text: source.dot });
   for (const card of source.cards) {
     // `bundleSource` reports the repo-relative path; the bundle-relative name is what
     // diagnostics quote back, so the wizard shows the same locations the loader does.
@@ -76,6 +82,100 @@ function exampleBundle(): ExampleBundle {
   return { title: bp.title, files };
 }
 
+/** The first string value under `key`, when there is one — `searchParams` carries an array
+    for a repeated query key, and this route only ever reads one of each. */
+function firstString(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string,
+): string | undefined {
+  const raw = searchParams[key];
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw) && typeof raw[0] === "string") return raw[0];
+  return undefined;
+}
+
+/**
+ * `?owner=&slug=`, resolved into a `PublishTarget` only once the session reading this
+ * page OWNS the addressed bundle — checked here, server-side, before the wizard ever
+ * sees the pin, rather than left to the client to ask and trust.
+ *
+ * Ownership is a literal handle match rather than a `can` call: `draftBundle` already
+ * enforces B-03 readability (a private bundle that is not the caller's answers
+ * `undefined`, the same as one that does not exist), and a stranger reading a PUBLIC
+ * bundle's owner/slug in the URL must still not have the wizard address a release at it
+ * on their behalf — only the owner may pin their own upload.
+ */
+async function resolveTarget(
+  searchParams: Record<string, string | string[] | undefined>,
+): Promise<PublishTarget | undefined> {
+  const owner = firstString(searchParams, "owner");
+  const slug = firstString(searchParams, "slug");
+  if (owner === undefined || slug === undefined) return undefined;
+
+  const session = await readSession();
+  if (session === undefined || session.handle !== owner) return undefined;
+
+  const { db } = getSharedDbClient();
+  const draft = await draftBundle(db, actorFrom(session), owner, slug);
+  if (draft === undefined) return undefined;
+
+  const target: PublishTarget = {
+    owner: draft.ownerHandle,
+    slug: draft.slug,
+    visibility: draft.visibility,
+  };
+  if (draft.title !== undefined) target.title = draft.title;
+  if (draft.summary !== undefined) target.summary = draft.summary;
+  if (draft.description !== undefined) target.description = draft.description;
+  if (draft.category !== undefined) target.category = draft.category;
+  if (draft.tags !== undefined) target.tags = draft.tags;
+  return target;
+}
+
+/**
+ * The wizard's own shape, empty — what a reader sees for the moment (typically well under
+ * a frame) `TargetedUploadFlow` takes to resolve `?owner=&slug=`.
+ *
+ * A skeleton rather than an untargeted `UploadFlow`: the two are different components, so
+ * swapping one for the other on resolve UNMOUNTS whichever rendered first and takes
+ * anything typed into it along — the mistake this shape avoids is a reader who started
+ * typing during the fallback losing it the instant the real wizard mounts.
+ */
+function UploadFlowSkeleton() {
+  return (
+    <div
+      className="panel flex min-h-[420px] items-center justify-center overflow-hidden"
+      aria-hidden
+    >
+      <span className="font-mono text-xs text-dim">Loading…</span>
+    </div>
+  );
+}
+
+/**
+ * The wizard itself, once `?owner=&slug=` has been resolved (or found absent).
+ *
+ * Async and therefore only reachable inside the `Suspense` boundary `UploadPage` wraps it
+ * in — see that function's own header for why the split exists. One more thing follows
+ * from the split, worth recording because it is not obvious from the two files alone:
+ * `renderToStaticMarkup` (`tests/server/t263/ac5-retired-copy.test.ts`'s own render
+ * technique, over `UploadPage` with no real `searchParams` promise) cannot await this
+ * component, and — same as `React.lazy` under that renderer — shows the boundary's
+ * fallback instead of crashing on it, which is what keeps that suite collectible.
+ */
+async function TargetedUploadFlow({
+  searchParams,
+}: {
+  searchParams: PageProps<"/upload">["searchParams"];
+}) {
+  // `?? {}` guards a call outside a real request — `searchParams` is never actually
+  // absent from a live Next request, but the render technique in the header note above
+  // passes this component no real promise at all, and an absent record answers "no pin"
+  // exactly the way an empty one does rather than throwing on the property read.
+  const target = await resolveTarget((await searchParams) ?? {});
+  return <UploadFlow example={exampleBundle()} {...(target === undefined ? {} : { target })} />;
+}
+
 /**
  * The page a reader arrives at with their own graph in hand.
  *
@@ -87,8 +187,19 @@ function exampleBundle(): ExampleBundle {
  * literal zero-human-node test, the sentence was also false about any graph with a gate
  * in it, `guarded-merge-bot` included. What the page asks for is a pipeline; what the
  * analyzer answers with is the class it belongs to.
+ *
+ * ── `searchParams`, and why the RESOLUTION is split into its own component ──
+ * `?owner=&slug=` (T280) pins the wizard to a bundle the reader already owns — `/u/*`'s
+ * DraftRow and the blueprint page's "Publish a release" link both build this URL, and
+ * resolving it needs a session-derived actor and a `Db` handle, both async. This function
+ * itself stays SYNCHRONOUS on purpose, with that work pushed into `TargetedUploadFlow`
+ * below and wrapped in `Suspense`: an async default export would make this route
+ * per-request either way (the same mechanism `cookies()` opts other routes into
+ * elsewhere in this codebase), but everything ABOVE the fold here — the header, the two
+ * disclosure paragraphs — needs neither a session nor a database row, and there is no
+ * reason to hold it behind a query that only some visits even carry.
  */
-export default function UploadPage() {
+export default function UploadPage({ searchParams }: PageProps<"/upload">) {
   return (
     <div className="container-page py-12">
       {/* `as="h1"`. The page a contributor lands on had no level-one heading at all: its
@@ -108,17 +219,19 @@ export default function UploadPage() {
             names the action; "Check your work" names the outcome, one line above it, so
             the two are read together and a reader knows before the fold that uploading
             here is how a bundle gets checked and not how it gets somewhere. */}
-        <Eyebrow>Validate before release</Eyebrow>
+        <Eyebrow>Check it, then publish it</Eyebrow>
         <SectionHeading
           as="h1"
           className="mt-3"
-          title="Validate and publish"
-          lead="Choose a blueprint bundle and resolve it in your own tab. You get explainable diagnostics, an autonomy class, and a bounded static risk-exposure reading before the separate publish step."
+          title="Publish"
+          lead="Drop a blueprint folder: the topology.dot graph and the cards it names. This page checks it in your browser: every node has a card, the cards' inputs and outputs line up along each edge, and every term they use is known. Each problem it finds says where and why. Publishing a release needs an account, or a write-scoped API key from your settings."
         />
         {/* ── Where the folder in front of the reader came from ──
             The population arriving here changed. Until now the only person with a bundle
             in hand had downloaded one from `/blueprints` or exported one from `/build`,
-            and both of those hand over something finished. The DarkPrint skill writes the
+            and both of those handed over something finished. `/build` was deleted on
+            2026-09-06, which leaves `/blueprints` as the only such source and makes the
+            paragraph below more true rather than less. The DarkPrint skill writes the
             registry shape into a working directory a card at a time, and it points at
             this route, so the ordinary visitor is now an author halfway through — which
             is what the second sentence is for and what `components/upload/progress.ts`
@@ -139,79 +252,132 @@ export default function UploadPage() {
         {/* Full width, on the author's instruction 2026-08-07: `max-w-2xl` off this one.
             The paragraphs around it keep their measure; this is a named exception. */}
         <p className="mt-5 text-sm leading-relaxed text-muted">
-          A folder written by the{" "}
+          If your coding agent wrote the folder with the{" "}
           <Link href={SKILL_ROUTE} className={PROSE_LINK}>
             DarkPrint skill
-          </Link>{" "}
-          drops straight in. It runs in your own editor and writes the two things this page
-          reads, a <span className="font-mono text-cyan">blueprint.dot</span> and the{" "}
-          <span className="font-mono text-cyan">cards/</span> it pins, so there is nothing
-          to export and nothing to convert. Bring it before it is finished: a graph whose
-          cards are half written resolves as far as it goes, and the report says how far.
+          </Link>
+          , drop it in as it is. The DarkPrint skill writes exactly what this page reads, a{" "}
+          <span className="font-mono text-cyan">topology.dot</span> and the{" "}
+          <span className="font-mono text-cyan">cards/</span> it names, so there is nothing
+          to export or convert. You can bring it before it is finished: a graph whose cards
+          are half written is checked as far as it goes, and the report says how far.
         </p>
-        {/* The word "upload" carries an implication the old title did not: that the file
-            goes somewhere and is kept. It does not, and the author's own sketch of where
-            this is heading — "like a github repository … when uploading you are asked
-            whether you want it public or private on your account" — needs accounts,
-            storage and a backend, none of which exist. So the direction is stated once,
-            in the open, wearing the marker this site reserves for exactly this, rather
-            than being left for a reader to assume from a verb. Same shape as the two
-            registry notes in `components/build/AgentHandoff.tsx`: badge, "Not built
-            yet:", the thing, and then what is true today. */}
-        {/* `max-w-2xl`, the same measure as the paragraph under it. Without one this line
-            set to the full 1152px container at 13px, which is roughly 150 characters —
-            two and a half times the measure everything else in this header keeps, and the
-            badge ended up alone at the far left of a single very long line. */}
-        <p className="mt-5 flex max-w-2xl flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
-          <ComingSoonBadge />
-          Not built yet: an account to upload into, with each blueprint public or private
-          the way a repository is. There are no accounts and no backend: what you upload is
-          read in this tab and stays in it.
-          {/* The third unbuilt thing, added when the skill did. A reader who has just been
-              told that a tool running inside their editor writes a folder for this page
-              will ask whether the editor sends it, and a page that answers by saying
-              nothing is answering yes. It sits under the badge already here rather than
-              taking a second one: it is the same absence — no account, no backend, so
-              nothing to push to — and one paragraph of unbuilt registry beats two amber
-              marks on one screen. `components/site/honesty.test.ts` holds all three
-              sentences over the rendered route. */}{" "}
-          Nor is there a live push from the editor the skill runs in: it writes the folder
-          to your disk, and you bring it here.
+        {/* ── The other folder a reader can arrive with (§11.0 Q20 c) ──
+            A person holding an Attractor pipeline was, until now, the one visitor this
+            route had nothing for. `importAttractorDot` has been complete and tested for
+            releases and its only non-test caller was a CLI whose npm package is
+            unpublished, so dropping a `.dot` here produced one `bundle/missing-card` per
+            node and advice about an authoring format the reader had not asked about.
+
+            The owner ruled it runs in the browser (2026-09-04): `lib/core` is isomorphic by
+            contract, `importAttractorDot` is pure, and this route already resolves whole
+            bundles in the tab. So there is no endpoint behind this paragraph and no seam to
+            cite, which is why it carries no badge.
+
+            "offers" and never "converts". `components/upload/AttractorOffer.tsx` shows what
+            the import cannot carry across before anything is written, and refuses outright
+            when the session has no handle to attribute the cards to. A sentence here
+            promising a conversion would describe a button that is deliberately not that. */}
+        <p className="mt-5 text-sm leading-relaxed text-muted">
+          An Attractor pipeline works here too. Drop its{" "}
+          <span className="font-mono text-cyan">.dot</span> and this page offers to read it
+          into a draft bundle in your browser, one card per node, attributed to you. Before
+          it writes anything it lists what the two formats cannot express in each other.
+        </p>
+        {/* The other door. The DarkPrint skill's hand-off ends with a publish command for
+            the terminal it runs in, over `POST /api/bundles` with a write-scoped API key
+            from the reader's settings, so this page is one of two ways a folder arrives.
+            Said here because the paragraph above names a tool inside the reader's editor
+            that writes a folder for this page, and the next question anybody asks is how it
+            gets here. `components/site/honesty.test.ts` holds the sentence. */}
+        <p className="mt-5 max-w-2xl text-[13px] leading-relaxed text-dim">
+          The DarkPrint skill ends with a publish command for the terminal it runs in, using
+          a write-scoped API key from your settings. This page is the other door.
         </p>
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
             removed. It is a statement about this page, and it was the only unconditional
             statement of it on the site: `BundleDropzone` says the bundle is read against
             the curated core alone, but only once a dropped bundle has already tripped a
-            vocabulary problem, so a reader comparing a page's score against the wizard's
-            never sees it first.
+            vocabulary problem, so a reader comparing what a blueprint page says about a
+            bundle against what the wizard says never sees it first.
 
-            The claim is exact and worth keeping exact: the wizard builds its vocabulary
-            from `CORE_ONTOLOGY` alone (`components/upload/UploadFlow.tsx`) while the
-            archive resolves against the core plus `content/ontology/extensions.yaml`, so
-            this release's own `frontline-triage` bundle reports two unknown terms in the
-            wizard and scores 4 where its page shows 2. Not folded, and not shortened:
-            two HIGH findings in this project were disclaimers going missing while
-            somebody was cutting for pace. */}
+            ── D-263-01: this REMAINED, rewritten, and the premise for deleting it was false ──
+            The contract said the divergence "is resolved once the server resolves against
+            published overlays". It is not. `app/api/validate/bundle/route.ts` never calls
+            `openView`: `validateBundle` falls back to `ontologyView(CORE_ONTOLOGY,
+            extensions)`, which is bit-for-bit the vocabulary this tab already builds. What
+            the cutover changed is the PUBLISH leg, where `publish.ts` opened the STORED
+            ontology at the version the manifest named. So the gap did not close, it moved:
+            a bundle can read clean here and be refused at publish, and the reverse. That
+            last sentence is still true and its mechanism is not: the version half of this
+            paragraph is history, and what separates the two readings today is the overlay
+            alone. The 2026-09-04 note below is where that is worked out.
+
+            The client-side pass stays on purpose — the same Contract line says so, and
+            `docs/ARCHITECTURE.md` §7 puts the server's authoritative pass at publish time.
+            Deleting this sentence on the stated premise would have replaced a true
+            disclosure with silence about a divergence that is still there.
+
+            Not folded, and not shortened: two HIGH findings in this project were disclaimers
+            going missing while somebody was cutting for pace.
+
+            ── 2026-09-04: the VERSION half of it went, the disclosure did not ──
+            Two sentences here made the divergence a version story: the registry resolved
+            "against the ontology version the manifest names", and "a bundle pinning an older
+            version can be judged on different terms there than here". The owner removed
+            ontology versioning outright, and both sentences now describe a mechanism that
+            has no parts — a manifest names no version and `lib/server/registry/graphs.ts`
+            records that `openView` reaches no store to select one from.
+
+            What is NOT deleted is the last two sentences, and the reason is D-263-01's own:
+            the subject decides whether a sentence retires. Their subject is which of the two
+            passes is authoritative, and the answer is unchanged. A reader is still owed the
+            fact that the check in front of them is the fast one and the publish leg is the
+            one that decides. The illustration this note used to carry, `frontline-triage`
+            reading 4 here and 2 on its page, went with the number on the page rather than
+            with the divergence. */}
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-dim">
-          It resolves what you drop against the curated core vocabulary only. Bundles in
-          the archive are resolved against the core plus the terms this release adds in
-          its own namespace, so a graph using one of those comes back with the term
-          unknown and a static risk-exposure reading computed without it.
+          The terms your cards use are checked against DarkPrint&rsquo;s core vocabulary, plus
+          any <span className="font-mono text-cyan">ontology/extensions.yaml</span> in the
+          folder. When you publish, the registry runs the same check on its side. The reading
+          on this page is the quick one. The registry&rsquo;s reading decides.
         </p>
       </header>
 
-      {/* The two facts the lead used to carry about the result, moved to where the
-          result appears. Both qualify what the reader is about to look at, which is the
-          one place a limit belongs: a graph with a person in it is read, not penalised,
-          and the scorecard that comes back has four axes nothing can fill. */}
+      {/* Two facts the lead used to carry about the result, moved to where the result
+          appears. Both qualified what the reader is about to look at, which is the one place
+          a limit belongs: a graph with a person in it is read, not penalised, and the
+          scorecard that came back had four axes nothing could fill.
+
+          The second one is gone since 2026-09-04. It read "Two of the six axes are read off
+          the graph. Efficacy, reliability and transparency need votes. Cost and time need a
+          run." — and the votes half of it stopped being true when the ballot was deleted
+          from the site: `components/bundle/VoteControl.tsx` is not in the tree any more, so
+          nothing anywhere collects a vote and a sentence telling a reader three axes are
+          waiting for one is describing a queue with no door. It goes rather than gets
+          reworded: the axes it counted are still drawn inside the wizard, and rewording it
+          into a quieter version of the same promise on the page ABOVE the wizard would put
+          the header's name on a claim the header cannot keep.
+
+          `components/upload/UploadFlow.tsx` and `ValidationReport.tsx` said the votes
+          sentence beside the result itself until 2026-09-05, when §11.0 Q28 reached them:
+          the wizard's "Filled in later" legend keeps its cost/time half whole and has lost
+          the three community axes, and the downloadable report no longer counts six of
+          anything. Nothing on this route names a ballot now.
+
+          The first sentence stays and is doc 2 §1.1's, which nothing in the scoring removal
+          touches: a person standing in the graph is a design decision the analyzer reports
+          and never a shortfall it deducts for. That claim is the one this paragraph exists
+          to make on the one page where somebody is being asked to hand over their work. */}
       <p className="mt-5 text-sm leading-relaxed text-dim">
-        A graph with a person standing in it resolves like one without, and names the node
-        where they act. Two of the six axes are read off the graph; efficacy, reliability
-        and transparency need votes, and cost and time need a run.
+        A graph with a human step in it is checked the same way as one without. The report
+        names the node where a person acts and treats it as a design choice.
       </p>
 
       <div className="mt-10">
-        <UploadFlow example={exampleBundle()} />
+        <Suspense fallback={<UploadFlowSkeleton />}>
+          <TargetedUploadFlow searchParams={searchParams} />
+        </Suspense>
       </div>
     </div>
   );

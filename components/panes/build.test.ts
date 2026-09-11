@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import type { NodeCard } from "@/lib/core";
-import { buildPaneModel, cardYamlBlocks, type PaneNodeInput } from "./build";
+import {
+  buildPaneModel,
+  cardYamlBlocks,
+  paneNodesFor,
+  pinnedRefs,
+  type PaneNodeInput,
+} from "./build";
 import { CARD_FIELD_KEYS } from "./model";
+import type { PaneNode } from "./model";
 
 /* ============================================================
    The line numbers pane 3 highlights and the line ranges pane 4
@@ -46,12 +53,10 @@ outputs:
     type: code
 dependencies: []
 
-requires_human: false
 risk_markers: []
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0
 `;
 
 function card(overrides: Partial<NodeCard> = {}): NodeCard {
@@ -70,11 +75,10 @@ function card(overrides: Partial<NodeCard> = {}): NodeCard {
     outputs: [{ name: "build", type: "code" }],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version: "1.0.0",
     author: "orin",
-    ontologyVersion: "0.1.0",
     ...overrides,
   };
 }
@@ -194,7 +198,13 @@ describe("cardYamlBlocks", () => {
     // charged to `spec`.
     expect(blocks.get("spec")).toEqual({ start: 8, end: 9 });
     expect(blocks.get("inputs")).toEqual({ start: 13, end: 15 });
-    expect(blocks.get("ontology_version")).toEqual({ start: 26, end: 26 });
+    // `author` and not `ontology_version`, at 24 rather than 25. Two withdrawals in a row
+    // moved this probe: `requires_human` leaving the schema took the fixture from 26 to 25,
+    // and `ontology_version` leaving it took the KEY as well, so the last top-level line of
+    // the document is now `author`. It asks the identical question — the last key in the
+    // document owns exactly its own line — and the block boundaries this cell is about did
+    // not change either time; the document did.
+    expect(blocks.get("author")).toEqual({ start: 24, end: 24 });
   });
 
   it("does not mistake an indented key for a top-level one", () => {
@@ -308,8 +318,16 @@ describe("buildPaneModel — the card skeleton", () => {
     expect(tools?.lines).toEqual({ start: 11, end: 11 });
   });
 
-  it("states both sides of requires_human without weighing one against the other", () => {
-    const unattended = model().nodes.find((n) => n.nodeId === "builder");
+  it("draws no row for a key the schema no longer has", () => {
+    /* This cell used to be "states both sides of requires_human without weighing one
+       against the other", and it drove the two sentences the pane printed for `true` and
+       `false`. The field is gone: whether a person acts at the node is the `type`, and the
+       pane says it there. Doc 2 §1.1's rule that the two answers weigh the same is not
+       lost with the row, it moved to `FIELD_NOTE.type` with the answer.
+
+       What is checked here instead is that the pane did not keep a slot for the withdrawn
+       key. A row reading `requires_human — false` off a document that no longer writes it
+       would be the pane inventing a field. */
     const attended = buildPaneModel({
       slug: "s",
       title: "S",
@@ -319,17 +337,18 @@ describe("buildPaneModel — the card skeleton", () => {
           nodeId: "builder",
           label: "B",
           ref: "code-builder@1.0.0",
-          card: card({ requiresHuman: true }),
+          card: card({ type: "human-gate" }),
           yaml: CARD_YAML,
         },
       ],
     });
-    const off = unattended?.card?.fields.find((f) => f.key === "requires_human");
-    const on = attended.nodes[0].card?.fields.find((f) => f.key === "requires_human");
-    expect(off?.filled).toBe(true);
-    expect(on?.filled).toBe(true);
-    expect(on?.value).toBe("true. The run holds here until a person acts.");
-    expect(off?.value).toBe("false. A run passes through without stopping.");
+    const keys = (n: PaneNode | undefined): string[] => n?.card?.fields.map((f) => f.key) ?? [];
+    expect(keys(model().nodes.find((n) => n.nodeId === "builder"))).not.toContain(
+      "requires_human",
+    );
+    expect(keys(attended.nodes[0])).not.toContain("requires_human");
+    // The type is still a row, and it still says which type it is.
+    expect(attended.nodes[0].card?.fields.find((f) => f.key === "type")?.value).toBe("human-gate");
   });
 
   it("gives `dependencies` the DOT lines of the edges it names", () => {
@@ -410,5 +429,69 @@ describe("buildPaneModel — absences", () => {
 
   it("has none when the caller declares none", () => {
     expect(model().absences).toEqual([]);
+  });
+});
+
+/* --------------------- the join between a node and its card --------------------- */
+
+describe("pinnedRefs and paneNodesFor", () => {
+  /* The first node pins the ref that sorts LAST, and the third pins through the bare
+     `version` form. A join by position against a sorted ref list would hand `task` the
+     verifier's card; the join has to come from the DOT. */
+  const JOIN_DOT = `digraph join {
+  task    [card="task-intake@1.0.0"];
+  verify  [card=" acceptance-verifier@2.0.0 "];
+  deliver [version="1.0.0"];
+  task -> verify -> deliver;
+}
+`;
+  const NODES = [
+    { id: "task", label: "Task Intake" },
+    { id: "verify", label: "Acceptance Verifier" },
+    { id: "deliver", label: "Deliver" },
+  ];
+  const RESOLVED = new Map<string, NodeCard>([
+    ["task-intake@1.0.0", card({ id: "task-intake", name: "Task Intake" })],
+    ["acceptance-verifier@2.0.0", card({ id: "acceptance-verifier", version: "2.0.0" })],
+    ["deliver@1.0.0", card({ id: "deliver", name: "Deliver" })],
+  ]);
+
+  it("reads every node's pin off its own DOT statement, in both spellings", () => {
+    expect([...pinnedRefs(JOIN_DOT)]).toEqual([
+      ["task", "task-intake@1.0.0"],
+      ["verify", "acceptance-verifier@2.0.0"],
+      ["deliver", "deliver@1.0.0"],
+    ]);
+  });
+
+  it("gives the first node its own card, not the card that sorts first", () => {
+    const sorted = [...RESOLVED.keys()].sort();
+    expect(sorted[0], "the fixture no longer discriminates").not.toBe("task-intake@1.0.0");
+
+    const nodes = paneNodesFor(
+      NODES,
+      JOIN_DOT,
+      RESOLVED,
+      new Map([["task-intake@1.0.0", "id: task-intake\n"]]),
+    );
+    expect(nodes.map((n) => n.ref)).toEqual([
+      "task-intake@1.0.0",
+      "acceptance-verifier@2.0.0",
+      "deliver@1.0.0",
+    ]);
+    expect(nodes[0].card?.id).toBe("task-intake");
+    expect(nodes[0].yaml).toBe("id: task-intake\n");
+    expect(nodes[1].card?.id).toBe("acceptance-verifier");
+    expect(nodes[1].yaml).toBeUndefined();
+  });
+
+  it("leaves a node without a legal pin unjoined rather than guessing", () => {
+    const nodes = paneNodesFor(
+      [{ id: "loose", label: "Loose" }],
+      `digraph g { loose [card="unversioned"]; }`,
+      RESOLVED,
+      new Map(),
+    );
+    expect(nodes).toEqual([{ nodeId: "loose", label: "Loose" }]);
   });
 });

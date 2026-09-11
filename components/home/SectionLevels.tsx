@@ -1,78 +1,26 @@
 /* ============================================================
-   Rung 3 of doc 2 §2.1 — self-localisation. The rung the site was
-   missing, and the reason a cold tester could not read the old one:
-   "il sito definisce il concetto prima di far localizzare il
-   lettore" (§0).
+   The ladder: four levels of working with coding agents, turned
+   toward the reader so they can find where they stand.
 
-   Three jobs, in this order:
+   Three jobs, in this order: put the reader somewhere, land the hook
+   that the gap to the top is architectural and organisational rather
+   than technological, and keep the per-blueprint autonomy class from
+   inheriting the ladder's sense of a destination. Nothing in this file
+   may teach a reader to optimise a number: the levels describe an
+   organisation, the class describes one graph, and no arrow, progress
+   track or wording makes level 2 a deficiency.
 
-   1. put the reader somewhere. The levels are turned toward them
-      ("oggi sei probabilmente al livello 2"), not presented as a
-      taxonomy to admire;
-   2. land the hook of §1: the gap to the top of the ladder is
-      architectural and organisational, the technology already
-      exists, what is missing are the patterns for structuring the
-      work. That sentence is the whole positioning argument: it tells
-      the reader their problem is a design problem, and design is
-      what this site collects;
-   3. defuse the tension §1.1 flags in as many words. Rung 3 implies
-      the top of the ladder is a destination. The per-blueprint
-      autonomy class must not inherit that reading, so the two scales
-      are named apart on the same screen where the confusion would
-      otherwise start.
-
-   ── The ladder runs 1 to 5, and the rungs are ours ──
-   It used to run 1 to 4 on the strength of a BlueGrid post that
-   sat behind a Cloudflare challenge and could not be read, and the
-   HackerNoon piece was then credited with "the five levels". It
-   does not have five and it names none of them: its ladder is
-   "Level 1: AI finishes your sentences", 2, 3, a "Level 3.5" where
-   some services auto-merge, and "Level 4: Full dark factory", and
-   the words autocomplete, chat-assisted, agentic and harness-driven
-   appear nowhere in it. So the numbering, the five names and the
-   sentences under them are this site's, the article is credited
-   with the account of the climb it actually contains, and the
-   source note says which is which. Getting this wrong was
-   reader-visible: `/towards-a-dark-factory` opens on "the gap
-   between level 2 and level 5" beside a link whose top rung is 4.
-   (That route was `/how-to-build-a-dark-factory` when this was
-   written; redesign spec §4.2 renamed it, and this comment was the
-   fourth stale reference to the old path.)
-
-   ⚠️ §1.1 is binding here more than anywhere: nothing in this file
-   may teach a reader to optimise a number. The five levels describe
-   an organisation; the class describes one graph, and it is a name
-   with no number behind it on any surface. No arrows between the
-   levels, no progress track, no wording that makes level 2 a
-   deficiency.
-
-   ── Why the layout draws now (spec §3.4) ──
-   The author: "you can associate also here an image to each level by
-   splitting on the left and the right of the page each level to give
-   space." So every word of the copy below is the copy that shipped,
-   and only the arrangement changed: a two-column split per level,
-   alternating side, with one drawing each.
-
-   The five drawings are the same figure five times. A path runs from
-   a request to a shipped change, and the only thing that differs is
-   who is standing on it. That choice does the §1.1 work structurally
-   rather than by disclaimer:
-
-   - the five are co-ordinate, because they are the same drawing at
-     the same size in the same frame. There is no arrow between them,
-     no rising line, and no shared axis to read a rank off;
-   - a person on the path is drawn the way a person is drawn
-     everywhere else on this site, in `HUMAN_PRESENCE_MARK` violet,
-     which is the colour the repo reserves for where somebody acts
-     and never for a fault;
-   - level 5 has no human mark because its own sentence says nobody
-     is standing on the path, which is a description of that
-     arrangement and not a prize for reaching it.
+   The four drawings are the same figure four times, a path from a
+   request to a shipped change, and the only thing that differs is who
+   is standing on it. That does the work structurally: the levels are
+   co-ordinate because they share one frame and one size, a person on
+   the path is drawn in the violet the site reserves for where somebody
+   acts and never for a fault, and level 4 has no human mark because
+   its own sentence says nobody is standing on the path.
 
    The drawing is finished markup at SSR time and the reveal spends
-   itself on opacity and transform (spec §1). `useReveal` returns
-   `static` on the server, without JS and under reduced motion, and
-   the row renders at rest in all three.
+   itself on opacity and transform; `useReveal` returns `static` on the
+   server, without JS and under reduced motion.
    ============================================================ */
 
 
@@ -99,49 +47,24 @@ type Level = {
 };
 
 /**
- * The four rungs: the SOURCE'S numbering, in this site's words.
+ * The four rungs: the linked article's numbering, in this site's words.
  *
- * The author, 2026-08-08, with the article's own table in hand: "I expect to mimic such
- * division — the graphics does not report that."
+ * The distinction each rung turns on is the article's: the model completes what you are
+ * typing; an agent writes whole files and every change passes your review; an agent works
+ * from a spec, unseen scenarios gate it and you approve the merge; specs in, merged tested
+ * code out, your existing pipeline deploys it. The article's half step at 3.5, where some
+ * services auto-merge, is a rollout rather than a place to stand, so it is not a rung
+ * here; the gate below still says what it said by being the one thing separating 3 from 4.
  *
- * So the numbering is the linked piece's, 1 / 2 / 3 / 4, and the distinction each rung
- * turns on is its:
- *
- *   1   the model completes what you are typing; everything else is yours
- *   2   an agent writes whole files; every change passes your review
- *   3   an agent works from a spec, held-out scenarios gate it, you approve the merge
- *   4   specs in, merged tested code out, your existing pipeline deploys it
- *
- * The source carries a fifth row between 3 and 4, a half step at 3.5 where "some services
- * auto-merge without you". It was drawn here for one revision and the author asked it out.
- * The ladder is what a reader locates themselves on, and 3.5 is not a place to stand: it is
- * 3 for some of your services and 4 for the others, which is a rollout and not a rung. What
- * it did say — that the gate comes off one service at a time — the gate below still says by
- * being the single thing that separates 3 from 4.
- *
- * The SENTENCES are ours and deliberately not the table's. Two reasons, and neither is
- * squeamishness: copying five rows of someone else's prose onto a page that credits them
- * for "the account of the climb" is a different kind of borrowing than the credit claims,
- * and the article's rows are written for its reader while ours have to name the phases this
- * site's ontology closes over. The half step keeps its number because renumbering it would
- * be the one edit that breaks the mapping the author asked for.
- *
- * ── What this replaced ──
- * Five rungs of our own — Autocomplete, Chat-assisted, Agentic, Harness-driven, Dark
- * factory — numbered 1 to 5, with a comment insisting "All five are ours: the numbering,
- * the names and the sentences." That was honest and it was the wrong call: it put a private
- * scale beside a public one, so a reader arriving from the article had to translate, and our
- * level 5 and its level 4 were the same rung under different numbers. `levels.test.ts` held
- * the old names and now holds these.
- *
- * Level 4 stays "Dark factory" because that is the article's own phrase for its top rung and
- * this site's central term. Level 2 is still where most readers stand.
+ * The sentences are this site's, because the article's rows are written for its reader
+ * and these have to name the phases this site's vocabulary closes over. `levels.test.ts`
+ * holds the names and the numbering.
  */
 const LEVELS: Level[] = [
   {
     n: 1,
     name: "Autocomplete",
-    body: "The model finishes the line you are typing. Everything else on the run is yours: you plan it, you build it, you test it, you debug it and you release it.",
+    body: "The model finishes the line you are typing. Everything else on the run is yours: you plan it, build it, test it, debug it and release it.",
   },
   {
     n: 2,
@@ -152,35 +75,38 @@ const LEVELS: Level[] = [
   {
     n: 3,
     name: "Spec-driven",
-    body: "An agent works from a specification inside a harness, and held-out scenarios decide whether what came back is good enough. You approve the merge, every time.",
+    body: "An agent works from a specification inside a harness, and test scenarios the agent never saw decide whether what came back is good enough. You approve the merge, every time.",
   },
   {
     n: 4,
     name: "Dark factory",
-    body: "A specification goes in, tested and merged code comes out, and the pipeline you already have deploys it. The harness is the same one; what was removed is the checkpoint, not the constraints.",
+    body: "A specification goes in. Tested and merged code comes out. The pipeline you already have deploys it. The harness is the same one as level 3; the approval checkpoint is gone and every other constraint stays.",
   },
 ];
 
 type Source = { title: string; where: string; href: string; note: string };
 
 /**
- * The references doc 2 §1 asks the landing to carry. Every URL is a real one, and every
- * note says what the source actually supports. The HackerNoon note read "Where the five
- * levels come from", which the article does not: it runs a ladder of its own to level 4
- * with a half step at 3.5 and gives no rung a name.
+ * The two sources the page credits. Every URL is real, and every note says only what the
+ * source supports: the article runs a ladder of its own to level 4 with a half step at
+ * 3.5 and gives no rung a name, so it is credited with the account of the climb and not
+ * with the names.
  */
 const SOURCES: Source[] = [
   {
     title: "The Dark Factory Pattern: Moving From AI-Assisted to Fully Autonomous Coding",
     where: "HackerNoon",
     href: "https://hackernoon.com/the-dark-factory-pattern-moving-from-ai-assisted-to-fully-autonomous-coding",
-    note: "One team's account of the climb, and the source this framing is borrowed from. The four rungs above are numbered as it numbers them; it carries a half step at 3.5 that this ladder does not, and the sentences are ours.",
+    note: "One team's account of the climb, and the source this framing is borrowed from. The four rungs above are numbered as the article numbers them; the article also has a half step at 3.5, which this ladder leaves out.",
   },
   {
     title: "strongdm/attractor",
     where: "GitHub",
     href: "https://github.com/strongdm/attractor",
-    note: "The operational case. StrongDM published the specification of its graph runner and no source code. DarkPrint's DOT stays readable by it.",
+    /* "written to Attractor's specification" and not "a graph it can run": StrongDM
+       published a specification and no source, so nothing in this repository has ever run
+       Attractor on an export. The exporter proves conformance to the spec, never execution. */
+    note: "The runner this site keeps its files compatible with. StrongDM published the specification of Attractor, its graph runner, and no source code; a DarkPrint topology exports to a graph written to Attractor's specification.",
   },
 ];
 
@@ -556,13 +482,13 @@ interface LevelDrawing {
 const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   1: {
     label:
-      "The five-phase run (plan, build, test, debug, release) with a person standing at every one of the five. No harness, and no return run: when a test fails, the person carries the work back.",
+      "The five-phase run (plan, build, test, debug, release) with a person standing at every one of the five. No harness. No return run. When a test fails, the person carries the work back.",
     note: "a person at all five",
     body: <Run people={[0, 1, 2, 3, 4]} />,
   },
   2: {
     label:
-      "The same five-phase run, with a person at plan, test and release and an agent doing the building and the debugging. Still no return run: the person is the one who reads a failure and decides to go round again.",
+      "The same five-phase run, with a person at plan, test and release and an agent doing the building and the debugging. Still no return run. The person reads a failure and decides to go round again.",
     note: "a person at three of five",
     body: <Run people={[0, 2, 4]} />,
   },
@@ -574,7 +500,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   },
   4: {
     label:
-      "The same five-phase run, its return run and the same harness, with an agent at every station, the direct run to release and no person anywhere inside it.",
+      "The same five-phase run, its return run and the same harness. An agent works at every station. The run goes direct to release. No person is anywhere inside it.",
     note: "the same harness, nobody in it",
     body: <Run people={[]} harness="harness" loop />,
   },
@@ -696,7 +622,7 @@ export function SectionLevels() {
                the middle clause described the list a reader is looking at, which the four
                rows under it do better than a sentence can. What is left is the instruction
                and the reason for it. */
-            lead="Find yourself on the ladder before the rest of this makes sense. Where you land decides which problem you actually have."
+            lead="Find yourself on the ladder first. Where you land decides which problem you have."
           />
         </div>
 
@@ -709,7 +635,7 @@ export function SectionLevels() {
             <span className="h-2.5 w-2.5 rounded-full border border-cyan bg-cyan/25" />
             agent runs phase
           </span>
-          <span>↩ retry loop appears when the system closes it</span>
+          <span>↩ the return path from debug back to test, drawn only where the harness closes the loop itself</span>
         </div>
 
         {/* One coordinate system, four times. Copy stays on the left and the drawing on
@@ -749,10 +675,10 @@ export function SectionLevels() {
               paragraph. The line above it keeps its cap — it is one display-size sentence
               and a 48rem measure is what stops it running as a banner. */}
           <p className="mt-4 text-base leading-relaxed text-muted">
-            The technology to run at level 4 already exists. What is missing are the
-            patterns for structuring the work: what each agent is handed, and what each
-            one is kept away from. Better models will not supply that. It is a design
-            problem, and designs are what this site collects.
+            The technology to run at level 4 already exists. The patterns for structuring
+            the work are missing: what each agent is handed, and what each one is kept
+            away from. Better models will not supply that. It is a design problem. This
+            site collects designs.
           </p>
         </div>
 

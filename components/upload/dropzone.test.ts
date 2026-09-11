@@ -62,30 +62,25 @@ describe("the wizard, given a downloaded bundle", () => {
     const { files } = downloadOf("frontline-triage");
     const parts = classifyBundle(files);
 
-    expect(parts.dot?.name).toBe("blueprint.dot");
+    expect(parts.dot?.name).toBe("topology.dot");
     expect(parts.cards).toHaveLength(7);
     expect(parts.vocabulary?.name).toBe("ontology/extensions.yaml");
     expect(parts.vocabularyProblem).toBeUndefined();
     expect(parts.terms.map((term) => term.id)).toEqual(["lupo/pii-handling"]);
-    // Three files in the folder are deliberately not read, and each says why rather than
-    // reading as a rejection: `factory.dot` is the same graph prepared for a runner, and
-    // the two prose documents address a person and an agent respectively.
+    // One file in the folder is deliberately not read, and it says why rather than
+    // reading as a rejection: `README.md` addresses a person, not the engine. Owner
+    // instruction, 2026-08-25: a fresh download no longer carries `factory.dot` or
+    // `AGENTS.md` at all, so neither shows up here any more either — see the
+    // `factory.dot` and `AGENTS.md` describe block below for the classifier's continuing
+    // recognition of both, which exists for a reader's older downloads.
     const ignored = parts.roles.filter((entry) => entry.role === "ignored");
-    expect(ignored.map((entry) => entry.file.name).sort()).toEqual([
-      "AGENTS.md",
-      "README.md",
-      "factory.dot",
-    ]);
+    expect(ignored.map((entry) => entry.file.name).sort()).toEqual(["README.md"]);
     const noteFor = (name: string) =>
       ignored.find((entry) => entry.file.name === name)?.note ?? "";
-    expect(noteFor("factory.dot")).toContain("blueprint.dot");
     expect(noteFor("README.md")).toContain("written for a person");
-    expect(noteFor("AGENTS.md")).toContain("agent adapting it");
-    // The old catch-all said what these files are not, which told a reader nothing about
-    // why their own download contains them.
-    for (const name of ["README.md", "AGENTS.md"]) {
-      expect(noteFor(name), name).not.toContain("not a .dot");
-    }
+    // The old catch-all said what this file is not, which told a reader nothing about
+    // why their own download contains it.
+    expect(noteFor("README.md")).not.toContain("not a .dot");
   });
 
   it("reproduces the two levels the blueprint page shows", () => {
@@ -133,5 +128,71 @@ describe("the wizard, given a downloaded bundle", () => {
     expect(
       parts.roles.find((entry) => entry.file.name === "other/extensions.yaml")?.role,
     ).toBe("ignored");
+  });
+});
+
+describe("the wizard, given blueprint.dot — the topology's name before the format rename", () => {
+  const file = (name: string): UploadFile => ({ name, text: "digraph g {}\n" });
+
+  it("reads a folder carrying only blueprint.dot, same as it validated before the rename", () => {
+    const parts = classifyBundle([file("blueprint.dot")]);
+    expect(parts.dot?.name).toBe("blueprint.dot");
+    // Nothing was ignored, so there is nothing to warn about — the compatibility
+    // diagnostic exists for the two-file case below, not for this one.
+    expect(parts.diagnostics).toEqual([]);
+  });
+
+  it("prefers topology.dot when a drop carries both, and warns that blueprint.dot was ignored", () => {
+    const parts = classifyBundle([file("blueprint.dot"), file("topology.dot")]);
+    expect(parts.dot?.name).toBe("topology.dot");
+
+    const ignored = parts.roles.filter((entry) => entry.role === "ignored");
+    expect(ignored.map((entry) => entry.file.name)).toEqual(["blueprint.dot"]);
+    expect(ignored[0].note).toContain("topology.dot");
+
+    expect(parts.diagnostics).toHaveLength(1);
+    expect(parts.diagnostics[0]).toMatchObject({
+      code: "bundle/legacy-topology-file",
+      severity: "warning",
+      location: { file: "blueprint.dot" },
+    });
+  });
+
+  it("prefers topology.dot regardless of which file was dropped first", () => {
+    // Same pair as above, reversed — `topology.dot` winning must not be an accident of
+    // `blueprint.dot` losing a "first .dot wins" race it happened to run second in.
+    const parts = classifyBundle([file("topology.dot"), file("blueprint.dot")]);
+    expect(parts.dot?.name).toBe("topology.dot");
+    expect(parts.diagnostics).toHaveLength(1);
+    expect(parts.diagnostics[0].code).toBe("bundle/legacy-topology-file");
+  });
+});
+
+/**
+ * `factory.dot` and `AGENTS.md`, neither of which a fresh download carries any more
+ * (owner instruction, 2026-08-25). `classifyBundle` still recognises both by name — a
+ * reader may drop an older download, or a folder they wrote by hand — so this holds that
+ * recognition directly, the way the suite above holds `blueprint.dot` after ITS rename.
+ */
+describe("the wizard, given factory.dot or AGENTS.md — no longer part of a fresh download", () => {
+  const file = (name: string): UploadFile => ({ name, text: "content\n" });
+
+  it("recognises factory.dot beside topology.dot, and says why it was not read", () => {
+    const parts = classifyBundle([
+      { name: "topology.dot", text: "digraph g {}\n" },
+      file("factory.dot"),
+    ]);
+    expect(parts.dot?.name).toBe("topology.dot");
+    const ignored = parts.roles.filter((entry) => entry.role === "ignored");
+    expect(ignored.map((entry) => entry.file.name)).toEqual(["factory.dot"]);
+    expect(ignored[0].note).toContain("topology.dot");
+  });
+
+  it("recognises AGENTS.md as the bundle's agent-facing notes, not an unreadable stray", () => {
+    const parts = classifyBundle([file("AGENTS.md")]);
+    const ignored = parts.roles.filter((entry) => entry.role === "ignored");
+    expect(ignored.map((entry) => entry.file.name)).toEqual(["AGENTS.md"]);
+    expect(ignored[0].note).toContain("agent adapting it");
+    expect(ignored[0].note).not.toContain("not a .dot");
   });
 });

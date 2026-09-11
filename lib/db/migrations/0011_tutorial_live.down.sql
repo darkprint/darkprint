@@ -1,0 +1,12 @@
+-- Reverse of 0011_tutorial_live.up.sql. Dropping the table takes its index
+-- with it, so one statement is the exact inverse.
+--
+-- What this loses is every open live page, and that is nothing to keep: a row
+-- lives 24 hours from its last write and holds a draft the author's own
+-- machine still has.
+--
+-- No `IF EXISTS`. The pair is applied and rolled back as a unit by
+-- `lib/db/migrate.ts` inside one transaction, so a half-applied state is not
+-- reachable, and a guard against an impossible state hides the real fault the
+-- day the state stops being impossible.
+drop table "tutorial_draft";

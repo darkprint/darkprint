@@ -213,9 +213,14 @@ export function ReachRow({
           gone. */}
       <span
         className={cx(
-          /* Capped: the third column is `1fr`, and in a full-width placement that let a
-             gloss run to about 110 characters. */
-          "flex min-w-0 max-w-[74ch] flex-col gap-1 border-l pl-3 text-[13px] leading-snug text-muted sm:border-l-0 sm:pl-0",
+          /* No cap. `max-w-[74ch]` stood here, added because the third column is `1fr` and
+             a full-width placement let a gloss run to about 110 characters. The owner
+             asked the /ontology panels to fill the band on 2026-09-05, and this component
+             renders ten times on that page, so the cap was the width the reader actually
+             saw there whatever the panels around it did. The site-wide rule is that text
+             runs full width; the left rule and its padding are what group a gloss with the
+             field above it, and they are unchanged. */
+          "flex min-w-0 flex-col gap-1 border-l pl-3 text-[13px] leading-snug text-muted sm:border-l-0 sm:pl-0",
           barred ? "border-amber/50" : "border-line",
         )}
       >

@@ -27,10 +27,9 @@ function cardOf(type: string, over: Partial<NodeCard> = {}): NodeCard {
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version: "1.0.0",
-    ontologyVersion: "0.1.0",
     ...over,
   };
 }
@@ -169,10 +168,8 @@ outputs:
   - name: payload
     type: json
 dependencies: []
-requires_human: false
 risk_markers: []
 version: 1.0.0
-ontology_version: 0.1.0
 `;
 
 const YAML_SINK = `
@@ -191,10 +188,8 @@ inputs:
     type: json
 outputs: []
 dependencies: []
-requires_human: false
 risk_markers: []
 version: 1.0.0
-ontology_version: 0.1.0
 `;
 
 const PROBE_BUNDLE: Bundle = {
@@ -203,7 +198,6 @@ const PROBE_BUNDLE: Bundle = {
     title: "Probe",
     summary: "A two-node bundle whose only purpose is to raise a resolver warning.",
     tags: [],
-    ontologyVersion: "0.1.0",
   },
   dot: `digraph probe {
   source [card="source@1.0.0"];
@@ -301,6 +295,46 @@ describe("graphForBlueprint — the card id on the seed", () => {
 });
 
 /* ============================================================
+   the schematic and the guarded edge
+   `ResolvedEdge.condition` is deliberately not drawn, and this
+   cell is what makes that a decision rather than an omission.
+
+   Every analyzer counts a guarded edge exactly as much as an
+   unconditional one, because a leak that can happen is a leak. A
+   second stroke on the schematic would say the opposite in the one
+   place a reader looks first — a "maybe" line beside a Security
+   number computed as though the branch were certain — and a
+   picture that contradicts the score printed next to it is a
+   defect this codebase has shipped before. Nothing is lost by the
+   decision: the guard is carried on the edge, written into the
+   exported DOT, and shown verbatim in the source panel beside the
+   schematic.
+
+   A future change to the rendering has to come through here and
+   say so.
+   ============================================================ */
+
+describe("graphForBlueprint — a guarded edge draws as an edge", () => {
+  const guarded: Bundle = {
+    ...PROBE_BUNDLE,
+    dot: `digraph probe {
+  source [card="source@1.0.0"];
+  sink   [card="sink@1.0.0"];
+  source -> sink [condition="attempts > 3", weight=9];
+}`,
+  };
+
+  it("carries the guard on the resolved edge and nothing of it onto the seed", () => {
+    const plain = loadBundle(PROBE_BUNDLE, { ontology }).blueprint!;
+    const withGuard = loadBundle(guarded, { ontology }).blueprint!;
+    // The premise: without this the comparison below is a graph against itself.
+    expect(withGuard.edges[0].condition).toBe("attempts > 3");
+    expect(withGuard.edges[0].weight).toBe("9");
+    expect(graphForBlueprint(withGuard).edges).toEqual(graphForBlueprint(plain).edges);
+  });
+});
+
+/* ============================================================
    The other half of spec part 3: a pane that claims the click
    takes the links off first.
 
@@ -390,10 +424,8 @@ outputs:
     type: json
 dependencies:
   - source
-requires_human: true
 risk_markers: []
 version: 1.0.0
-ontology_version: 0.1.0
 `;
 
 /** The probe with a person standing in the middle of it. */
@@ -487,7 +519,7 @@ describe("toBlueprintView — autonomy as a class", () => {
       expect(view.analysis.autonomy.level).toBe(r.analysis!.autonomy.level);
       expect(view.analysis.autonomy.fraction).toBe(r.analysis!.autonomy.fraction);
       expect(view.analysis.autonomy.contributions).toEqual(r.analysis!.autonomy.contributions);
-      expect(view.analysis.autonomy.ontologyVersion).toBe(r.analysis!.autonomy.ontologyVersion);
+      expect(view.analysis.autonomy.control).toEqual(r.analysis!.autonomy.control);
     }
   });
 });

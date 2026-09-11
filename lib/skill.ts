@@ -1,71 +1,98 @@
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-94) (cited at line 51): n/a — external CLI over git
 /* ============================================================
-   The blueprint-writing skill, as one string.
-   ------------------------------------------------------------
-   The skill lives in this repository and the skills CLI reads it over git, so there is
-   nothing hosted, nothing to zip and no version to keep in step with a download. What a
-   reader needs from the site is therefore one line of text, and that line is printed on
-   three routes: the landing's hero chip (`components/hero/Wordmark.tsx`, where it is one
-   of two commands and the only one that runs), `/build`'s second exit
-   (`components/build/AgentHandoff.tsx`, beside the brief it is the durable form of) and
-   `/skill`, which is the only one of the three that explains anything.
+   The blueprint-writing skill, as the strings the site prints about it.
 
-   Three hand-typed copies of a command a reader retypes into a terminal is the shape that
-   drifts the day the repository moves, and the failure is silent: a wrong command produces
-   an error in somebody else's shell, never a red test here. So it is written once.
+   The skill is the `skills/darkprint` tree in this repository. It reaches a reader two
+   ways. The `darkprint` package on npm carries a copy of the tree, and `npx -y darkprint
+   skill install` (`packages/cli/src/skill.ts`) copies it into the folder the reader's agent
+   loads user skills from: `~/.claude/skills/darkprint` for Claude Code, `~/.agents/skills/
+   darkprint` for Codex. That is the install line the site prints. `prebuild`
+   (`scripts/generate-bundles.ts`) also copies the tree to `public/skill/darkprint/**` and
+   packs it as `public/skill/darkprint.tgz` with a manifest of per-file hashes, so a reader
+   can read every file before running anything and check what the package installed.
+
+   Every command is defined once here because four surfaces print it (the landing band, a
+   draft bundle's quick-setup panel, `/capabilities`, and `/skill`), and a command a reader
+   retypes fails silently when copies drift: the error lands in somebody else's shell, never
+   in a test here. The npm form of the CLI is `NPX_INVOCATION` in `packages/cli/src/run.ts`;
+   it is spelled again here rather than imported because that barrel reaches `node:fs` and
+   the engine, and this module is read by pages. `lib/skill.test.ts` holds the two equal.
+
+   ── Constraints on the command strings ──
+   No `$` prompt: the prompt belongs to the surface, and a `$` that reaches the clipboard
+   is a command that fails. No `&`, `<`, `>` or quotes either: React escapes those five
+   characters into markup, and a guard that compares a rendered page against the raw
+   constant would then read a correct page as wrong. `lib/skill.test.ts` holds both.
 
    ── The word `skill` is already taken on this site ──
-   `lib/core/card/schema.ts` defines `skill?: string` as a per-node behaviour document
-   ("such as `skills/planner.md`"), and `/what-a-blueprint-is#the-words` prints, in the
-   open, that the engine reads nothing at the other end of that path. That skill sits one
-   level BELOW the graph: it hands one agent a capability, while the blueprint decides who
-   is wired to whom. This one inverts that, because it WRITES the graph.
-
-   Never print "the skill" unqualified on any surface. "The DarkPrint skill" or "the
-   blueprint-writing skill", both of which a reader can tell from a card's `skill:` field
-   at a glance, and `/skill` spends one sentence saying so outright.
-
-   ── What it emits, and the one thing it deliberately does not ──
-   The registry shape: `blueprint.dot`, one YAML card per node, `README.md` and
-   `AGENTS.md`. NOT `factory.dot`. That file is compiled out of the other two by
-   `lib/content/bundle-export.ts` on the way out of DarkPrint, and a skill that emitted its
-   own copy of the Attractor emit rules would be free to drift from the exporter the day
-   either changed. `/build`'s download exit leads on `factory.dot`, so the two folder
-   shapes are visibly different on one page and both surfaces that name the skill have to
-   say why.
-
-   ── What no test here can hold ──
-   Everything else the site claims about an artefact is checked against the artefact:
-   `workspace.test.ts` walks all eighty bundles, `honesty.test.ts` renders the real pages.
-   The skill's behaviour is read by an external CLI out of git, so nothing in
-   `npx tsc --noEmit` or the suite fails on the day its output stops matching what these
-   two routes say it writes. That is a standing cost of shipping it, not an oversight, and
-   it is the reason both surfaces describe the output in the fewest words that are true.
+   `lib/core/card/schema.ts` defines `skill?: string` as a per-node behaviour document, one
+   level below the graph. This one writes the graph. Never print "the skill" unqualified on
+   any surface: "the DarkPrint skill" or "the blueprint-writing skill".
    ============================================================ */
 
 /**
- * The command a reader types, exactly as it must be typed.
- *
- * No `$` prompt in the value: the prompt is a rendering convention of whichever surface
- * prints it, and a `$` that reaches the clipboard is a command that fails.
+ * The host the tree is served from, spelled with `www` because that is the host
+ * production serves. Written here rather than imported: no site-wide origin constant
+ * exists in this tree yet, and the links have to print the host that answers.
  */
-export const SKILL_INSTALL_COMMAND = "npx skills@latest add Brotherhood94/darkprint";
+export const SKILL_SITE_ORIGIN = "https://www.darkprint.io";
 
 /**
- * Where the command is explained.
+ * The directory the skill lives in, relative to the repository root, and the root of every
+ * entry in the served archive. It is also the suffix under which the CLI lands the copy:
+ * `<parent>/skills/darkprint`, which is where both agents look.
+ */
+export const SKILL_ARCHIVE_ROOT = "skills/darkprint";
+
+/** Where `prebuild` writes the served copy, under `public/`. */
+export const SKILL_PUBLIC_DIR = "skill";
+
+/** The raw tree, one URL per file: `/skill/darkprint/SKILL.md` and so on. */
+export const SKILL_TREE_PATH = `/${SKILL_PUBLIC_DIR}/darkprint`;
+
+/** Every file in the tree with its SHA-256, and the archive's own, for a reader who checks. */
+export const SKILL_MANIFEST_PATH = `/${SKILL_PUBLIC_DIR}/manifest.json`;
+
+export const SKILL_TREE_URL = `${SKILL_SITE_ORIGIN}${SKILL_TREE_PATH}`;
+export const SKILL_MANIFEST_URL = `${SKILL_SITE_ORIGIN}${SKILL_MANIFEST_PATH}`;
+
+/** The folder whose `skills/` subdirectory each agent reads user skills from. */
+export const CLAUDE_CODE_SKILLS_PARENT = "~/.claude";
+export const CODEX_SKILLS_PARENT = "~/.agents";
+
+/** The npm package that carries the CLI, the stdio MCP server and the DarkPrint skill. */
+export const SKILL_PACKAGE = "darkprint";
+
+/**
+ * The command a Claude Code user types, exactly as it must be typed.
  *
- * This read `/install`, and the comment here argued for it: one "set your agent up"
- * destination, already linked from both surfaces printing the command, and a route of its
- * own would cost a tenth header row a week after the IA pass took the header down to nine.
- *
- * The author overruled it on 2026-08-07 — "I prefer two pages, one for the skill and one
- * for the mcp" — and the header row is the price, knowingly paid. What the old argument
- * missed is that the landing now names the two halves separately and sends a reader at
- * one of them by name: the hero prints "Design your blueprint" over this command and
- * "Connect via MCP" over the other. A chip that promises one half and opens a page that is
- * half something else spends the reader's click on navigation they did not ask for. Two
- * destinations, two chips, and neither page has to hedge about the other.
+ * `npx -y` fetches the package from npm on the first run and answers no prompt; the verb
+ * copies the packaged skill into `~/.claude/skills/darkprint`. `~/.claude` exists for anyone
+ * who has run Claude Code once and the verb creates the rest. Nothing else is installed and
+ * no account is created.
+ */
+export const SKILL_INSTALL_COMMAND = `npx -y ${SKILL_PACKAGE} skill install`;
+
+/**
+ * The same verb for Codex, which reads user skills from `~/.agents/skills` (its own
+ * documentation names that directory and no other). The verb creates the folder.
+ */
+export const SKILL_INSTALL_COMMAND_CODEX = `${SKILL_INSTALL_COMMAND} --codex`;
+
+/**
+ * Where the commands are explained. One page for the skill and one for MCP, on the owner's
+ * instruction, so a landing chip that promises one half never opens a page that is half the
+ * other.
  */
 export const SKILL_ROUTE = "/skill";
+
+/**
+ * Where the blueprint-writing skill opens a live page for the tutorial: a `POST` with an
+ * empty object answers a token and the page's URL, and the draft is then `PUT` to the same
+ * path with the token appended. The skill is a document and prints this URL as prose, so
+ * `lib/skill.test.ts` holds `SKILL.md` and `references/live-preview.md` to this spelling.
+ */
+export const LIVE_OPEN_PATH = "/api/tutorial/live";
+export const LIVE_OPEN_URL = `${SKILL_SITE_ORIGIN}${LIVE_OPEN_PATH}`;
+
+/** The page a token opens, as `/tutorial/live/<token>`. */
+export const LIVE_PAGE_PATH = "/tutorial/live";

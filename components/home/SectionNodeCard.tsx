@@ -16,9 +16,10 @@
 
    `code-builder@1.0.0` rather than a written-for-the-page example,
    because the spec asks for a card the site can be held to: it is
-   the one carrying `cannot: [acceptance-criteria]`, the resolver
-   enforces that entry, and `/nodes/code-builder` shows the same
-   document in full. An invented card would make the ninth
+   the one carrying `cannot: [acceptance-criteria]` next to a
+   `will_not` nothing checks, the resolver enforces the first of
+   those, and `/nodes/code-builder` shows the same document in
+   full. An invented card would make the ninth
    annotation a claim about a file nobody can open.
 
    ── Two figures this used to mount, and why it mounts a third ──

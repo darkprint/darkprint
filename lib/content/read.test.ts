@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { checkVersionChain, loadCard, parseCardRef, type NodeCard } from "@/lib/core";
+import { checkVersionChain, computeAutonomy, loadCard, parseCardRef, type NodeCard } from "@/lib/core";
 
 import { contentOntology, contentOntologyDiagnostics, readContent } from "./read";
 
@@ -19,7 +19,7 @@ import { contentOntology, contentOntologyDiagnostics, readContent } from "./read
 describe("readContent over content/", () => {
   const loaded = readContent();
 
-  it("loads all nine blueprints with no error-severity diagnostic", () => {
+  it("loads all ten blueprints with no error-severity diagnostic", () => {
     expect(loaded.map((b) => b.slug)).toEqual([
       "adversarial-consensus-line",
       "checkpoint-resume-runner",
@@ -28,6 +28,7 @@ describe("readContent over content/", () => {
       "guarded-merge-bot",
       "incident-commander",
       "nightly-data-janitor",
+      "pipeline-observability",
       "schema-forge-etl",
       "starter-software-factory",
     ]);
@@ -57,9 +58,11 @@ describe("readContent over content/", () => {
         expect([node.ref, new Set(phases).size]).toEqual([node.ref, phases.length]);
         expect([node.ref, TYPES.includes(node.card.type)]).toEqual([node.ref, true]);
         expect(node.card.spec.trim().length).toBeGreaterThan(40);
-        expect(node.card.ontologyVersion).toBe("0.1.0");
       }
-      expect(bundle.bundle.manifest.ontologyVersion).toBe("0.1.0");
+      /* Nothing declares an ontology version any more, the vocabulary included, so the
+         assertions that stood here are gone with the field. That the archive is read against
+         the shipped vocabulary is asserted by identity in the cell below, which is what the
+         version string was standing in for. */
     }
   });
 
@@ -74,13 +77,22 @@ describe("readContent over content/", () => {
     expect(cards.some((card) => card.phases.length > 1)).toBe(true);
   });
 
-  // Doc 3 §3's note: the two fields feed the same metric, so disagreeing is an error and
-  // not a warning. The archive carries two `human-gate` cards and no `human-input` one.
-  it("keeps `requires_human` consistent with every human type", () => {
+  /* This cell used to compare the card's `requires_human` flag with the subsumption
+     question and demand they agree, because the archive could carry a card where they did
+     not. There is no flag to compare against now, so what it checks is the property the
+     flag's removal was for: every node the metric counts as staffed carries a type the
+     vocabulary puts under `human-in-the-loop`, and nothing else can put it there. The
+     archive carries two `human-gate` cards and no `human-input` one. */
+  it("derives who acts at every archive node from its type and nothing else", () => {
     for (const bundle of loaded) {
+      const staffed = new Set(
+        computeAutonomy(bundle.blueprint)
+          .contributions.filter((c) => c.requiresHuman)
+          .map((c) => c.nodeId),
+      );
       for (const node of bundle.blueprint.nodes) {
         const human = bundle.blueprint.ontology.isA(node.card.type, "human-in-the-loop");
-        expect([node.ref, human]).toEqual([node.ref, node.card.requiresHuman]);
+        expect([node.ref, human]).toEqual([node.ref, staffed.has(node.nodeId)]);
       }
     }
   });
@@ -91,8 +103,8 @@ describe("readContent over content/", () => {
     const local = view.get("lupo/pii-handling");
     expect(local?.kind).toBe("risk-marker");
     expect(view.isA("lupo/pii-handling", "isolation-breach")).toBe(true);
-    // A local overlay does not mint a new vocabulary version (doc 3 §8).
-    expect(view.ontology.version).toBe("0.1.0");
+    // An overlay adds terms to the core rather than replacing it, so the core is still there.
+    expect(view.get("agent")?.kind).toBe("node-type");
     // …and the vocabulary itself holds together, which is what the loader checks first.
     expect(contentOntologyDiagnostics()).toEqual([]);
   });
@@ -181,7 +193,6 @@ function card(id: string, inputs: string, outputs: string, extra = ""): string {
     "type: agent",
     "phase: implementation",
     "version: 1.0.0",
-    "ontology_version: 0.1.0",
     "action: Do the one thing this fixture exists to do.",
     "spec: >-",
     "  Do the one thing this fixture exists to do, and emit it on the port declared below.",
@@ -227,7 +238,7 @@ function trivialArchive(root: string): void {
   const dir = join(root, "content", "blueprints", "solo");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "blueprint.yaml"), manifest("solo"));
-  writeFileSync(join(dir, "blueprint.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
+  writeFileSync(join(dir, "topology.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
 }
 
 const roots: string[] = [];
@@ -248,14 +259,14 @@ describe("readContent on broken content", () => {
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("ghosts"));
       writeFileSync(
-        join(dir, "blueprint.dot"),
+        join(dir, "topology.dot"),
         'digraph ghosts {\n  a [card="ghost-card@1.0.0"];\n  b [card="also-gone@2.0.0"];\n  a -> b;\n}\n',
       );
     });
 
     expect(read).toThrow(/DarkPrint content is broken/);
     expect(read).toThrow(/bundle\/missing-card/);
-    expect(read).toThrow(/content\/blueprints\/ghosts\/blueprint\.dot:2/);
+    expect(read).toThrow(/content\/blueprints\/ghosts\/topology\.dot:2/);
     expect(read).toThrow(/ghost-card@1\.0\.0/);
     expect(read).toThrow(/also-gone@2\.0\.0/);
     expect(read).toThrow(/hint:/);
@@ -280,7 +291,7 @@ describe("readContent on broken content", () => {
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("mismatch"));
       writeFileSync(
-        join(dir, "blueprint.dot"),
+        join(dir, "topology.dot"),
         'digraph mismatch {\n  p [card="producer@1.0.0"];\n  c [card="consumer@1.0.0"];\n  p -> c;\n}\n',
       );
     });
@@ -311,7 +322,6 @@ describe("readContent on broken content", () => {
           "type: trigger",
           "phase: coding",
           "version: 1.0.0",
-          "ontology_version: 1.0.0",
           "action: Open the run.",
           "inputs: []",
           "outputs: [{ name: payload, type: json }]",
@@ -320,7 +330,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "legacy");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("legacy"));
-      writeFileSync(join(dir, "blueprint.dot"), 'digraph legacy {\n  n [card="legacy@1.0.0"];\n}\n');
+      writeFileSync(join(dir, "topology.dot"), 'digraph legacy {\n  n [card="legacy@1.0.0"];\n}\n');
     });
 
     expect(read).toThrow(/card\/unknown-phase/);
@@ -337,7 +347,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "headless");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), "slug: headless\nsummary: No title.\ntags: []\n");
-      writeFileSync(join(dir, "blueprint.dot"), "digraph headless {\n}\n");
+      writeFileSync(join(dir, "topology.dot"), "digraph headless {\n}\n");
     });
 
     expect(read).toThrow(/blueprint\.yaml is missing a `title`/);
@@ -348,7 +358,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "on-disk");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("in-the-file"));
-      writeFileSync(join(dir, "blueprint.dot"), "digraph x {\n}\n");
+      writeFileSync(join(dir, "topology.dot"), "digraph x {\n}\n");
     });
 
     expect(read).toThrow(/declares slug `in-the-file`, but it sits in a directory called `on-disk`/);
@@ -361,7 +371,7 @@ describe("readContent on broken content", () => {
         mkdirSync(dir, { recursive: true });
         writeFileSync(join(dir, "blueprint.yaml"), manifest(slug));
         writeFileSync(
-          join(dir, "blueprint.dot"),
+          join(dir, "topology.dot"),
           `digraph ${slug} {\n  n [card="nowhere@1.0.0"];\n}\n`,
         );
       }
@@ -391,7 +401,7 @@ describe("readContent on broken content", () => {
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("sound"));
       writeFileSync(
-        join(dir, "blueprint.dot"),
+        join(dir, "topology.dot"),
         'digraph sound {\n  p [card="producer@1.0.0"];\n  c [card="consumer@1.0.0"];\n  p -> c;\n}\n',
       );
     });
@@ -420,7 +430,7 @@ describe("readContent on broken content", () => {
       writeFileSync(join(cards, "only@1.0.0.yaml"), card("only", "[]", "[]"));
       writeFileSync(
         join(cards, "only@1.1.0.yaml"),
-        card("only", "[]", "[]", "cannot:\n  - read the acceptance criteria").replace(
+        card("only", "[]", "[]", "cannot:\n  - acceptance-criteria").replace(
           "version: 1.0.0",
           "version: 1.1.0",
         ),
@@ -428,7 +438,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "solo");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("solo"));
-      writeFileSync(join(dir, "blueprint.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
+      writeFileSync(join(dir, "topology.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
     });
 
     expect(read).toThrow(/DarkPrint content is broken/);
@@ -443,7 +453,7 @@ describe("readContent on broken content", () => {
       writeFileSync(join(cards, "only@1.0.0.yaml"), card("only", "[]", "[]"));
       writeFileSync(
         join(cards, "only@2.0.0.yaml"),
-        card("only", "[]", "[]", "cannot:\n  - read the acceptance criteria").replace(
+        card("only", "[]", "[]", "cannot:\n  - acceptance-criteria").replace(
           "version: 1.0.0",
           "version: 2.0.0",
         ),
@@ -451,7 +461,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "solo");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("solo"));
-      writeFileSync(join(dir, "blueprint.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
+      writeFileSync(join(dir, "topology.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
     });
 
     expect(read()).toHaveLength(1);
@@ -521,8 +531,8 @@ describe("readContent and the local namespace", () => {
     const view = mod.contentOntology();
     expect(view.get("acme/spooky-action")?.defaultWeight).toBe(0.5);
     expect(view.isA("acme/spooky-action", "isolation-breach")).toBe(true);
-    // The overlay does not mint a vocabulary version of its own (doc 3 §8).
-    expect(view.ontology.version).toBe("0.1.0");
+    // The overlay adds to the core rather than replacing it.
+    expect(view.get("agent")?.kind).toBe("node-type");
     expect(mod.readContent()).toHaveLength(1);
   });
 

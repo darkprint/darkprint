@@ -218,28 +218,60 @@ describe("a route is called the same thing everywhere", () => {
    * to each other catch that; one control held to a footer row that no longer exists
    * catches nothing.
    */
-  const uploadLabels = () => NAV.filter((item) => item.href === "/upload").map((item) => item.label);
+  /* Read through a widened row type on purpose.
+     `NAV` is a `const` array of object literals, so TypeScript infers `href` as the union of
+     the paths actually in it. Until 2026-09-06 that union included the sandbox stop's
+     `href`, a `string`, which widened the whole field; the owner deleted `/build` that day
+     and the row with it, so every remaining `href` is a literal and `item.href ===
+     "/upload"` became a comparison between two non-overlapping types — a compile error
+     rather than an empty result. Casting the comparison away would have been the wrong
+     repair: the point of this cell is that a `/upload` row coming back turns it red, and a
+     check the compiler has proved vacuous cannot do that. Widening the ROW type keeps the
+     comparison meaningful and keeps the day-one behaviour — the filter finds nothing today
+     and finds the row the moment somebody writes one. */
+  const uploadLabels = (): string[] => {
+    const rows: readonly { href: string; label: string }[] = NAV;
+    return rows.filter((item) => item.href === "/upload").map((item) => item.label);
+  };
 
-  it("gives every `/upload` control in the header the same label", () => {
-    const labels = uploadLabels();
-    // Two today. A floor rather than a count — it is here to fail when the scan stops
-    // matching, not to pin the header's shape.
-    expect(labels.length, "the header names /upload nowhere").toBeGreaterThan(0);
-    expect([...new Set(labels)], "the header calls /upload two things").toHaveLength(1);
+  /* AMENDED at the Publish-button removal (owner, 2026-08-25): the two cells above this
+     comment's history compared the wide-row button against the phone-panel row, and both
+     controls are gone. What survives is each half of what they held, restated against the
+     new truth: the header carries NO /upload row at all (the same claim the panel cell's
+     not.toContain makes from the source side), and the page still answers to its own name
+     without a header label to inherit. */
+  it("names `/upload` in no header row", () => {
+    expect(
+      uploadLabels(),
+      "a /upload row came back into NAV without the panel/source cells moving with it",
+    ).toEqual([]);
   });
 
-  /**
-   * And the page answers to it. `/towards-a-dark-factory` is held to its nav label the
-   * same way two blocks down, for the same reason: a reader who clicks a label wants to
-   * see what they clicked at the top of what loads, with nothing to re-resolve on
-   * arrival. Both halves — the `h1` and the browser tab.
-   */
-  it("titles the upload page with the label that sends a reader to it", () => {
-    const [label] = [...new Set(uploadLabels())];
-    expect(label, "the header names /upload nowhere").toBeDefined();
+  /* The name is `Publish` since 2026-09-06, on the owner's instruction: "remove Validate and
+     Publish it is only Publish".
+
+     Both halves still asserted, and that is the point of the cell rather than the string in
+     it: the `<h1>` a reader sees and the `metadata.title` a tab and a search result show have
+     to be the SAME name. They drifted apart once, which is why this exists. The route's own
+     docblock records that two HIGH findings in this project were disclaimers lost in a length
+     pass, so the pair is held rather than either one alone. */
+  it("titles the upload page under its own name", () => {
     const source = read("app/upload/page.tsx");
-    expect(source).toContain('title="Validate and publish"');
-    expect(source).toContain('title: "Validate and publish",');
+    expect(source).toContain('title="Publish"');
+    expect(source).toContain('title: "Publish",');
+    // And the old name does not survive in either place, so a partial rename reds.
+    expect(source).not.toContain("Validate and publish");
+  });
+
+  /* The header says "Cards" for the route and the page says "Node cards" in its `<title>`
+     and its `h1`: one short name in the chrome, one full name on the page, and the two
+     halves on the page have to agree with each other. They drifted three ways once. */
+  it("titles the cards page under one name in its title and its heading", () => {
+    const source = read("app/nodes/page.tsx");
+    expect(source).toContain('title: "Node cards",');
+    expect(source).toContain('title="Node cards"');
+    expect(source, "the tab title fell back to the bare word").not.toContain('title: "Nodes",');
+    expect(HEADER_LABELS.get("/nodes")).toBe("Cards");
   });
 
   it("never puts one label on two routes", () => {
@@ -256,6 +288,43 @@ describe("a route is called the same thing everywhere", () => {
         .map(([label, hrefs]) => `${where}: "${label}" → ${hrefs.join(", ")}`);
       expect(shared).toEqual([]);
     }
+  });
+
+  /**
+   * The converse, and it was missing for as long as this file has existed.
+   *
+   * The cell above walks label to hrefs. Nothing walked href to labels, and the surface
+   * that would have needed it is `HEADER_LABELS` at the top of this file: it is a `Map`
+   * keyed by href, so two `NAV` rows at one route do not collide, they OVERWRITE — the
+   * later row wins and the earlier row's label vanishes from every check in this file. The
+   * first block then compares the footer against a label the header may not even be
+   * drawing.
+   *
+   * That is not hypothetical. Folding the ontology browser into `/spec/ontology` on
+   * 2026-09-06 made "repoint the Browse row at the spec page" the obvious move, and the
+   * obvious move puts a second `NAV` row on a route that already has one: "Ontology" in the
+   * bar, "Ontology file" in the Learn menu, one URL, one screen, which is defect 1 in this
+   * file's own opening comment. The row was deleted instead, and this cell is what makes
+   * the next person's version of that mistake loud rather than silent.
+   *
+   * Read through a widened row type for the reason `uploadLabels` is: `NAV` is `as const`,
+   * so its `href` is a union of the paths actually in it, and a check that the compiler can
+   * decide is a check that cannot fail at run time.
+   */
+  it("never puts two labels on one route", () => {
+    const rows: readonly { href: string; label: string }[] = NAV;
+    const byHref = new Map<string, string[]>();
+    for (const row of rows) {
+      byHref.set(row.href, [...(byHref.get(row.href) ?? []), row.label]);
+    }
+    const doubled = [...byHref.entries()]
+      .filter(([, labels]) => labels.length > 1)
+      .map(([href, labels]) => `${href} → ${labels.join(", ")}`);
+    expect(
+      doubled,
+      "two NAV rows share an href. `HEADER_LABELS` is a Map, so the second silently " +
+        "replaces the first and every label check in this file reads the survivor",
+    ).toEqual([]);
   });
 });
 
@@ -325,33 +394,78 @@ describe("the nav is a complete map of the routes", () => {
    * definition of "in the header", not to what the assertion demands, which is the whole
    * argument the entry made while it stood.
    */
-  const ELSEWHERE = new Set(["upload"]);
+  /* `welcome` is exempt for a different reason than `upload`, and the difference is the
+     point: `/upload` IS a destination and is merely reached by a button rather than a `NAV`
+     row, so the exemption says "look elsewhere in this file". `/welcome` is not a
+     destination at all. It is where `app/api/auth/github/callback/route.ts` sends an account
+     whose sign-up is unfinished (T050 AC1's `handle: null`), and it bounces any finished
+     account straight back to `/` — so a header row pointing at it would be a link that,
+     for every reader who could click it, goes nowhere. A route nobody may navigate to is
+     the one shape this assertion cannot demand.
+
+     This file is byte-frozen by `tests/server/t262/frozen.test.ts`. This edit is D-262-29's
+     ruled amendment, and the pin moved in the same commit — see that ruling for why the
+     freeze fired correctly and was still the right thing to amend. */
+  /* `new` joined at T280 for the same reason `upload` is here: it is reached from the
+     "New blueprint" controls on the profile shelf and the hero, not from the global nav —
+     a creation form is a destination a button hands you, not a place a reader browses. */
+  const ELSEWHERE = new Set(["upload", "welcome", "new"]);
 
   /**
-   * Decision 1 of the accounts pass, held from both ends, and rewritten twice.
+   * Decision 1 of the accounts pass, held from both ends, and rewritten three times. The
+   * third rewrite is the owner reversing the decision the first two were arguing about.
    *
    * It first asserted that `/ontology` was NOT in the header at all, which was true and was
    * the defect: the ontology browser is one of the three things the registry holds and the
    * only route to it in the chrome was the Learn menu's row for the spec document ABOUT it.
    * The browser got its own row, and the collision that created was resolved by calling the
-   * browser "Vocabulary" — which this case then pinned.
+   * browser "Vocabulary" — which this case then pinned. The author overruled that on
+   * 2026-08-12 ("adopt the term Ontology also for /ontology page … be consistent through
+   * all the website"), so the browser took the bare word and the spec row took its
+   * siblings' shape.
    *
-   * The author overruled that on 2026-08-12 ("adopt the term Ontology also for /ontology
-   * page … be consistent through all the website"), so the case is rewritten rather than
-   * deleted: the claim it holds is unchanged and only the answer moved. Both routes are in
-   * the header, they are called different things on purpose, and the browser is the one
-   * that gets the bare word.
+   * The owner ended the split on 2026-09-06: "move the ontology page in the /spec/ontology
+   * substituing the "every term" box. Then, you can delete the /ontology page". There was
+   * one route then, so the question this case was asking — which of the two wears the bare
+   * word — had no second route to be about, and the case was rewritten rather than deleted
+   * for the third time: the spec row kept the file form its two siblings have, and the other
+   * half inverted into `/ontology` appearing in no header table at all.
    *
-   * The spec row takes its siblings' shape instead — `/spec/topology` is "Blueprint file
-   * (DOT)" and `/spec/card` is "Node card (YAML)" — which is asserted here too, because a
-   * future rename reaching for the short form would reopen exactly this.
+   * ── The fourth rewrite, hours later, and the last one this question can have ──
+   * The owner accepted the finding that the vocabulary and the Attractor specification read
+   * as two rival standards because of the order a reader meets them in ("The motivations you
+   * provided are sound. Apply them"), so every ontology term is printed beside the card field
+   * that consumes it and `/spec/ontology` folds into `/spec/card`. Neither route exists now,
+   * and the question of which wears the word "Ontology" has no subject at either end.
+   *
+   * So both halves are the same claim, in the same direction, about two paths: a chrome row
+   * pointing at a redirect is the two-hop link this file's `RENAMED` block refuses everywhere
+   * else, and `HEADER_LABELS` must know neither path. That is what would break first if
+   * somebody repointed a row instead of deleting it, which is the repair reached for at both
+   * of the previous two folds. `RENAMED` carries both routes, so the redirects, the deleted
+   * pages and the absence from the chrome are all asserted there as well.
+   *
+   * The positive that survives is the destination. `/spec/card` keeps the file form its
+   * sibling has (`/spec/topology` is "Topology file (DOT)"), because a rename reaching for
+   * the short form is still available and would still be wrong now that this row is the only
+   * name the chrome gives the page that holds the vocabulary.
    */
-  it("gives the ontology browser the bare word, and the spec page its file form", () => {
-    expect(HEADER_LABELS.get("/ontology")).toBe("Ontology");
-    expect(HEADER_LABELS.get("/spec/ontology")).toBe("Ontology file (YAML)");
+  it("keeps the card row's file form, and names neither retired ontology path", () => {
+    expect(HEADER_LABELS.get("/spec/card")).toBe("Node card (YAML)");
+    for (const retired of ["/ontology", "/spec/ontology"]) {
+      expect(
+        HEADER_LABELS.has(retired),
+        `a header row points at ${retired}, which 308s onto /spec/card`,
+      ).toBe(false);
+    }
   });
 
-  it("uses the shared 00–06 sequence for the Learn dropdown", () => {
+  /* The range came out of this name on 2026-09-06. It read "00-06" over a sequence that had
+     been 00-05 since the sandbox was deleted and became 00-04 when the vocabulary's stop
+     folded into `/spec/card`, so it was a count in a place nothing could hold it true. The
+     assertion never depended on it: it compares the dropdown against `SPEC_SEQUENCE`
+     element-wise, whatever the sequence is. */
+  it("uses the shared sequence for the Learn dropdown", () => {
     expect(LEARN.map(({ href, label, step }) => ({ href, label, step }))).toEqual(
       SPEC_SEQUENCE.map(({ href, nav, step }) => ({ href, label: nav, step })),
     );
@@ -373,8 +487,11 @@ describe("the nav is a complete map of the routes", () => {
    *   exemption to describe a route that is not actually missing.
    *
    * So the fix is to the definition of "in the header", not to what the assertion demands.
-   * No route is exempt now except `/upload`, which has its own button and its own checks
-   * above.
+   * Three routes are exempt: `/upload` and `/new`, reached from the surfaces that own a
+   * release (the profile shelf, a draft's landing, /skill's accounts row — the Publish
+   * button left the chrome on the owner's instruction, 2026-08-25), and `/welcome`, which
+   * is a redirect target rather than a destination — see `ELSEWHERE` for why a header row
+   * pointing at it would be a link that goes nowhere.
    */
   const HEADER_ROUTES = new Set<string>([
     ...HEADER_LABELS.keys(),
@@ -451,7 +568,17 @@ describe("the nav is a complete map of the routes", () => {
     // set and fails the named case, which is the failure the count was always standing in
     // for.
     expect(hrefs.size).toBeGreaterThan(1);
-    expect([...hrefs]).toContain("/reading-the-radar#weights");
+    /* The named link was `/reading-the-radar#weights` until that page was deleted on
+       2026-09-04 and `ScoringModel`, which owned the id, went with it on 2026-09-05. A
+       known-good link has to be one this repository still contains, or the case fails on
+       the site being correct rather than on the walk being broken, which is the opposite of
+       what it is for.
+
+       `/what-a-blueprint-is#run` replaces it: `SectionSameRun.tsx` writes it as a table
+       entry rather than a JSX attribute, which is the form the regex's other half exists to
+       catch and the form no other survivor has. It is also on the Learn entry point, the
+       one route in the sequence that has outlived every reshuffle of the pages around it. */
+    expect([...hrefs]).toContain("/what-a-blueprint-is#run");
     expect(unrenderedFragments([...hrefs].sort())).toEqual([]);
   });
 
@@ -519,17 +646,19 @@ describe("the collapsed menu stays usable", () => {
        heading. What still has to hold is that every item reaches the panel somehow, so the
        check is against the rendered hrefs rather than against the group list.
 
-       Two hrefs reach a reader by another route entirely, and both are asserted below
-       rather than waved through:
+       One href reaches a reader by another route entirely and is asserted below rather
+       than waved through:
 
-       - `/upload` is the Publish button in the wide row and an explicit row at the foot of
-         the panel's Build group. It is not a `NAV`-driven row in either place, so the scan
-         below cannot see it and the check on the source can.
+       - `/upload` WAS the Publish button in the wide row and an explicit row at the foot
+         of the panel's Build group, until the owner took publishing out of the chrome
+         (2026-08-25). The set below is empty now and stays as the mechanism; the source
+         check flipped direction in the same amendment — the header must NOT link /upload,
+         so the button cannot come back without this file moving with it.
        - `/towards-a-dark-factory` is stop 06 of the Learn sequence, so the dropdown and the
          phone panel both carry it through `LEARN`. It needs no exemption; the entry is kept
          here because the route has been in and out of that list twice and the next reader
          should find the answer rather than the history. */
-    const ELSEWHERE_THAN_THE_PANEL = new Set(["/upload"]);
+    const ELSEWHERE_THAN_THE_PANEL = new Set<string>([]);
     const learnHrefs = new Set([
       ...LEARN.map((item) => item.href as string),
       ...ACCOUNT_MENU.map((item) => item.href as string),
@@ -549,8 +678,10 @@ describe("the collapsed menu stays usable", () => {
     );
     expect(stray, "an item the collapsed panel never renders").toEqual([]);
 
-    // The one exemption, held to the way in it claims.
-    expect(SOURCE, "the phone panel dropped its Publish row").toContain('href="/upload"');
+    // The removal, held both ways: the chrome carries no publish link (owner, 2026-08-25).
+    expect(SOURCE, "a Publish link came back into the header without review").not.toContain(
+      'href="/upload"',
+    );
     // And the essay reaches a reader through the sequence and the footer both.
     expect(LEARN.map((item) => item.href)).toContain("/towards-a-dark-factory");
     expect(
@@ -591,8 +722,10 @@ describe("the collapsed menu stays usable", () => {
  *   - `/spec` was the overview above three layer pages. `/what-a-blueprint-is` is their
  *     door now, and it carries the three old in-page ids so `/spec#card` still lands on
  *     the band about the card after the hop.
- *   - `/spec/scoring` merged into `/reading-the-radar`, which took its title with it.
- *     `#weights` survives because `ScoringModel` owns that id and moved whole.
+ *   - `/spec/scoring` merged into `/reading-the-radar`, which took its title with it, and
+ *     both paths outlived every page that ever held their content. See the pair in
+ *     `RENAMED` for where they land now and why it is not a chain. `#weights` died with
+ *     `ScoringModel`; a fragment never reaches the server, so no redirect could carry it.
  *   - `/concepts` is the `#the-words` section of `/what-a-blueprint-is`. The destination
  *     is the bare route: a redirect that appends a fragment overrides the one a reader
  *     arrived with.
@@ -611,8 +744,49 @@ describe("the routes that were retired still answer", () => {
     ["/which-tasks", "/towards-a-dark-factory"],
     ["/towards-a-dark-factory/which-tasks", "/towards-a-dark-factory"],
     ["/spec", "/what-a-blueprint-is"],
-    ["/spec/scoring", "/reading-the-radar"],
+    /* `/spec/scoring` merged into `/reading-the-radar`; that page was deleted on 2026-09-04
+       and repointed onto `/build`, and `/build` was itself deleted on 2026-09-06 ("it is not
+       useful and make confusion"). Both old paths land on the Learn entry point now, and
+       neither chains through the other: a 308 onto a route that itself 308s costs every link
+       written before the merge two hops, which is the cost `/which-tasks` above records.
+       Nothing on the site shows a score moving any more, so no destination answers the
+       question either path was asking; `/what-a-blueprint-is` is where the sequence starts
+       and where the vocabulary those scores were computed over is introduced. */
+    ["/spec/scoring", "/what-a-blueprint-is"],
+    ["/reading-the-radar", "/what-a-blueprint-is"],
     ["/concepts", "/what-a-blueprint-is"],
+    /* The vocabulary's two retired paths, and both moved in one day.
+
+       The index went first, on the owner's instruction: "move the ontology page in the
+       /spec/ontology substituing the "every term" box. Then, you can delete the /ontology
+       page". The browser became a band on the spec page and the index was deleted, so
+       `/ontology` took the ordinary content-move shape and landed on `/spec/ontology`.
+
+       Then the spec page went too. The owner accepted the finding that the vocabulary and
+       the Attractor specification read as two rival standards because of the order a reader
+       meets them in ("The motivations you provided are sound. Apply them"): every ontology
+       term exists to be a legal value of a card field, so each is printed beside the field
+       that consumes it and the route folds into `/spec/card`.
+
+       Both rows land there in ONE HOP. `/ontology` was repointed rather than left chaining
+       through the row below it, which is the no-chaining argument three entries up applied
+       for the fourth time in three days: a 308 onto a 308 costs every link written before
+       the older move two hops, and `/ontology` had been written into the chrome of every
+       page this site served for months.
+
+       Only the index and the spec page. `/ontology/<term>` keeps its URL and is covered by
+       neither row, because a `source` with no parameter in it is an exact anchored pattern.
+       Verified against the matcher Next 16.2.11 ships rather than assumed: `/ontology` tests
+       true for `/ontology` and false for `/ontology/pii-handling` and `/ontology/a/b`. The
+       term detail pages are what every card chip and every search hit resolves to.
+
+       `/ontologies` and `/ontologies/:slug` were repointed onto `/spec/card` in the same
+       change rather than left chaining through either of these. They are not in this table
+       (they never were, and `tests/server/t261/ac2-redirects.test.ts` is where the whole
+       config is held element-wise, and where a cell now refuses ANY rule whose destination
+       is another rule's source), but the argument above is the one that decided them. */
+    ["/ontology", "/spec/card"],
+    ["/spec/ontology", "/spec/card"],
   ];
 
   it("redirects every old path, permanently, to a page that exists", async () => {

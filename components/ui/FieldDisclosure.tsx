@@ -3,7 +3,7 @@ import { cx } from "@/lib/format";
 /* ============================================================
    A field row that opens onto what the field is for.
    ------------------------------------------------------------
-   Two surfaces draw the same 23 wire keys of a card and the
+   Two surfaces draw the same 22 wire keys of a card and the
    author asked for the same behaviour on both: "on click of the
    field, it shows the details", and then, pointing at the
    blueprint page, "when clicking on the fields listed for a node,

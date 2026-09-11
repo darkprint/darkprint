@@ -1,0 +1,56 @@
+-- 0010 -- key scope: what an API key is allowed to do, written on the row
+-- rather than assumed from what the product happened to offer when it was minted.
+--
+-- ADDITIVE ONLY. One type is created and one column is added. No table is
+-- created, no column is altered or dropped, and `api_key` is not one of the ten
+-- tables `tests/server/t005/existing.test.ts` freezes (it arrived in
+-- `0002_community` as T005's, not in `0001_init`), so this migration carries no
+-- baseline delta and needs no licensed cell.
+--
+-- WHY THE COLUMN EXISTS. `components/settings/ApiKeys.tsx` has told every holder
+-- of every key so far: "It carries no identity, so it signs nothing in and
+-- authorizes no write." That sentence was true because the product had no keyed
+-- write path at all. It is about to stop being true of keys minted next, and the
+-- owner's ruling (2026-09-05, ARCHITECTURE §11.0 Q3) is that it must stay true
+-- of every key minted so far, for that key's whole life. A promise made at
+-- issue time is kept for the thing it was made about.
+--
+-- THE DEFAULT IS THE GRANDFATHERING, AND IT IS THE WHOLE OF IT.
+-- `ADD COLUMN ... NOT NULL DEFAULT 'read'` stamps 'read' onto every row that
+-- already exists, in one statement, with no window in which a row has no scope
+-- and no second statement anybody has to remember to run. The alternatives were
+-- both worse in the same direction: a nullable column makes NULL mean something
+-- (and every reader has to agree on what), and a NOT NULL column with no default
+-- cannot be added to a table that already has rows without a backfill step this
+-- runner would have to sequence.
+--
+-- The set this backfills was MEASURED rather than assumed, because "every
+-- existing row becomes read" is a claim about a population. Local development
+-- holds 1 row. Production was never probed for this table and its size is
+-- therefore unknown; the shape is what makes that safe rather than the count,
+-- since a default applies to every row there turns out to be.
+--
+-- THE DEFAULT IS KEPT AFTER THE BACKFILL, WHICH IS A SEPARATE DECISION.
+-- Dropping it here would force every future INSERT to name a scope, which reads
+-- like the stricter choice and fails in the worse direction: a writer that has
+-- not learned about scopes would get a NOT NULL violation, a 500, rather than a
+-- key. With the default kept, that same writer mints a read key. The failure of
+-- an uninformed caller should be the least privilege, not an exception.
+--
+-- WHY AN ENUM, AND WHAT THE ENUM COSTS.
+-- Five enums ship in `0001_init` and two more in later migrations, so a small
+-- closed vocabulary is a type in this schema rather than text plus a check
+-- constraint. It buys the thing this column is for: an unrecognised scope is
+-- unrepresentable, so no row can carry a value a reader has to decide how to
+-- interpret, and the one place a wrong answer is an authorization decision
+-- cannot receive one.
+--
+-- The cost is real and is named here so the next person finds it rather than
+-- discovers it. `lib/db/migrate.ts` runs every migration inside BEGIN/COMMIT.
+-- Postgres allows `ALTER TYPE ... ADD VALUE` inside a transaction block, but
+-- forbids USING the new label until that transaction commits. So a future third
+-- scope cannot be added and backfilled by one migration: it needs two, the first
+-- adding the label and the second writing it. Two scopes is what the ruling
+-- names, and this is the price of the type if that ever changes.
+create type "api_key_scope" as enum ('read', 'write');
+alter table "api_key" add column "scope" "api_key_scope" default 'read' not null;

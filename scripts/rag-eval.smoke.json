@@ -1,0 +1,24 @@
+{
+  "blueprints": [
+    { "query": "an on-call helper that reads a production alert, picks the right remediation and pages a person when the fix looks dangerous", "expected": "incident-commander" },
+    { "query": "look over a pull request, keep re-running the checks until they go green, then wait for a human before it merges", "expected": "guarded-merge-bot" },
+    { "query": "answer a question by pulling from the web and a vector index and double-checking every claim before replying", "expected": "grounded-research-desk" },
+    { "query": "two solvers attack the same problem from different angles and a referee settles which answer stands", "expected": "adversarial-consensus-line" },
+    { "query": "a long multi-step batch job that can pick up again from its last saved point after a crash", "expected": "checkpoint-resume-runner" },
+    { "query": "customer support inbox: sort the incoming requests, answer the easy ones from the help articles, hand the rest to a person", "expected": "frontline-triage" },
+    { "query": "turn messy uploaded documents into rows that pass schema checks, fixing whatever fails in claude code", "expected": "schema-forge-etl" },
+    { "query": "the plain plan, build, test, debug and ship loop for a software project", "expected": "starter-software-factory" },
+    { "query": "add observability to a scraping pipeline", "expected": "pipeline-observability" }
+  ],
+  "negatives": [
+    { "query": "book a table for four at an italian restaurant on friday night" },
+    { "query": "how do I convert celsius to fahrenheit" }
+  ],
+  "cards": [
+    { "query": "decide which lane an incoming alert belongs to and how sure you are", "expected": "intent-router" },
+    { "query": "run the project's test suite and report what failed", "expected": "test-runner" },
+    { "query": "stop and wait for a maintainer to approve before continuing", "expected": "maintainer-approval" },
+    { "query": "estimate how much of production a proposed change could take down", "expected": "blast-radius-check" },
+    { "query": "split a big question into separate searches to run", "expected": "retrieval-planner" }
+  ]
+}

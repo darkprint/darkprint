@@ -27,10 +27,10 @@ outputs:
     type: json
     description: The time window to sweep, its bounds, and the watermark they were derived from.
 dependencies: []
-cannot:
+cannot: []
+will_not:
   - clip the window when the watermark is older than it
 
-requires_human: false
 risk_markers: []
 notes: >-
   The schedule lives here as a parameter because the core vocabulary has no scheduler capability
@@ -38,4 +38,3 @@ notes: >-
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

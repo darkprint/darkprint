@@ -1,0 +1,50 @@
+digraph frontline_triage {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  ticket      [card="event-intake@1.0.0"];
+  classify    [card="intent-router@1.1.0"];
+  autoresolve [card="resolution-composer@1.0.0"];
+  kb          [card="kb-resolver@1.0.0"];
+  qa          [card="reply-qa-check@1.0.0"];
+  send        [card="reply-dispatch@1.0.0"];
+  escalate    [card="confidence-escalation@1.0.0"];
+
+  ticket -> classify;
+
+  // `classify` pins a `decision` card, so it is a diamond, and engine spec §4.7 runs a
+  // diamond as a no-op that returns SUCCESS and writes no `preferred_label`. Neither
+  // `outcome` nor a label can separate these two edges, which is why the fork fell all the
+  // way to §3.3's lexical tiebreak and `autoresolve` won it on every run in the archive's
+  // history: `kb` was unreachable. The lane the router puts the event in is the one thing
+  // that does distinguish them, and `general` is the lane the card itself names for a
+  // confidence below its threshold. An event it could not place is composed directly, and
+  // the composer is built for that, its `reference` port is optional and it states the
+  // claims it could not ground. Everything it could place is looked up first.
+  //
+  // The negation arm is `kb` on purpose. A missing context key resolves to the empty
+  // string under §10.4, so a runner where nothing has written a lane takes the `kb` arm
+  // and reaches `autoresolve` through it, which leaves both nodes reachable. Putting the
+  // negation on `autoresolve` instead would have reproduced the defect exactly.
+  //
+  // `intent-router@1.1.0` is what writes the key (§11.0 Q17). Its spec now tells the agent
+  // to put `lane` in `context_updates`, which is Appendix C's field for a node handing a
+  // key to the run context, so this fork reads a value the run actually produced. The
+  // negation arm stays where it is: a spec instructs an agent and cannot compel one, so
+  // the arm a silent classifier takes still has to be the safe one.
+  classify -> autoresolve [label="simple", condition="context.lane=general"];
+  classify -> kb [label="lookup", condition="context.lane!=general"];
+  kb -> autoresolve;
+  autoresolve -> qa;
+
+  // The QA node succeeds whichever way it grades: its card says it is done once a score is
+  // on `confidence` and `approved` carries the stamped reply or nothing, so §5.2's statuses
+  // cannot tell a cleared reply from a held one and `outcome` is the wrong key here. §10
+  // has no numeric comparison either, so the 0.72 threshold cannot be written as a guard;
+  // what the node says it prefers can. The negation arm is escalation deliberately: a QA
+  // step that writes no label at all must not put a reply in front of a customer, and
+  // `confidence-escalation` is a human gate, so the failure of this guard costs a person's
+  // time rather than a wrong send.
+  qa -> send     [label="confident", condition="preferred_label=confident"];
+  qa -> escalate [label="low conf.", style=dashed, out="confidence", in="verdict", condition="preferred_label!=confident"];
+}

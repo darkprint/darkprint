@@ -1,7 +1,3 @@
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-18) (cited at line 66): GET /api/ontology/promotion-candidates
-// TODO(SEAM-85) (cited at line 167): GET /api/blueprints/{slug}/cost
 /* ============================================================
    DarkPrint core — the single configuration file
    Doc 1 §11's closing note, taken literally: "Tutte le soglie e i
@@ -13,12 +9,17 @@
    So: every number in the engine that a real dataset will later
    move lives here, and nowhere else. Each field names the document
    section that left it open. Nothing here is a law; the vocabulary
-   (`ontology/core.ts`) carries meanings, this file carries the
-   tunable numbers, and doc 3 §8 makes moving one of them a PATCH
-   of the ontology version because it re-scores every blueprint.
+   (`ontology/core.ts`) carries meanings and this file carries the
+   tunable numbers.
    ============================================================ */
 
-/** Autonomy fraction-to-level cut-offs. Doc 3 §6, doc 1 §8.1. Strictly decreasing, all in 0..1. */
+/**
+ * What the autonomy reading can be tuned by. Doc 3 §6, doc 1 §8.1.
+ *
+ * The first three are the fraction-to-level cut-offs, strictly decreasing, all in 0..1.
+ * `minControlPoints` is not a cut-off and is kept here anyway, because splitting one
+ * metric's numbers across two config sections is the treasure hunt doc 1 §11 forbids.
+ */
 export interface AutonomyBands {
   /** fraction > level4 → level 4. Open in doc 3 §9 ("taratura delle fasce"), doc 1 §11. */
   level4: number;
@@ -26,6 +27,17 @@ export interface AutonomyBands {
   level3: number;
   /** fraction >= level2 → level 2. Below it, level 1. Open in doc 3 §9, doc 1 §11. */
   level2: number;
+  /**
+   * How many control points a graph must declare before the share of them that runs
+   * unattended is allowed to decide the band (`analysis/autonomy.ts`).
+   *
+   * A graph with one control point yields a control fraction of exactly 0 or exactly 1,
+   * and letting one node swing the whole class is reading a distribution off a single
+   * observation. Same shape and same reason as `telemetry.minRuns`: the reading is still
+   * computed and still reported, it just does not move the band until there is enough of
+   * it to be a share. Open, like every other number in this file.
+   */
+  minControlPoints: number;
 }
 
 /** Security penalties, in points subtracted from a starting score of 4. Doc 3 §5. */
@@ -95,16 +107,15 @@ export interface TelemetryConfig {
   outlierZScore: number;
 }
 
-/** Everything the engine can be tuned by, in one object. */
+/**
+ * Everything the engine can be tuned by, in one object.
+ *
+ * There is no `ontologyVersion`. It mirrored `CORE_ONTOLOGY.version` and had to be kept
+ * in step with it by a test, and the vocabulary has no version now: DarkPrint's terms
+ * name what an Attractor node is, and Attractor's shapes and handlers are fixed by its
+ * spec rather than by a number DarkPrint moved on its own.
+ */
 export interface DarkprintConfig {
-  /**
-   * The vocabulary version scores are computed under. Doc 3 §8: a score that does not
-   * record it is not comparable with any other score, and reproducibility is the whole
-   * point of doc 1 §4. Mirrors `CORE_ONTOLOGY.version`; the two are checked against each
-   * other in `config.test.ts` rather than one importing the other, so this file stays a
-   * leaf with no dependencies.
-   */
-  ontologyVersion: string;
   autonomy: AutonomyBands;
   security: SecurityConfig;
   criteriaLeak: CriteriaLeakConfig;
@@ -125,14 +136,16 @@ export interface DarkprintConfig {
  * way the exact shape survives to the caller.
  */
 export const DARKPRINT_CONFIG: DarkprintConfig = Object.freeze({
-  /** Doc 3 §8. */
-  ontologyVersion: "0.1.0",
-
   /** Doc 3 §6's starting bands, unchanged from doc 1 §8.1. */
   autonomy: Object.freeze({
     level4: 0.9,
     level3: 0.7,
     level2: 0.5,
+    /**
+     * Two: the smallest number of control points that can express a share other than 0 or
+     * 1. Below it the reading is reported and the band is taken from the headcount alone.
+     */
+    minControlPoints: 2,
   }),
 
   security: Object.freeze({

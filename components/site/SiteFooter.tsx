@@ -20,22 +20,32 @@ import { RUNS, SPEC_SEQUENCE, type SpecRun } from "@/components/spec/sequence";
    Which stop belongs to which run is read off `SPEC_SEQUENCE`, so a page that changes run
    changes column on the next build and cannot be left behind in the wrong one. The labels
    stay the footer's own: a footer row is met cold, with no crumb and no rail above it, so
-   `Blueprint file (DOT)` earns its parenthesis where the rail can afford `Topology`.
+   `Topology file (DOT)` earns its parenthesis where the rail can afford it.
    ============================================================ */
 
 /** The footer's wording for a Learn stop, where it says more than the nav's short form. */
 const LEARN_LABELS: Record<string, string> = {
-  "/spec/topology": "Blueprint file (DOT)",
+  "/spec/topology": "Topology file (DOT)",
   "/spec/card": "Node card (YAML)",
-  /* The third spec stop joins its two siblings here. It spent one commit carrying the
-     format in `sequence.ts` instead, and the author asked "(YAML)" off the Learn dropdown
-     and the Learn rail — which is what `page.nav` draws. This table is the footer's own
-     register and always was: a footer row stands alone with no run around it to say what
-     kind of document it is, where a dropdown row sits under "Specification" beside
-     "Topology" and "Node card". `nav` keeps the word "file", which is what holds it apart
-     from the Browse row called "Ontology". */
-  "/spec/ontology": "Ontology file (YAML)",
-  "/reading-the-radar": "How a blueprint is graded",
+  /* `/spec/ontology` had a row here reading "Ontology file (YAML)", the third spec stop
+     beside its two siblings. The owner folded that page into `/spec/card` on 2026-09-06 and
+     the route is a 308, so the row is deleted rather than repointed: the card row directly
+     above already names the destination, and two rows opening one URL is what
+     `nav.test.ts`'s first block refuses.
+
+     The register argument the row was carrying is not lost, because it is what the two rows
+     above are FOR. A footer row stands alone with no run heading around it to say what kind
+     of document it is, where a dropdown row sits under "Specification" beside its siblings,
+     so "(DOT)" and "(YAML)" are spelled here and not in `page.nav`. Nothing about the file
+     the card row names changed; what changed is that the same page now also prints the
+     vocabulary, which `components/spec/sequence.ts` records on the stop itself. */
+  /* The crosswalk names no file, because it is not a layer: `sequence.ts` keeps it out of
+     `SPEC_LAYERS` deliberately, since a blueprint has three documents and this page is about
+     what happens to all three on the way to a runner. So the footer's register gives it the
+     subject instead of a format. It is stop 01 since 2026-09-06 and this label is now
+     `SiteHeader`'s docs row as well, byte for byte, which is what puts it inside the parity
+     cell that had never covered it. */
+  "/spec/attractor": "Reading it as Attractor",
 };
 
 function learnColumn(run: SpecRun) {
@@ -63,14 +73,21 @@ export const COLS = [
     links: [
       { href: "/blueprints", label: "Blueprints" },
       { href: "/nodes", label: "Cards" },
-      /* The third thing the registry holds. It had no row in either the header or the
-         footer until this pass, and was called "Vocabulary" in both until 2026-08-12; see
-         `SiteHeader`'s decision 1. `nav.test.ts` holds this label to the header's. */
-      { href: "/ontology", label: "Ontology" },
+      /* The third thing the registry holds had a row here from the accounts pass until
+         2026-09-06, when the owner folded its browser into `/spec/ontology` and deleted the
+         index. The header's Browse row went in the same change and for the same reason, and
+         `SiteHeader`'s header docblock carries the argument: repointing either row at the
+         spec page would have given one route two names on one screen, which is the defect
+         `nav.test.ts` opens with. The Specification column below names the survivor.
+
+         `nav.test.ts` would have caught a repointing here on its own, and it is worth
+         saying how, because the mechanism is not obvious: `HEADER_LABELS` is a Map keyed by
+         href, so a second `NAV` row at `/spec/ontology` is overwritten by the docs row, and
+         this row's "Ontology" would then be compared against "Ontology file (YAML)". */
     ],
   },
   {
-    title: "Design",
+    title: "AI Tools",
     links: [
       /* One row for `/skill`, not two.
 
@@ -78,7 +95,10 @@ export const COLS = [
          skill", which was two rows for what a reader does once. The `/build` split merged
          them: the authoring half is on `/skill` now, so the row that sent people to it and
          the row that named the tool are the same destination, and the header's label wins
-         (`nav.test.ts`: a route is called the same thing everywhere). */
+         (`nav.test.ts`: a route is called the same thing everywhere). The sandbox that was
+         left behind at `/build` after that merge is itself deleted since 2026-09-06, so the
+         Learn column below lost its row too — it reads `SPEC_SEQUENCE`, which no longer
+         carries the stop. */
       /* The author's order: the protocol, then the skill, then the ask. Publishing is last
          because it is the thing you do once you have made something, which is the order the
          other two put you in. */
@@ -124,9 +144,8 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="border-t border-line/60">
-        <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-dim sm:flex-row">
+        <div className="container-page py-5 text-xs text-dim">
           <span>© 2026 DarkPrint · darkprint.io</span>
-          <span className="font-mono">version-pinned · statically checked · locally run</span>
         </div>
       </div>
     </footer>

@@ -30,13 +30,12 @@ outputs:
     type: json
     description: The PR as the line sees it, refs, changed files, diff stats and the description.
 dependencies: []
-cannot:
+cannot: []
+will_not:
   - read the repository beyond the two refs the event names
   - form an opinion about the change
 
-requires_human: false
 risk_markers: []
 
 version: 1.0.0
 author: sol-antczak
-ontology_version: 0.1.0

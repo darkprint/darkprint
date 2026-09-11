@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { TagPill } from "@/components/ui/TagPill";
+import { Ticked } from "@/components/ui/Ticked";
 
 /**
  * One node card at library altitude — enough to decide whether to open it, and
@@ -36,6 +37,19 @@ export interface NodeSummary {
   phases: { id: string; label: string }[];
   /** `tool` term ids, as the card writes them. */
   tools: string[];
+  /**
+   * Whether a person acts at this node.
+   *
+   * DERIVED, and resolved on the server before a tile is built: the card carries a `type`
+   * and no boolean beside it, so the answer is `requiresHuman(ontology, card.type)` — the
+   * same call `computeAutonomy` makes about a node inside a graph. A tile and the blueprint
+   * page that resolves the same card therefore cannot disagree about where the people are,
+   * which they could when the card stored the answer twice.
+   *
+   * `false` also covers "this registry has published no vocabulary to ask", and the tile
+   * draws no marker either way rather than printing the word "unattended" over a question
+   * it could not resolve.
+   */
   requiresHuman: boolean;
   /** `risk-marker` labels, already resolved. */
   riskMarkers: string[];
@@ -55,8 +69,9 @@ export interface NodeSummary {
    * Absent everywhere the tile has always meant "public" — `/nodes`, every archive-derived
    * card on a profile — because every one of those is a document in `content/cards/` and a
    * card there is public by definition. Only `/u/[username]/cards`'s owner list ever passes
-   * `"private"`, for a card seeded in `lib/data/cards.ts` rather than published: see the
-   * violet border and pill this tile draws for that one case.
+   * `"private"`, off `CardSummary.visibility` (`cardsOwnedBy`, T132) — a real
+   * `card_version.visibility` column now, not a seeded fixture: see the violet border and
+   * pill this tile draws for that one case.
    */
   visibility?: "public" | "private";
 }
@@ -99,9 +114,16 @@ const TYPE_TONE: Readonly<Record<string, string>> = {
 };
 
 /**
- * A type the table does not know — a local type declared under `broader` (doc 3 §7) —
- * takes the neutral tool grey rather than being guessed into one of the five. Grey is
- * the one answer that does not claim something the card did not say.
+ * A type the table does not know takes the neutral tool grey rather than being guessed
+ * into one of the five. Grey is the one answer that does not claim something the card did
+ * not say.
+ *
+ * Two kinds of type land here. A local one declared under `broader` (doc 3 §7), which is
+ * what the fallback was written for, and the `orchestration` branch — `parallel`,
+ * `parallel.fan-in`, `manager-loop` — which is core and deliberately has no row. The tile
+ * carries no legend, so a sixth colour would be a distinction the reader cannot decode,
+ * and both remaining accents are spoken for by the two lines above. The disc says
+ * "not one of the five" and the type is printed in words on the same tile.
  */
 const DEFAULT_TONE = NODE_KIND_META.tool.color;
 
@@ -265,15 +287,20 @@ export function NodeCardSummary({
             <span aria-hidden className="text-faint">
               /
             </span>
-            {/* Copper, on the author's instruction (2026-08-12: "in the node cards gallery
-                adopt the orange for highlighting instead of blue"). It was `text-cyan`, on
-                the general rule that cyan marks what a reader can act on — and every tile on
-                this shelf is actionable, so the rule was picking out nothing. Copper is what
-                `app/globals.css` reserves for the node card AS A SUBJECT, which is what a
-                shelf of 53 of them is; the landing's card beat wears it for the same reason
-                one route away. The tile is still a link and still says so, by being a link
-                and by lifting on hover. */}
-            <span className="min-w-0 truncate text-copper-line">{node.id}</span>
+            {/* Amber, on the owner's ruling of 2026-09-06 — "the amber should be the
+                dominant color on the cards sections" — and the third answer this one line
+                has had. It was `text-cyan`, on the general rule that cyan marks what a
+                reader can act on, and every tile on this shelf is actionable, so the rule
+                was picking out nothing. It became copper on 2026-08-12, when the owner
+                asked the gallery to highlight in orange rather than blue. Amber is the same
+                instruction, granted a second time and now with a token behind it: the tile
+                already carried an amber type badge, an amber hover shadow and an amber risk
+                line, so copper on the id was the one thing on this tile still speaking a
+                register of its own. The tile is still a link and still says so, by being a
+                link and by lifting on hover.
+
+                #ffb020 on `--color-surface` #0a0c16 is 10.66:1, up from copper's 8.35:1. */}
+            <span className="min-w-0 truncate text-amber">{node.id}</span>
           </span>
         )}
         {/* Violet, the same second job the accent takes on `DraftRow`'s `Private` pill —
@@ -294,7 +321,9 @@ export function NodeCardSummary({
             wants a different answer: every mount of this component sits inside a group. */}
         <h3
           id={titleId}
-          className="font-display text-base font-semibold leading-snug text-fg group-hover:text-copper-line"
+          /* `group-hover:text-amber`, with the id above it: one register per tile, and
+             `app/globals.css` job 3 makes it the card's. It was copper. */
+          className="font-display text-base font-semibold leading-snug text-fg group-hover:text-amber"
         >
           {node.name}
         </h3>
@@ -302,7 +331,7 @@ export function NodeCardSummary({
             cut mid-word at two. The tile's height is set by the footer row below, so the
             third line is room the card already had. */}
         <p className="mt-1 line-clamp-3 text-sm leading-snug text-muted">
-          {node.action}
+          <Ticked text={node.action} />
         </p>
       </div>
 

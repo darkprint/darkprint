@@ -6,20 +6,34 @@
    all at once, it does not play whack-a-mole.
    Design doc §3–§4 and §6.1, engine spec §5.
 
-   Ontology v0.1 (doc 3) added three rules this file owns:
-   §2 every phase a card declares is one of five closed values,
-   §7 none of them is ever namespaced, and §3's note makes a human
-   `type` with `requires_human` unset an error rather than a warning.
-   Doc 1 §3.2 added `spec`, the prose the agent actually reads.
+   Ontology v0.1 (doc 3) added two rules this file owns: §2 every
+   phase a card declares is one of five closed values, and §7 none
+   of them is ever namespaced. Doc 1 §3.2 added `spec`, the prose
+   the agent actually reads.
 
-   Three later fields land here with no rule of their own: `mcp`
-   and `cannot` default to `[]` and `skill` is optional, and none
-   of the three is checked against the vocabulary. `mcp` names
-   installed servers the ontology does not describe; `cannot` is
-   free text right up until an entry happens to name a
-   `data-type`, and only the graph can tell — so
-   `bundle/prohibition-violated` is raised by `bundle/resolve.ts`,
-   where the edges are.
+   §3's note used to add a third, making a human `type` beside a
+   `requires_human` that was not `true` an error. That rule existed
+   because the card said the same thing twice and the two spellings
+   could disagree. The field is gone and `type` is the whole
+   answer, so the contradiction is no longer expressible and there
+   is nothing left for a cross-field rule to check. What replaced
+   it is `card/retired-field`: a card still carrying the withdrawn
+   key is told so, and told what its `type` answers instead.
+
+   `mcp` and `skill` land here with no rule of their own: `mcp`
+   defaults to `[]`, `skill` is optional, and neither is checked
+   against the vocabulary, because an MCP server is a process
+   somebody installed and the ontology describes no such thing.
+
+   The two prohibition fields are checked, and they are checked in
+   opposite directions. `cannot` holds `data-type` term ids and
+   nothing else, so it goes through `checkTerm` exactly as `tools`
+   and `risk_markers` do; whether an entry is VIOLATED is still
+   `bundle/resolve.ts`'s question, since only the graph has edges.
+   `will_not` holds the author's sentences, so it is checked for
+   the one thing that can be wrong with a free-text field beside a
+   typed one: an entry naming a term the resolver could have
+   enforced is `card/prohibition-misfiled`, pointing at `cannot`.
 
    `phase` is **optional and repeatable**, which supersedes doc 3
    §1's "esattamente 1" on the author's ruling: the five phases
@@ -38,13 +52,11 @@ import {
 } from "../diagnostics";
 import type { TermKind } from "../ontology/types";
 import type { OntologyView } from "../ontology/resolve";
+import { requiresHuman } from "../ontology/resolve";
 import { bumpSatisfies, declaredBump, inferBump, type BumpLevel } from "../version/bump";
 import { compareVersionStrings, formatSemver, parseSemver } from "../version/semver";
 import { formatForFilename, parseDocument, type CardFormat } from "./parse";
-import type { JsonValue, NodeCard, Port } from "./schema";
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-40) (cited at line 844): POST /api/cards/{id}/check-bump — must run at publish time, since a published version can
+import { TOOL_COMMAND_KEY, type JsonValue, type NodeCard, type Port } from "./schema";
 
 /**
  * Deliberate copy of the private regex in `schema.ts`: that one guards
@@ -87,16 +99,68 @@ export const CARD_KNOWN_KEYS: ReadonlySet<string> = new Set([
   "outputs",
   "dependencies",
   "cannot",
-  "requires_human",
-  "requiresHuman",
+  "will_not",
+  // The camelCase spelling, accepted for the same reason `requiresHuman` and
+  // `riskMarkers` are: the model's own name for the field is what an author who has read
+  // `schema.ts` reaches for, and a silently dropped list is worse than either spelling.
+  "willNot",
   "risk_markers",
   "riskMarkers",
   "notes",
   "version",
   "author",
   "provenance",
-  "ontology_version",
-  "ontologyVersion",
+]);
+
+/** What a withdrawn key is told: the sentence naming the successor, and the advice. */
+interface RetiredKey {
+  /** Completes "Field `k` is no longer part of the card schema: <what>." */
+  what: string;
+  /**
+   * The advice. A function rather than a string because `requires_human` needs to quote
+   * the card's own `type` back before it can say whether deleting the key drops a claim.
+   */
+  hint: (type: string | undefined, ontology: OntologyView) => string;
+}
+
+/**
+ * Keys the schema used to carry, mapped to the sentence that says what happened to them.
+ *
+ * `requires_human` stored whether a person acts at the node, beside a `type` that already
+ * answered the same question, and the two were free to disagree: `type: human-gate` with
+ * `requires_human: false` loaded, drew a person on the schematic, and scored as
+ * unattended. `type` is the whole answer now.
+ *
+ * `ontology_version` named the vocabulary the card was written against, so the engine
+ * could read an old card against the vocabulary it meant. Nothing ever asked for that: a
+ * release stores its whole scorecard at publish time, so no score is recomputed against a
+ * historical vocabulary, and the version a score WAS computed under is recorded on the
+ * score. What the field actually produced was a third copy of one number, next to the
+ * bundle manifest's and the vocabulary's own, and two diagnostics whose whole job was to
+ * report the three copies disagreeing.
+ *
+ * Both spellings of each, because both used to load. A key here is deliberately NOT in
+ * `CARD_KNOWN_KEYS`: that set is what the validator accepts and this one is what it
+ * refuses to accept quietly, and merging them would put a withdrawn key back into the
+ * wire vocabulary `scripts/skill-refs.ts` publishes to card authors.
+ */
+const RETIRED_KEYS: ReadonlyMap<string, RetiredKey> = new Map([
+  [
+    "requires_human",
+    { what: "whether a person acts at this node is read from `type`", hint: humanKeyHint },
+  ],
+  [
+    "requiresHuman",
+    { what: "whether a person acts at this node is read from `type`", hint: humanKeyHint },
+  ],
+  [
+    "ontology_version",
+    { what: "there is one living vocabulary and a card is always read against it", hint: vocabularyKeyHint },
+  ],
+  [
+    "ontologyVersion",
+    { what: "there is one living vocabulary and a card is always read against it", hint: vocabularyKeyHint },
+  ],
 ]);
 
 /**
@@ -116,9 +180,6 @@ const MAX_PARAM_DEPTH = 100;
  * an author nothing.
  */
 const MIN_SPEC_LENGTH = 40;
-
-/** Doc 3 §3 — the abstract category the human-consistency rule is asked about. */
-const HUMAN_CATEGORY = "human-in-the-loop";
 
 /** The outcome of validating one document. */
 export interface CardValidation {
@@ -194,61 +255,55 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
   // here is free text. Defaults to `[]`.
   const mcp = stringList(read(value, "mcp", ds, file), ds, file);
   const skill = optionalString(read(value, "skill", ds, file), ds, file);
-  const params = readParams(read(value, "params", ds, file), ds, file);
+  const paramsField = read(value, "params", ds, file);
+  const params = readParams(paramsField, ds, file);
+  if (type !== undefined) checkToolCommand(type, params, paramsField.key, opts.ontology, ds, file);
 
   /* 3.3 interfaces */
   const inputs = readPorts(read(value, "inputs", ds, file), opts.ontology, ds, file);
   const outputs = readPorts(read(value, "outputs", ds, file), opts.ontology, ds, file, true);
   const dependencies = stringList(read(value, "dependencies", ds, file), ds, file);
-  // Also unchecked against the ontology, for the opposite reason: an entry here is free
-  // text *unless* it happens to name a `data-type`, in which case `bundle/resolve.ts`
-  // enforces it against the graph. Running `checkTerm` would make `card/unknown-term` fire
-  // on "never opens a shell", which is a legal entry and the one the field was named for.
-  // Nothing about a single card decides which of the two an entry is, so the decision
-  // belongs where the edges are, and this reads the list unaltered. Defaults to `[]`.
-  const cannot = stringList(read(value, "cannot", ds, file), ds, file);
+  // Checked against the vocabulary, and pinned to one kind. `cannot` is the enforced half
+  // of the prohibition pair: every entry is a `data-type` the resolver holds every
+  // incoming edge to. A `data-type` is the only kind of term an edge carries, so it is the
+  // only kind that can be refused, and `checkTerm` says so at the entry rather than
+  // letting a `phase` or a `tool` sit here looking enforced. "never opens a shell" belongs
+  // in `will_not` and is `card/unknown-term` here, which is the whole point of the split.
+  // Defaults to `[]`.
+  const cannotField = read(value, "cannot", ds, file);
+  const cannot = stringList(cannotField, ds, file, {
+    kind: "data-type",
+    ontology: opts.ontology,
+  });
+  // The stated half. Free text by construction, so no `checkTerm`: an entry here is a
+  // sentence and the ontology has nothing to say about a sentence. `checkMisfiled` below
+  // makes the one check a free-text field beside a typed one can carry.
+  const willNotField = read(value, "will_not", ds, file, "willNot");
+  const willNot = stringList(willNotField, ds, file);
+  checkMisfiled(willNot, willNotField.key, opts.ontology, ds, file);
 
   /* 3.4 evaluation metadata */
-  const requiresHumanField = read(value, "requires_human", ds, file, "requiresHuman");
-  const requiresHuman = readBoolean(requiresHumanField, ds, file);
   const riskMarkers = stringList(read(value, "risk_markers", ds, file, "riskMarkers"), ds, file, {
     kind: "risk-marker",
     ontology: opts.ontology,
   });
   const notes = optionalString(read(value, "notes", ds, file), ds, file);
 
-  // Doc 3 §3's note: a type under `human-in-the-loop` and a `requires_human` that is not
-  // true describe two different nodes, and the analysis would believe the flag. An error,
-  // explicitly not a warning — the two fields feed the same metric.
-  if (type !== undefined && !requiresHuman && isHumanType(type, opts.ontology)) {
-    // Point at `requires_human` when the author wrote it, at `type` when they did not:
-    // the diagnostic should land on something that exists in their document.
-    const path = requiresHumanField.present ? requiresHumanField.key : typeField.key;
-    ds.push(
-      error(
-        "card/human-type-inconsistent",
-        `Type \`${type}\` puts a person in the loop, but \`requires_human\` is not \`true\`.`,
-        {
-          hint: `\`${type}\` is a \`${HUMAN_CATEGORY}\` node, so set \`requires_human: true\`, or pick a type that runs without a person.`,
-          location: at(file, path),
-        },
-      ),
-    );
-  }
-
   /* 3.5 service fields */
   const versionField = read(value, "version", ds, file);
   const version = requiredSemver(versionField, ds, file);
   const author = optionalString(read(value, "author", ds, file), ds, file);
   const provenance = optionalString(read(value, "provenance", ds, file), ds, file);
-  const ontologyVersion = requiredSemver(
-    read(value, "ontology_version", ds, file, "ontologyVersion"),
-    ds,
-    file,
-  );
 
   for (const key of Object.keys(value)) {
     if (CARD_KNOWN_KEYS.has(key)) continue;
+    if (RETIRED_KEYS.has(key)) {
+      // Reported before the generic branch, because the generic branch's advice is wrong
+      // here: "check the spelling" invites the author to fix a key that was withdrawn on
+      // purpose. `type` is quoted back so the author can see the answer they now have.
+      ds.push(retiredField(key, type, opts.ontology, file));
+      continue;
+    }
     ds.push(
       info("card/bad-type", `Field \`${key}\` is not part of the card schema and is ignored.`, {
         hint: "Unknown fields are kept for forward compatibility; check the spelling if you expected it to apply.",
@@ -273,10 +328,9 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
     outputs,
     dependencies,
     cannot,
-    requiresHuman,
+    willNot,
     riskMarkers,
     version: version ?? "",
-    ontologyVersion: ontologyVersion ?? "",
   };
   if (model !== undefined) card.model = model;
   if (agent !== undefined) card.agent = agent;
@@ -394,16 +448,6 @@ function requiredSemver(f: Field, ds: Diagnostic[], file: string | undefined): s
     return undefined;
   }
   return raw;
-}
-
-/** A boolean with a documented default of `false`. */
-function readBoolean(f: Field, ds: Diagnostic[], file: string | undefined): boolean {
-  if (!f.present || f.value === null || f.value === undefined) return false;
-  if (typeof f.value !== "boolean") {
-    ds.push(badType(f.key, "a boolean", f.value, file));
-    return false;
-  }
-  return f.value;
 }
 
 /**
@@ -589,21 +633,6 @@ function checkSpec(spec: string, path: string, ds: Diagnostic[], file: string | 
   );
 }
 
-/**
- * True when the declared type puts a person in the loop (doc 3 §3).
- *
- * Asked of the *category*, never of a list of ids: a local type declaring
- * `broader: human-in-the-loop` is caught by the same call, and a human type added to the
- * core in a later version changes the answer without this file being touched. That is the
- * stated reason the category exists at all.
- */
-function isHumanType(id: string, ontology: OntologyView): boolean {
-  // A deprecated spelling resolves to its successor first, so an old alias of a human
-  // type is held to the same rule as the term it points at (§6.2 keeps it valid).
-  const resolved = ontology.resolve(id)?.term.id ?? id;
-  return ontology.isA(resolved, HUMAN_CATEGORY);
-}
-
 /* --------------------- ports --------------------- */
 
 /**
@@ -683,6 +712,82 @@ function readPorts(
 }
 
 /* --------------------- params --------------------- */
+
+/**
+ * Doc 3 §3's node types as this codebase extends them: the term for a node whose whole
+ * instruction is a command. Local rather than imported for the same reason
+ * `analysis/security.ts` keeps `VALIDATION_TYPE` local: one module asking one question of
+ * the vocabulary, spelled once where the question is asked.
+ */
+const SHELL_TOOL_TYPE = "shell-tool";
+
+/**
+ * A `shell-tool` card that declares no command to run.
+ *
+ * Engine spec §4.10's tool handler opens by reading `tool_command` and returns FAIL with
+ * "No tool_command specified" when it is empty, so a card of this type carrying no command
+ * describes a node that resolves, scores, exports, and then fails on its first execution.
+ * Moving that earlier is what this file is for.
+ *
+ * `isA` rather than `type === SHELL_TOOL_TYPE`: a local type rooted at it (doc 3 §7) runs
+ * on the same handler and needs the same command, and asking the vocabulary is how every
+ * other type question in the engine is asked.
+ *
+ * A WARNING, on the ground `card/prohibition-misfiled` states. The card is legible and
+ * everything else about it is checkable, and a draft is allowed to be unfinished:
+ * `attractor/import.ts` deliberately writes a card with an empty `spec` for an Attractor
+ * node that carried no `prompt`, so refusing this one would say a card cannot be worked on
+ * until it is done.
+ *
+ * ── Why it borrows a code instead of minting one ──
+ * `DiagnosticCode` is a shared union in `lib/core/diagnostics.ts` and this file does not
+ * own it, so a `card/missing-tool-command` is owed rather than taken here. The two codes
+ * used are the honest readings meanwhile: a `shell-tool` card without the key IS missing a
+ * field its own type requires, and one that spells the key with something that is not a
+ * command has put a value of the wrong type in it. Neither can move `gate.ts`, which
+ * refuses storage on `severity === "error"` alone and narrows both of these codes further
+ * to the two fields that carry a card's address.
+ */
+function checkToolCommand(
+  type: string,
+  params: Readonly<Record<string, JsonValue>>,
+  key: string,
+  ontology: OntologyView,
+  ds: Diagnostic[],
+  file: string | undefined,
+): void {
+  if (!ontology.isA(type, SHELL_TOOL_TYPE)) return;
+  const path = `${key}.${TOOL_COMMAND_KEY}`;
+  // No `hasOwnProperty` dance, unlike `card/iteration-cap.ts` over the same bag: that one
+  // reads a card's raw `params` and this one reads what `readParams` built out of
+  // `Object.keys`, so an inherited key was already dropped and `undefined` here can only
+  // mean the author wrote nothing.
+  if (params[TOOL_COMMAND_KEY] === undefined) {
+    ds.push(
+      warning("card/missing-field", `Field \`${path}\` is missing, and \`type: ${type}\` runs a command.`, {
+        hint: "Write the command the node runs, or declare a `type` whose instruction is the prose in `spec`. Engine spec §4.10 fails a tool node with no `tool_command` before it does anything.",
+        location: at(file, path),
+      }),
+    );
+    return;
+  }
+  const declared = params[TOOL_COMMAND_KEY];
+  // Whitespace is what §4.10 refuses, so a command of spaces is the empty case and not a
+  // command that happens to be short.
+  if (typeof declared === "string" && declared.trim() !== "") return;
+  ds.push(
+    warning(
+      "card/bad-type",
+      typeof declared === "string"
+        ? `Field \`${path}\` is blank, and \`type: ${type}\` runs a command.`
+        : `Field \`${path}\` must be a command string, but it is ${describe(declared)}.`,
+      {
+        hint: "Engine spec §4.10 reads it as the shell command for the node and fails the node when it is empty.",
+        location: at(file, path),
+      },
+    ),
+  );
+}
 
 /** Free-form nested configuration, defaulting to `{}` and required to survive JSON. */
 function readParams(
@@ -780,6 +885,48 @@ function toJsonValue(
  * §6.1: structural fields are references, not free text. Unknown ids and
  * kind mismatches are errors; a deprecated id stays valid and only warns (§6.2).
  */
+/**
+ * The one check a free-text field can carry when a typed field stands beside it.
+ *
+ * `will_not` holds sentences and `cannot` holds `data-type` term ids, and the mistake two
+ * fields make possible is writing the value into the wrong one. An author who puts
+ * `acceptance-criteria` under `will_not` has written down a rule `bundle/resolve.ts` would
+ * have held every incoming edge to, in the field where it will never be looked at. The
+ * card reads as though the rule is in force and no edge is ever checked against it, which
+ * is the exact failure the split was made to end.
+ *
+ * Pinned to `data-type` for the same reason `cannot` is: a `phase`, a `node-type` or a
+ * `tool` is not something an edge carries, so moving one into `cannot` would not buy the
+ * author an enforced rule and telling them to is bad advice. `resolve` rather than `get`,
+ * so a deprecated spelling of a data type is caught too.
+ *
+ * A warning: what the entry says is what the field says, and the card still loads with it.
+ * The hint names the destination, since "this is in the wrong field" is only useful with
+ * the right one attached.
+ */
+function checkMisfiled(
+  entries: readonly string[],
+  key: string,
+  ontology: OntologyView,
+  ds: Diagnostic[],
+  file: string | undefined,
+): void {
+  entries.forEach((entry, i) => {
+    const resolved = ontology.resolve(entry, "data-type");
+    if (resolved === undefined) return;
+    ds.push(
+      warning(
+        "card/prohibition-misfiled",
+        `\`${entry}\` is a \`data-type\` in the vocabulary, and nothing enforces it here.`,
+        {
+          hint: `Move it to \`cannot\` and the resolver refuses every incoming edge that could carry \`${resolved.term.id}\`. Left here it is a sentence, and the engine reads it as one.`,
+          location: at(file, `${key}[${i}]`),
+        },
+      ),
+    );
+  });
+}
+
 function checkTerm(
   id: string,
   kind: TermKind,
@@ -791,9 +938,14 @@ function checkTerm(
   const exact = ontology.get(id);
   const resolved = ontology.resolve(id);
   if (!exact && !resolved) {
+    // An id carrying a namespace has already taken the advice below once, and repeating it
+    // would ask for `me/me/check`. That author needs the file the term is declared in.
+    const hint = id.includes("/")
+      ? `Use an existing \`${kind}\` term, or declare \`${id}\` in \`ontology/extensions.yaml\` with a \`broader\` that reaches the core.`
+      : `Use an existing \`${kind}\` term, or declare your own in a local namespace such as \`me/${id}\`.`;
     ds.push(
       error("card/unknown-term", `Term \`${id}\` is not in the ontology.`, {
-        hint: `Use an existing \`${kind}\` term, or declare your own in a local namespace such as \`me/${id}\`.`,
+        hint,
         location: at(file, path),
       }),
     );
@@ -929,6 +1081,52 @@ function badType(
   return error("card/bad-type", `Field \`${path}\` must be ${expected}, but it is ${describe(actual)}.`, {
     location: at(file, path),
   });
+}
+
+/**
+ * A key the schema withdrew, and what the card now answers without it.
+ *
+ * The hint quotes the card's own `type` back rather than describing the rule in the
+ * abstract, because the author's question is not "what is the rule" but "does deleting
+ * this line change what my card says". For `requires_human` the two possible answers are
+ * different pieces of advice: a `human-gate` card is already saying what the key said, and
+ * a `tool` card that set the key to `true` has just lost a claim and has to move it into
+ * the type or drop it.
+ *
+ * `type` may be absent or unresolvable here — the card is being validated and its own
+ * `type` may be one of the things wrong with it — so the hint degrades to naming the field
+ * rather than guessing at an answer it cannot compute.
+ */
+function retiredField(
+  key: string,
+  type: string | undefined,
+  ontology: OntologyView,
+  file: string | undefined,
+): Diagnostic {
+  const retired = RETIRED_KEYS.get(key);
+  const what = retired?.what ?? "it has been withdrawn from the card schema";
+  const hint = retired?.hint(type, ontology) ?? "Delete the key.";
+  return warning("card/retired-field", `Field \`${key}\` is no longer part of the card schema: ${what}.`, {
+    hint,
+    location: at(file, key),
+  });
+}
+
+/** `requires_human`'s advice, which turns on whether `type` already staffs the node. */
+function humanKeyHint(type: string | undefined, ontology: OntologyView): string {
+  if (type === undefined) return "Delete the key and check that `type` says what you meant.";
+  return requiresHuman(ontology, type)
+    ? `\`type: ${type}\` already puts a person in the loop, so deleting the key changes nothing this card says.`
+    : `\`type: ${type}\` runs unattended. Delete the key, and if a person acts here declare a \`human-in-the-loop\` type such as \`human-gate\` instead.`;
+}
+
+/**
+ * `ontology_version`'s advice. It takes no arguments it uses: unlike `requires_human`,
+ * deleting this key drops no claim about the node, so there is nothing to check against
+ * the rest of the card and nothing to warn the author they are giving up.
+ */
+function vocabularyKeyHint(): string {
+  return "Delete the key. Terms are added and retired with `deprecated: {since, replacedBy}` inside the one vocabulary, and the version a score was computed under is recorded on the score.";
 }
 
 /** `card/bad-type` doubles as the params-serialization code — §1 has no narrower one. */

@@ -1,27 +1,18 @@
-import Link from "next/link";
-
 import type { HistoryEntry } from "@/lib/data/bundles";
 import { cx, prettyDate } from "@/lib/format";
-import { Button } from "@/components/ui/Button";
 
 /* ============================================================
    History, and the word this site will not let it mean.
 
-   There is no repository behind a bundle. Each entry below is a **published snapshot
-   addressed by its own digest** — a hash over the DOT source and every card version it
-   pinned — not a patch against the row under it. Nothing here can be pulled, checked out,
-   reverted or merged, and the closing note says so in the open rather than leaving a
-   reader to infer it from a column of version numbers with messages beside them, which is
-   a commit log to everybody who has ever seen one.
+   There is no repository behind a blueprint. Each entry below is a published snapshot
+   addressed by its own digest, a hash over the graph and every card version it pinned, and
+   never a patch against the row under it. Nothing here can be pulled, checked out, reverted
+   or merged, and the closing note says so in the open: a column of version numbers with
+   messages beside them is a commit log to everybody who has ever seen one.
 
-   That is also why `Take` is switched off rather than missing. It is a real thing a
-   registry could do with a digest and it is not built; drawing it dead with a reason states
-   the design without claiming it. `Diff` is different and only renders where there are two
-   snapshots: on a bundle with one it could never do anything even in a finished product,
-   and a control like that is worse than one that is merely not built yet.
-
-   `honesty.test.ts` forbids the word `git` on the download surfaces. It is not forbidden
-   here, and it does not appear here either.
+   No per-row controls. Copying a release into your own account is the header's Fork button,
+   over `POST /api/bundles/[owner]/[slug]/fork`; comparing two releases is not built, and a
+   disabled button advertising it would be a promise drawn as a control.
    ============================================================ */
 
 const TAG_TONE = {
@@ -30,21 +21,12 @@ const TAG_TONE = {
   upstream: "border-line text-dim",
 } as const;
 
-function Entry({
-  entry,
-  upstream,
-  comparable,
-}: {
-  entry: HistoryEntry;
-  upstream: boolean;
-  /** Whether there is a second snapshot to compare this one against. */
-  comparable: boolean;
-}) {
+function Entry({ entry, upstream }: { entry: HistoryEntry; upstream: boolean }) {
   return (
     <li className="relative flex gap-4 border-b border-line px-5 py-4 last:border-b-0">
-      {/* The rail: a ring per entry and a hairline between them. The upstream row is drawn
-          in the dimmest tone the ladder has, so the lineage reads as the end of your own
-          history rather than as one more of your releases. */}
+      {/* The rail: a ring per entry and a hairline between them. The upstream row takes the
+          dimmest tone, so the lineage reads as the end of your own history rather than as
+          one more of your releases. */}
       <span aria-hidden className="relative flex w-3 shrink-0 justify-center">
         <span
           className={cx(
@@ -57,9 +39,8 @@ function Entry({
       <div className={cx("flex min-w-0 flex-1 flex-col gap-2", upstream && "opacity-70")}>
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="font-mono text-[13px] text-fg">{entry.version}</span>
-          {/* A published bundle has no version but its digest, so the two are the same
-              string and printing it twice is noise. A private one names its own versions
-              and the digest is the second fact. */}
+          {/* When the version IS the digest the two are one string, and printing it twice
+              is noise. */}
           {entry.digest !== entry.version && (
             <span className="rounded-full border border-line bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-dim">
               {entry.digest}
@@ -76,42 +57,18 @@ function Entry({
             </span>
           )}
         </div>
-        <p className="max-w-[62ch] border-l border-line pl-4 text-[13px] leading-relaxed text-muted">
+        {/* No width cap: a release message is the blueprint's own summary, which the header
+            above prints at full width, and one sentence wrapping at two widths reads as a
+            defect. */}
+        <p className="border-l border-line pl-4 text-[13px] leading-relaxed text-muted">
           {entry.message}
         </p>
         <p className="font-mono text-[11px] text-dim">
-          <Link
-            href={`/u/${entry.author}`}
-            className="transition-colors hoverable:hover:text-cyan"
-          >
-            {entry.author}
-          </Link>{" "}
+          {/* Text rather than a link: an entry's author is a handle off the release manifest,
+              and those handles may hold no account. */}
+          <span>{entry.author}</span>{" "}
           · {prettyDate(entry.at)}
         </p>
-      </div>
-
-      <div className="flex shrink-0 items-start gap-2">
-        {/* `Diff` needs two snapshots. A bundle with one has nothing to compare against,
-            and a control that could never do anything even in a finished product is worse
-            than one that is merely not built yet. */}
-        {comparable && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled
-            title="Comparing two digests is designed and not built."
-          >
-            Diff
-          </Button>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          disabled
-          title="Nothing copies a snapshot into an account: there are no accounts."
-        >
-          Take
-        </Button>
       </div>
     </li>
   );
@@ -129,7 +86,7 @@ export function History({ entries }: { entries: readonly HistoryEntry[] }) {
           History
         </h2>
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
-          a version is a digest, not a commit
+          each release is a frozen snapshot, addressed by its digest
         </span>
       </div>
 
@@ -139,16 +96,12 @@ export function History({ entries }: { entries: readonly HistoryEntry[] }) {
             key={`${entry.version}-${entry.digest}`}
             entry={entry}
             upstream={entry.tag === "upstream"}
-            comparable={entries.length > 1}
           />
         ))}
       </ul>
 
       <p className="border-t border-line bg-surface-2/50 px-5 py-4 text-xs leading-relaxed text-dim">
-        There is no repository behind a bundle. Each row is a published snapshot addressed
-        by its own digest, so history here is a list of identities rather than a chain of
-        patches, and nothing in it can be pulled. Comparing two of them, and copying one
-        into an account, are both designed and neither is built.
+        There is no repository behind a release, so there is nothing to pull.
       </p>
     </section>
   );

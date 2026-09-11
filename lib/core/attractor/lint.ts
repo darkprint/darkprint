@@ -43,6 +43,37 @@
         hands Attractor a handler name. Nothing else about
         unreserved attributes is reported: Attractor ignores them,
         which is the fact the whole compatibility claim rests on.
+     7. (beyond the five, and a different KIND of rule) an edge
+        `condition` must parse under spec §10.2.
+
+   ── rule 7 is the first one about something a runner REFUSES ──
+   Rules 1 to 6 all report a spelling a runner reads differently:
+   the file parses, the pipeline runs, and something in it means
+   something other than what the author meant. Rule 7 does not.
+   Attractor grades its own `condition_syntax` ERROR (§7.2) and
+   §7.1 says the engine refuses to execute a pipeline carrying an
+   error-severity diagnostic, so a guard that does not parse stops
+   the run before the first node.
+
+   It is reported as a **warning** anyway, and the reasoning is
+   `gate.ts`'s rather than this file's. Rule 4 there: nothing
+   DarkPrint INFERS may ever block, and the Attractor lint is named
+   in that rule by name. A condition finding is DarkPrint's own
+   parse of somebody else's expression language against somebody
+   else's spec, and §10.2 and §10.5 of that spec do not agree with
+   each other (`condition.ts`'s header sets out where). An error
+   here would travel: `lintAttractor` is merged into
+   `resolveBundle`, `hasErrors` gates `registry/graphs.ts` and
+   `content/read.ts`, and one disputable parse would take a
+   published blueprint off the site. A warning that says the runner
+   will refuse carries the same information to the author and takes
+   nothing away from a reader.
+
+   Rule 7 had one reader until 2026-09-05, a panel that printed
+   "None of these stops a runner" over every finding, and the owner
+   deleted it (§11.0 Q30) rather than keep an unmounted surface. So
+   the warning/ERROR gap is carried by the hint alone now, and
+   `lint.test.ts` holds the cells that were the panel's.
    ============================================================ */
 
 import { sortDiagnostics, warning } from "../diagnostics";
@@ -50,6 +81,7 @@ import type { Diagnostic, DiagnosticCode, DiagnosticLocation } from "../diagnost
 import { lex } from "../dot/lexer";
 import type { Token } from "../dot/lexer";
 import type { DotGraph } from "../dot/parser";
+import { parseCondition } from "./condition";
 import { isAttractorIdentifier, isAttractorKeyword } from "./reserved";
 
 /**
@@ -65,6 +97,25 @@ const DURATION_UNITS: readonly string[] = Object.freeze(["ms", "s", "m", "h", "d
 
 /** Attractor's node attribute that means "handler override" — never DarkPrint's `type`. */
 const HANDLER_OVERRIDE_ATTRIBUTE = "type";
+
+/** Attractor's edge attribute holding the routing guard (Appendix A, and spec §10). */
+const CONDITION_ATTRIBUTE = "condition";
+
+/**
+ * The code rule 7 reports under, named after Attractor's own `condition_syntax` (§7.2) so
+ * a reader can match the two by eye, and spelled the way this union spells everything.
+ *
+ * It is reported as a WARNING, like the eight codes above it, and that is a deliberate
+ * choice against Attractor's own grading rather than an oversight. §7.2 grades
+ * `condition_syntax` ERROR and §7.1 makes a runner refuse the pipeline, so this is the one
+ * rule here that reports a file a runner takes and then declines to run. The severity stays
+ * `warning` because a DarkPrint topology is not the file a runner takes — `emit.ts` compiles
+ * that one — and because an error here runs through `hasErrors` into `registry/graphs.ts` and
+ * `content/read.ts` and takes a published blueprint off the site, which `gate.ts` rule 4
+ * forbids a DarkPrint inference from doing. What Attractor would do with it travels in the
+ * hint instead, where the reader who is about to export can act on it.
+ */
+const CONDITION_SYNTAX: DiagnosticCode = "attractor/condition-syntax";
 
 /* --------------------- reporting --------------------- */
 
@@ -534,13 +585,47 @@ function checkHandlerOverride(dot: DotGraph, report: Reporter): void {
   }
 }
 
+/* --------------------- rule 7: the edge guard's syntax --------------------- */
+
+/**
+ * Every edge `condition`, parsed against §10.2.
+ *
+ * Reads the DOT attribute rather than `ResolvedEdge.condition` because the linter runs on
+ * a `DotGraph` and is reachable before any card is resolved. The two carry the same
+ * string: `bundle/resolve.ts` lifts it out of exactly this attribute.
+ *
+ * An absent attribute and an empty one are different, and that difference is why this
+ * reads `hasOwnProperty` rather than truthiness. §3.3 treats an empty condition as NO
+ * condition, so `condition=""` is an edge the author guarded and a runner does not, which
+ * is worth one line; an unguarded edge is worth none.
+ *
+ * A chained `a -> b -> c [condition="…"]` is two edges carrying one attribute and both are
+ * reported: the guard really is on both, and a runner really refuses over both.
+ * `MAX_PER_CODE` caps the repeats the way it does for every other rule.
+ */
+function checkEdgeConditions(dot: DotGraph, report: Reporter): void {
+  for (const stmt of dot.edges) {
+    if (!Object.prototype.hasOwnProperty.call(stmt.attrs, CONDITION_ATTRIBUTE)) continue;
+    for (const found of parseCondition(stmt.attrs[CONDITION_ATTRIBUTE]).problems) {
+      report.report(
+        CONDITION_SYNTAX,
+        `Edge \`${stmt.source} -> ${stmt.target}\` carries a \`condition\` Attractor cannot parse: ${found.message}`,
+        `${found.hint} Attractor grades this rule ERROR (\`condition_syntax\`, §7.2) and refuses to execute a pipeline carrying one, so a runner stops before the first node rather than routing past this edge.`,
+        { line: stmt.line, column: stmt.column },
+      );
+    }
+  }
+}
+
 /* --------------------- the entry point --------------------- */
 
 /**
  * Check a parsed blueprint against the DOT subset Attractor reads.
  *
- * Returns warnings only, sorted: a bundle that breaks one of these rules is a valid
- * DarkPrint bundle that will not run under Attractor. Never throws.
+ * Returns warnings only, sorted. A bundle that breaks one of rules 1 to 6 is a valid
+ * DarkPrint bundle that will not run under Attractor; one that breaks rule 7 is a valid
+ * DarkPrint bundle a runner refuses to start. Never throws, and never an error: the header
+ * says why the second of those is still a warning.
  *
  * Both arguments are needed and neither is redundant. `dot` carries the facts the
  * parser settled — the ids it built, whether the graph was `strict` or directed, the
@@ -556,6 +641,7 @@ export function lintAttractor(dot: DotGraph, src: string, file?: string): Diagno
   checkGraphHeader(dot, tokens, report);
   checkNodeIds(dot, report);
   checkHandlerOverride(dot, report);
+  checkEdgeConditions(dot, report);
   scanTokens(dot, tokens, report);
   scanSource(src, report);
 

@@ -31,14 +31,13 @@ inputs:
 outputs: []
 dependencies:
   - claim-verifier
-cannot:
+cannot: []
+will_not:
   - edit the report it delivers
   - publish before the reference list has arrived
 
-requires_human: false
 risk_markers:
   - irreversible-action
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

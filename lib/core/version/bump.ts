@@ -196,14 +196,13 @@ function comparePhases(
  *
  * **Adding is major.** It narrows the contract. A blueprint that pinned this card and ran
  * clean can start raising `bundle/prohibition-violated` on an edge nobody touched, which
- * is exactly the "breaks something a blueprint pinned" test §4 reserves major for. Whether
- * the entry is an ontology `data-type` — enforced — or free text is not consulted: the
- * vocabulary can grow a term that turns yesterday's free text into today's rule, and a
- * bump level that changed under the card's feet would be worse than one that is
- * occasionally strict.
+ * is exactly the "breaks something a blueprint pinned" test §4 reserves major for. Every
+ * entry in this field is a `data-type` the resolver enforces, so that consequence is
+ * certain rather than conditional; the sentences an author writes instead live in
+ * `willNot` and are priced by `compareWillNot` below.
  *
- * **Withdrawing is minor.** It widens what the node accepts, the way `requires_human`
- * going true → false does. Nothing that resolved before stops resolving.
+ * **Withdrawing is minor.** It widens what the node accepts: nothing that resolved before
+ * stops resolving, and no blueprint pinning this card starts failing.
  *
  * A pure reorder claims the same set in a different sequence and falls under §4's "patch
  * otherwise".
@@ -228,9 +227,62 @@ function compareCannot(
     previous.length === next.length &&
     previous.every((v) => after.has(v)) &&
     next.every((v) => before.has(v));
-  // Joined on a newline, which a `cannot` entry cannot contain: entries are free text and
-  // a space would make ["a b"] and ["a", "b"] compare equal.
+  // Joined on a newline, which a term id cannot contain, so ["a b"] and ["a", "b"] cannot
+  // compare equal. Kept as a newline rather than narrowed to a space now that the entries
+  // are ids: the separator has to be a character the values exclude, and it is.
   if (sameMembers && previous.join("\n") !== next.join("\n")) push("patch", "`cannot` entries were reordered");
+}
+
+/**
+ * `willNot`, which breaks in the opposite direction from `cannot`, and that is the whole
+ * asymmetry. Owner ruling of 2026-08-30, recorded as D-108.
+ *
+ * `compareCannot` one function up is major on the way IN, because gaining a prohibition
+ * narrows what the node accepts and a blueprint that fed it that type stops resolving.
+ * An undertaking has no such reader in the engine. It breaks on the way OUT: a reader who
+ * relied on "does not open a shell" and finds the sentence gone has lost the guarantee they
+ * chose this card for, and no resolver anywhere will tell them.
+ *
+ * **Withdrawing is MAJOR.** The first draft of this function priced it minor on the ground
+ * that nothing in the engine reads `willNot`, so no bundle can start failing. That argument
+ * inverts on inspection. Because nothing reads the field, the version number is the only
+ * witness a reader gets that a published promise disappeared. Pricing it minor would put the
+ * one signal available to them at the same level as an addition that costs them nothing.
+ *
+ * **Stating one is MINOR.** It adds a guarantee. Nobody downstream is worse off, which is
+ * the ordinary shape of a minor, and it is not a patch because §4 reserves patch for a
+ * change nobody downstream can observe. An undertaking is published: on the card's page, in
+ * the bundle a stranger downloads, and on most cards in the archive restated inside the
+ * `spec` the agent executes.
+ *
+ * A reorder is a patch on the ordinary ground: the same undertakings in a different
+ * sequence.
+ */
+function compareWillNot(
+  previous: readonly string[],
+  next: readonly string[],
+  push: (level: Reason["level"], message: string) => void,
+): void {
+  const before = new Set(previous);
+  const after = new Set(next);
+  for (const entry of next) {
+    if (!before.has(entry)) push("minor", `promise \`${entry}\` was added`);
+  }
+  for (const entry of previous) {
+    if (!after.has(entry)) {
+      push("major", `promise \`${entry}\` was withdrawn (nothing checks this automatically)`);
+    }
+  }
+
+  const sameMembers =
+    previous.length === next.length &&
+    previous.every((v) => after.has(v)) &&
+    next.every((v) => before.has(v));
+  // Joined on a newline, which an entry cannot contain: these ARE free text, so a space
+  // would make ["a b"] and ["a", "b"] compare equal.
+  if (sameMembers && previous.join("\n") !== next.join("\n")) {
+    push("patch", "`will_not` entries were reordered");
+  }
 }
 
 /** The part of a card that decides its identity, for the "did anything at all change" check. */
@@ -244,18 +296,26 @@ function contentSignature(card: NodeCard): string {
  * Which bump the change from `previous` to `next` demands (design doc §4).
  *
  * MAJOR — the card breaks something a blueprint pinned: a port removed, renamed or
- * retyped, an input that became required, the node's `type` or `id` changed,
- * `requires_human` flipped false → true, or an entry *added* to `cannot`. The last two are
- * judgement calls. `requires_human` does not break the wiring, but it invalidates every
- * autonomy score already computed against the card, and invalidating a published result is
- * exactly what a major bump is for. A new `cannot` entry narrows the contract: an edge
- * that resolved clean yesterday can raise `bundle/prohibition-violated` today with nobody
- * having touched the graph, which is the definition of breaking a blueprint that pinned
- * this card. `compareCannot` carries the rest of the reasoning.
+ * retyped, an input that became required, the node's `type` or `id` changed, or an entry
+ * *added* to `cannot`. The last one is the judgement call: a new `cannot` entry narrows
+ * the contract, so an edge that resolved clean yesterday can raise
+ * `bundle/prohibition-violated` today with nobody having touched the graph, which is the
+ * definition of breaking a blueprint that pinned this card. `compareCannot` carries the
+ * rest of the reasoning.
+ *
+ * There is deliberately no separate rule for whether a person acts at the node. There used
+ * to be one, on a `requires_human` boolean, priced major on the way in because flipping it
+ * invalidated every autonomy score already computed against the card. That answer is read
+ * off `type` now, and a changed `type` is already major two lines above, at the strictest
+ * level the scale has. A second comparison could only agree with it or contradict it.
  *
  * MINOR — the declared surface *grew*: an optional port, an output, a tool, an MCP server,
- * a param key, a risk marker, a dependency, `spec`, `skill`, `model`, `requires_human`
- * true → false, a `cannot` entry *withdrawn*, or a change to the set of declared phases.
+ * a param key, a risk marker, a dependency, `spec`, `skill`, `model`, a `cannot` entry
+ * *withdrawn*, a `will_not` entry stated or withdrawn, or a change to the set of declared
+ * phases. `will_not` is the one field that moves at the same
+ * level in both directions, and `compareWillNot` carries the reasoning: nothing in the
+ * engine reads it, so neither direction can break a pinned blueprint, and it is published
+ * to a reader, so neither direction is invisible.
  *
  * `mcp` follows `tools` exactly, since both list something the node requires of its
  * environment: adding one grows what the card asks for, dropping one asks for less and
@@ -295,7 +355,7 @@ function contentSignature(card: NodeCard): string {
  * reorder claims exactly what it claimed before and falls under §4's "patch otherwise".
  *
  * PATCH — everything else, per §4's "patch otherwise": wording (`name`, `action`,
- * `notes`, `ontology_version`, a port description), a param's value, a reordering, a
+ * `notes`, a port description), a param's value, a reordering, a
  * relaxed `required`, a different `agent`, and anything *withdrawn* from
  * `tools`, `mcp`, `risk_markers`, `dependencies` or `params` — a card that claims less breaks
  * no wiring a blueprint declared against it.
@@ -321,14 +381,6 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
   comparePorts("input", previous.inputs, next.inputs, push);
   comparePorts("output", previous.outputs, next.outputs, push);
 
-  if (previous.requiresHuman !== next.requiresHuman) {
-    if (next.requiresHuman) {
-      push("major", "`requires_human` changed false → true, which breaks the autonomy contract");
-    } else {
-      push("minor", "`requires_human` changed true → false");
-    }
-  }
-
   compareList(
     previous.tools,
     next.tools,
@@ -350,6 +402,7 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
     push,
   );
   compareCannot(previous.cannot, next.cannot, push);
+  compareWillNot(previous.willNot, next.willNot, push);
   compareList(
     previous.riskMarkers,
     next.riskMarkers,
@@ -423,12 +476,11 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
   if (previous.notes !== next.notes) {
     push("patch", "`notes` changed");
   }
-  if (previous.ontologyVersion !== next.ontologyVersion) {
-    push(
-      "patch",
-      `\`ontology_version\` changed: ${previous.ontologyVersion} → ${next.ontologyVersion}`,
-    );
-  }
+  /* There is no `ontology_version` comparison. It priced the field at patch, which was the
+     right price for a number the author retyped when they had checked their card against a
+     newer vocabulary. The field is gone, and reintroducing the rule against anything else
+     would be inventing a change nobody made: a card is read against the one living
+     vocabulary, so the vocabulary moving is not an edit to the card and cannot bump it. */
 
   if (reasons.length === 0) {
     // Safety net: a field nobody enumerated above (or one added to NodeCard later)

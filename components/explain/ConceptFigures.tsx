@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { cx } from "@/lib/format";
 import { ReachList, ReachRow } from "@/components/ui/ReachList";
 
@@ -128,6 +126,7 @@ export function WhatACardReaches({
   mcp,
   skill,
   cannot,
+  willNot,
   riskMarkers,
 }: {
   model: string;
@@ -135,48 +134,43 @@ export function WhatACardReaches({
   mcp: string;
   skill: string;
   cannot: string;
+  willNot: string;
   riskMarkers: string;
 }) {
-  /* Six rows, and each carries its own fine print.
-     ------------------------------------------------------------
-     Both changes come from the same defect. The page drew this figure with five rows
-     and then set a six-box grid under it, one box per field, keyed by the same names. The
-     same list twice, and the two disagreed: the figure said five rows, the grid explained
-     six, and `risk_markers` appeared only in the grid. A reader counting fields on a page
-     whose subject is what the fields are got two answers.
-
-     So the sixth row is here, and the grid's sentences are the rows' `note`s. The gloss
-     says what the field reaches; the note says the thing about it a reader would otherwise
-     find out by trying it. Nothing was cut.
-
-     `code-builder` declares no risk markers, and the row says so. That is the honest
-     drawing: the field exists on every card and this card leaves it empty. */
+  /* Seven rows, each with its own fine print: the gloss says what the field reaches, and
+     the note says the thing about it a reader would otherwise find out by trying it. The
+     two prohibition fields are two rows because the card format keeps them apart.
+     `code-builder` declares no risk markers, and the row says so: the field exists on every
+     card and this card leaves it empty. */
   return (
-    <ReachList label="One card, six rows">
+    <ReachList label="One card, seven rows">
       <ReachRow
         field="model"
         value={model}
-        note="Written the way the provider writes it, and overridable. A reader can point the graph at something else."
+        /* The direction is the claim: a graph-level model_stylesheet looks like the outer
+           scope, so a reader arriving from the DOT side reads it as the thing that wins,
+           and Attractor spec §8.5 ranks it the other way. `rows.test.ts` reads this note. */
+        note="A stylesheet on the graph is a default for the nodes that name no model; a line here outranks it. A reader can still point the run at something else."
       >
-        The model it thinks with. The ceiling on what this step can be trusted to attempt.
+        The model this step runs on, named the way the provider names it.
       </ReachRow>
       <ReachRow
         field="tools"
         value={tools}
-        note="The card names the capability, not a vendor, so a graph says what it touches rather than what you bought."
+        note="The card names a capability rather than a vendor, so a graph says what it touches and never what you bought."
       >
         Capabilities it may reach for: a shell, a search index, a browser.
       </ReachRow>
       <ReachRow
         field="mcp"
         value={mcp}
-        /* The second sentence is the podcast document's least-privilege point, folded
-           into the row it is about rather than given a block of its own. In a graph the
-           question is never what an agent may do; it is what THIS node may do, and the
-           four reach fields are declared per card, which is per-node identity. */
-        note="Two nodes naming the same server share the same door, and two that do not are two different reaches. Every field on this list is declared per card, so a graph says what each node may touch rather than what the system may."
+        /* Equal reach and nothing more: a card only names a server, nothing on this site
+           runs a graph, and whether a runner opens one connection or two is the runner's
+           business. */
+        note="Two nodes naming the same server have the same reach; two naming different servers do not. Reach is declared per card, so a graph says what each node may touch rather than what the whole system may."
       >
-        A server exposing one. MCP is the wire, so this row is the reach a run has.
+        An MCP server this step may talk to, by the name it is registered under on the
+        machine that runs the graph.
       </ReachRow>
       <ReachRow
         field="skill"
@@ -184,42 +178,44 @@ export function WhatACardReaches({
         note={
           <>
             <span className="text-muted">
-              The engine reads nothing at the other end of this path, so no skill document
-              travels in the download.
+              Nothing here reads what this path points at, so no skill document travels in
+              the folder.
             </span>{" "}
-            Each bundle&rsquo;s README lists the ones you supply yourself.
+            Each blueprint&rsquo;s README lists the ones you supply yourself.
           </>
         }
       >
-        A written procedure it follows. A pointer only: the document does not travel in
-        the download.
+        A written procedure it follows. A pointer only.
       </ReachRow>
       <ReachRow
         field="cannot"
         value={cannot}
         barred
-        note="An entry naming a data type is enforced; an entry naming anything else is a sentence addressed to a reader and checked by nothing."
+        note="Data types from the vocabulary, and nothing else. Writing one here is what turns a stated rule into a checked one."
       >
-        What must never arrive. Naming a data type makes it a rule the resolver holds
-        every incoming edge to, whichever node draws one.
+        What must never arrive. The validator enforces it against every incoming edge, no
+        matter which node draws the edge.
+      </ReachRow>
+      <ReachRow
+        field="will_not"
+        value={willNot}
+        barred
+        note="The prohibitions nothing can check, kept apart from the ones the validator can, so a reader can tell them apart without running anything."
+      >
+        What the card promises, in the author&rsquo;s own sentences. It reaches whoever
+        runs the node, and the model that is handed the specification at run time.
       </ReachRow>
       <ReachRow
         field="risk_markers"
         value={riskMarkers}
-        note={
-          <>
-            Each marker costs the blueprint security points.{" "}
-            <Link
-              href="/reading-the-radar"
-              className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
-            >
-              How a blueprint is graded <span aria-hidden>&rarr;</span>
-            </Link>
-          </>
-        }
+        /* No link to a grading page and no score sentence: no page prints a security
+           number beside a card. What the row teaches is that a marker is a term out of the
+           vocabulary rather than a sentence, which is what makes a stated blast radius a
+           checked one. */
+        note="Risk-marker terms from the vocabulary, and nothing else. Writing one here puts the blast radius in the file, where the validator can hold the author to a word the vocabulary defines."
       >
-        The blast radius, priced. What this step could break if it goes wrong, declared by
-        the card rather than guessed at by a reader.
+        The blast radius, declared. The card states what this step could break if it goes
+        wrong.
       </ReachRow>
     </ReachList>
   );
@@ -257,9 +253,9 @@ export function WhatACardReaches({
 
    ── Why the site can draw it at all ──
    Because the definition is already the machinery. `lib/core/bundle/resolve.ts`'s
-   `checkProhibitions` raises `bundle/prohibition-violated` at **error** severity when a
-   `cannot` entry names a `data-type` and an incoming edge can carry it, whichever node
-   drew the edge; `bundle/port-mismatch` refuses an edge whose two ends do not agree on a
+   `checkProhibitions` raises `bundle/prohibition-violated` at **error** severity when an
+   incoming edge can carry a `data-type` a card lists under `cannot`, whichever node drew
+   the edge; `bundle/port-mismatch` refuses an edge whose two ends do not agree on a
    type. Those are the document's input and output guardrails, written in a file, checked
    by a reader of files. So this figure reports the engine rather than illustrating an
    idea, which is the rule `/what-a-blueprint-is` states for its own drawings.
@@ -285,14 +281,15 @@ export function WhatACardReaches({
    harness frame already made two figures up and is worth being consistent about: on this
    page, neutral means "the box you bring yourself".
 
-   The `cannot` row of `WhatACardReaches` sits about one screen above this and draws its
-   connector in AMBER, via `ReachList`'s `barred`. That was noticed and deliberately not
-   matched. `barred` means "this row is a refusal"; copper here means "this cell is
-   something a card declares" — two different claims, so the two drawings are not one
-   idea in two colours. The amber itself is a standing question for `ReachList`, whose own
-   docblock calls amber "this site's colour for a limit" against a sitewide rule that says
-   it is not; `barred` renders on exactly one row sitewide, this one, so the flip is cheap
-   whenever the author wants it. It is not made here, in a file that does not own it.
+   The `cannot` and `will_not` rows of `WhatACardReaches` sit about one screen above this
+   and draw their connectors in AMBER, via `ReachList`'s `barred`. That was noticed and
+   deliberately not matched. `barred` means "this row is a refusal"; copper here means
+   "this cell is something a card declares" — two different claims, so the two drawings
+   are not one idea in two colours. The amber itself is a standing question for
+   `ReachList`, whose own docblock calls amber "this site's colour for a limit" against a
+   sitewide rule that says it is not; `barred` renders on exactly two rows sitewide, both
+   of them there, so the flip is cheap whenever the author wants it. It is not made here,
+   in a file that does not own it.
 
    ── No text inside a viewBox ──
    There is no viewBox. The whole drawing is boxes and rules in DOM text, so
@@ -320,8 +317,8 @@ const GUARDRAIL_BANDS: readonly GuardrailBand[] = [
     band: "input",
     bundle: (
       <>
-        <Field>cannot</Field>, naming a data type. The resolver refuses every incoming
-        edge that can carry it, at error severity, whichever node draws the edge.
+        <Field>cannot</Field>, holding a data type. The resolver refuses every incoming
+        edge that can carry it, at error severity, no matter which node draws the edge.
       </>
     ),
     harness:
@@ -332,7 +329,7 @@ const GUARDRAIL_BANDS: readonly GuardrailBand[] = [
     bundle: (
       <>
         <Field>tools</Field>, <Field>mcp</Field> and <Field>skill</Field>, written per
-        card, so reach is stated node by node rather than for the system.
+        card. Each node states its own reach. There is no system-wide reach statement.
       </>
     ),
     harness:
@@ -517,7 +514,7 @@ const OFFLINE: readonly AxisStep[] = [
   },
   {
     step: "checked",
-    note: "the analyzer reads them and scores what it reads",
+    note: "the analyzer reads them and reports what it finds",
     col: "sm:col-start-2",
   },
 ];

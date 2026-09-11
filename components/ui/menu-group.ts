@@ -6,18 +6,16 @@ import { useEffect, useRef } from "react";
    Two dropdowns in one header row, one open at a time.
 
    `/blueprints/[slug]` and `/nodes/[...id]` both end their header row with a group of
-   actions, and that group now holds two things that open a floating panel: `ForkAction`
-   and `CloneMenu`. Both panels are `-translate-x-1/2`-centred under their own trigger and
-   both are wider than the gap between the triggers, so with both open the second lands on
-   top of the first and the reader is looking at two overlapping boxes.
+   actions, and anything in that group that opens a floating panel (`CloneMenu` today)
+   centres it `-translate-x-1/2` under its own trigger, wider than the gap between the
+   triggers, so with two open the second lands on top of the first and the reader is
+   looking at two overlapping boxes.
 
-   The two cannot simply share state: they are separate components, mounted by the page
-   independently, and one of them is a native `<details>` (the disclosure primitive the
+   Two such panels cannot simply share state: they are separate components, mounted by the
+   page independently, and `CloneMenu` is a native `<details>` (the disclosure primitive the
    rest of the site uses) whose open state lives on the DOM element rather than in React.
-   HTML's own exclusive-accordion `name=""` attribute would solve it if both were
-   `<details>`, and `ForkAction` is not — its panel has to sit inside a `relative` wrapper
-   that a `<summary>` built to look like a button would complicate, and that shape is
-   locked by its own spec.
+   HTML's own exclusive-accordion `name=""` attribute would solve it only if every panel
+   were a `<details>`, and a panel that has to sit inside a `relative` wrapper is not one.
 
    So the coordination is one event on `document`, carrying the id of whatever just
    opened. Everything that can open a panel announces itself and closes on hearing anybody

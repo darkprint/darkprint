@@ -5,19 +5,28 @@ import { CORE_ONTOLOGY } from "./ontology/core";
 
 const { autonomy, security, criteriaLeak, promotion, telemetry } = DARKPRINT_CONFIG;
 
-describe("ontology version", () => {
-  it("is the v0.1 the vocabulary ships as (doc 3 §8)", () => {
-    expect(DARKPRINT_CONFIG.ontologyVersion).toBe("0.1.0");
-  });
-
-  it("matches the vocabulary, so a recorded score names the version it was computed under", () => {
-    expect(DARKPRINT_CONFIG.ontologyVersion).toBe(CORE_ONTOLOGY.version);
+/* An `ontology version` block stood here, pinning `DARKPRINT_CONFIG.ontologyVersion` to
+   "0.1.0" and to `CORE_ONTOLOGY.version`. Two constants kept in step by a test, and the
+   thing they named has gone: the vocabulary carries no version. This cell replaces them
+   because the absence is the claim — a config that grows the field back is a config
+   claiming the vocabulary moves on a number of DarkPrint's own again. */
+describe("the retired ontology version", () => {
+  it("is not a tunable, because the vocabulary has no version to tune", () => {
+    expect(Object.hasOwn(DARKPRINT_CONFIG, "ontologyVersion")).toBe(false);
   });
 });
 
+/** The three cut-offs, apart from the one number in `autonomy` that is not one. */
+const CUT_OFFS = ["level4", "level3", "level2"] as const;
+
 describe("autonomy bands (doc 3 §6)", () => {
   it("holds the documented cut-offs", () => {
-    expect(autonomy).toEqual({ level4: 0.9, level3: 0.7, level2: 0.5 });
+    expect(autonomy).toEqual({
+      level4: 0.9,
+      level3: 0.7,
+      level2: 0.5,
+      minControlPoints: 2,
+    });
   });
 
   it("is strictly decreasing, so exactly one band matches a fraction", () => {
@@ -25,10 +34,29 @@ describe("autonomy bands (doc 3 §6)", () => {
     expect(autonomy.level3).toBeGreaterThan(autonomy.level2);
   });
 
-  it.each(Object.entries(autonomy))("%s is a fraction in 0..1", (_key, value) => {
+  it.each(CUT_OFFS)("%s is a fraction in 0..1", (key) => {
+    const value = autonomy[key];
     expect(Number.isFinite(value)).toBe(true);
     expect(value).toBeGreaterThanOrEqual(0);
     expect(value).toBeLessThanOrEqual(1);
+  });
+
+  /* The list above is named rather than taken from `Object.entries(autonomy)`, which is
+     how it used to read: `minControlPoints` is a count of nodes and not a fraction, and a
+     sweep over every key charged it against a rule that was never about it. Named means
+     a fourth cut-off added later is not covered until somebody adds it here, so the
+     agreement below is what catches that. */
+  it("covers every cut-off in the config, so a new band cannot arrive unchecked", () => {
+    const swept = Object.keys(autonomy).filter((key) => key.startsWith("level"));
+    expect(swept.slice().sort()).toEqual([...CUT_OFFS].slice().sort());
+  });
+
+  it("takes at least two control points before the second reading decides a band", () => {
+    // One control point yields a share of exactly 0 or exactly 1, which is an observation
+    // and not a distribution; `analysis/autonomy.ts` reads this to decide whether the
+    // control fraction may lower the band at all.
+    expect(Number.isInteger(autonomy.minControlPoints)).toBe(true);
+    expect(autonomy.minControlPoints).toBeGreaterThanOrEqual(2);
   });
 
   it("leaves level 1 reachable below the lowest band", () => {

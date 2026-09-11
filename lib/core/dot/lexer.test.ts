@@ -136,8 +136,8 @@ describe("lex — quoted strings", () => {
   });
 
   it("carries the file name into the location when given", () => {
-    const { diagnostics } = lex('"oops', "blueprint.dot");
-    expect(diagnostics[0].location).toEqual({ file: "blueprint.dot", line: 1, column: 1 });
+    const { diagnostics } = lex('"oops', "topology.dot");
+    expect(diagnostics[0].location).toEqual({ file: "topology.dot", line: 1, column: 1 });
   });
 
   it("omits the file key when no file is given", () => {

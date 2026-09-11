@@ -54,11 +54,9 @@ outputs:
 dependencies:
   - planner
 
-requires_human: false
 risk_markers: []
 
 version: 1.0.0
-ontology_version: 0.1.0
 `;
 
 const BUILDER_CARD: NodeCard = {
@@ -75,10 +73,9 @@ const BUILDER_CARD: NodeCard = {
   outputs: [{ name: "build", type: "code" }],
   dependencies: ["planner"],
   cannot: [],
-  requiresHuman: false,
+  willNot: [],
   riskMarkers: [],
   version: "1.0.0",
-  ontologyVersion: "0.1.0",
 };
 
 function model(): PaneModel {
@@ -133,8 +130,16 @@ describe("CARD_BLOCKS", () => {
 
   it("answers which block a key belongs to", () => {
     expect(blockOf("spec")).toBe("behaviour");
-    expect(blockOf("requires_human")).toBe("evaluation");
-    expect(blockOf("ontology_version")).toBe("service");
+    // `risk_markers` and not `requires_human`: the withdrawn key was this cell's probe
+    // into the evaluation block, and the block still has two keys to probe with. Whether a
+    // person acts at the node is `type`, in `identity`, and the line below already asks
+    // about a key in a third block, so the cell still covers three of the five.
+    expect(blockOf("risk_markers")).toBe("evaluation");
+    // `provenance` and not `ontology_version`: the withdrawn key was this cell's probe into
+    // the service block, which still has three keys to probe with. There is one vocabulary
+    // and a card declares no version of it; the version a SCORE was computed under is on the
+    // score, which is not a card field and has no block here.
+    expect(blockOf("provenance")).toBe("service");
     expect(blockOf("nothing_like_this")).toBeUndefined();
   });
 });
@@ -353,7 +358,7 @@ describe("announce", () => {
     const focus = resolveFocus(m, { nodeId: "planner", absence: "criteria-to-builder" });
     if (focus === undefined) throw new Error("the fixture graph is empty");
     expect(announce(m, focus)).toBe(
-      "planner ⇢ builder is not in this bundle. The criteria reach the tester and stop there. The drawing rings builder.",
+      "planner ⇢ builder is not in this blueprint. The criteria reach the tester and stop there. The drawing rings builder.",
     );
   });
 });

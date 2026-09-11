@@ -3,20 +3,16 @@ title: Guarded Merge Bot
 summary: >-
   An agent line triages the PR and drafts the review, iterating with the test runner until the
   suite is green. A maintainer approves before the merge lands.
-description: >-
-  Some factories are drawn with a person in them on purpose, and this is one of them. The agents
-  triage the diff and draft the review, then iterate with the test runner until the suite is
-  green. At that point the run holds, and a named maintainer makes the merge call. Five of the
-  six nodes run unattended and the sixth is the maintainer, which is the shape the analyzer reads
-  off the graph and reports as a conditional class. It is published for teams that want the
-  review work done by agents and the merge decision made by a person they can name.
+description: |-
+  Some factories are drawn with a person in them on purpose, and this is one of them. Five of the six nodes run unattended and the sixth is the maintainer, which is the shape the analyzer reads off the graph and reports as a conditional class. It is published for teams that want the review work done by agents and the merge decision made by a person they can name.
+
+  This blueprint was generated automatically as an example for the registry.
 category: Software
 tags:
   - code-review
   - CI
   - human-in-loop
   - software
-author: sol-antczak
-ontologyVersion: "0.1.0"
+author: autogen
 createdAt: "2026-02-17"
 updatedAt: "2026-06-20"

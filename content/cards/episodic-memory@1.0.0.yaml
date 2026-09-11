@@ -39,10 +39,10 @@ outputs:
 dependencies:
   - ingest-stage
   - transform-stage
-cannot:
+cannot: []
+will_not:
   - rewrite or remove an entry
 
-requires_human: false
 risk_markers: []
 notes: >-
   Entries are append-only, which is what makes the log double as an audit trail of exactly what
@@ -52,4 +52,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

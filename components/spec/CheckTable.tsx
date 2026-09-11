@@ -1,11 +1,14 @@
 /* ============================================================
-   The spec layer pages — the same three columns for all three.
+   The check cell, and the table that carries it on `/spec/topology`.
 
-   The page's claim is one claim repeated at three scales: some of
+   The page's claim is one claim repeated at every scale: some of
    what you write is resolved against something and the rest is
    shown to a reader. A reader can only see that it is one claim if
-   the three sections answer it in the same shape, so the shape is
-   a component rather than three hand-built tables that drift.
+   every layer answers it in the same shape, so the cell that says
+   what holds a construct is a component. `/spec/topology` draws it
+   in this three-column table, and `/spec/card` draws the same cell
+   beside each field of a stacked reference, where the curated values
+   a field may take need room a table cell does not have.
 
    The third column carries a diagnostic code rather than a word
    like "validated". A code is greppable, it is what `/upload` and
@@ -19,10 +22,17 @@
    the alarm colour belongs on a defect somebody actually has.
    ============================================================ */
 
+import type { DiagnosticCode } from "@/lib/core";
+
+import { Id } from "./parts";
+
 export interface CheckRow {
   /** The field, attribute or construct, spelled as it appears in the file. */
   name: string;
-  /** One sentence on what it holds. */
+  /**
+   * What it holds, in a sentence or a few. Backticks mark an identifier, and every
+   * renderer of a row prints it through `prose` so the mark reads the same on both pages.
+   */
   what: string;
   /**
    * What the engine does about it, or `undefined` when the answer is nothing.
@@ -32,7 +42,9 @@ export interface CheckRow {
    * be the site overstating what it can vouch for.
    */
   check?: {
-    codes: readonly string[];
+    /* Typed to the validator's own union, so a code that is renamed or deleted in the
+       engine fails the typecheck here instead of leaving a stale row on the page. */
+    codes: readonly DiagnosticCode[];
     /** `error` refuses the bundle; `warning` is reported and the bundle still loads. */
     level: "error" | "warning";
   };
@@ -43,6 +55,25 @@ export interface CheckRow {
    Uppercase at 10px with wide tracking is the least legible combination available. */
 const TH =
   "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[11px] text-dim";
+
+/**
+ * Backticked identifiers in a row's prose render as inline code. The rows are plain strings
+ * so `rows.test.ts` and `honesty.test.ts` can read a sentence back, and the backtick is the
+ * seam between a field name and the sentence around it. Exported because `/spec/card`
+ * lays its rows out as a stacked reference rather than through `CheckTable`, and the two
+ * renderers have to agree on what the mark means.
+ */
+export function prose(text: string): React.ReactNode[] {
+  return text
+    .split(/(`[^`]+`)/)
+    .map((part, i) =>
+      part.startsWith("`") && part.endsWith("`") ? (
+        <Id key={i}>{part.slice(1, -1)}</Id>
+      ) : (
+        part
+      ),
+    );
+}
 
 export function CheckTable({
   rows,
@@ -96,35 +127,10 @@ export function CheckTable({
                 {row.name}
               </th>
               <td className="py-3 pr-4 leading-relaxed text-muted">
-                {row.what}
+                {prose(row.what)}
               </td>
               <td className="w-[15rem] py-3">
-                {row.check === undefined ? (
-                  <span className="font-mono text-[11px] text-dim">
-                    <span aria-hidden>◌ </span>
-                    free text
-                  </span>
-                ) : (
-                  <span className="flex flex-col gap-0.5">
-                    {row.check.codes.map((code) => (
-                      <code
-                        key={code}
-                        className={
-                          row.check?.level === "error"
-                            ? "font-mono text-[11px] text-emerald"
-                            : "font-mono text-[11px] text-amber"
-                        }
-                      >
-                        {code}
-                      </code>
-                    ))}
-                    <span className="font-mono text-[11px] text-dim">
-                      {row.check.level === "error"
-                        ? "refuses the bundle"
-                        : "reported, still loads"}
-                    </span>
-                  </span>
-                )}
+                <CheckCell check={row.check} />
               </td>
             </tr>
           ))}
@@ -134,7 +140,41 @@ export function CheckTable({
   );
 }
 
-/** The key the three tables share, printed once above the first of them. */
+/**
+ * What holds one construct: the codes in the tone the legend keys, and the level in words,
+ * or the free-text mark when the answer is nothing.
+ */
+export function CheckCell({ check }: { check: CheckRow["check"] }) {
+  if (check === undefined) {
+    return (
+      <span className="font-mono text-[11px] text-dim">
+        <span aria-hidden>◌ </span>
+        free text
+      </span>
+    );
+  }
+  return (
+    <span className="flex flex-col gap-0.5">
+      {check.codes.map((code) => (
+        <code
+          key={code}
+          className={
+            check.level === "error"
+              ? "font-mono text-[11px] text-emerald"
+              : "font-mono text-[11px] text-amber"
+          }
+        >
+          {code}
+        </code>
+      ))}
+      <span className="font-mono text-[11px] text-dim">
+        {check.level === "error" ? "refuses the bundle" : "reported, still loads"}
+      </span>
+    </span>
+  );
+}
+
+/** The key the check cells share, printed once above the first of them on a page. */
 export function CheckLegend() {
   return (
     <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-dim">

@@ -40,10 +40,6 @@ import {
 } from "@/lib/core";
 import { parseOntologyTerms } from "./ontology-file";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-107) (cited at line 213): replaced by SEAM-01/03/07/09 backed by a store
-// TODO(SEAM-108) (cited at line 139): GET /api/ontology (SEAM-14), cached per ontology version
-
 /*
  * The `server-only` package would be the idiomatic guard here, but it is not in the
  * dependency set and the loader is not allowed to add one. This is the same promise
@@ -64,7 +60,7 @@ const CARDS_DIR = join(CONTENT_DIR, "cards");
 
 /** Bundle-relative names. The engine reports diagnostics against these. */
 const MANIFEST_FILE = "blueprint.yaml";
-const DOT_FILE = "blueprint.dot";
+const DOT_FILE = "topology.dot";
 const CARD_PREFIX = "cards/";
 
 /**
@@ -433,7 +429,6 @@ function toManifest(value: unknown, file: string): BundleManifest {
     title: requireString(doc, "title", file),
     summary: requireString(doc, "summary", file),
     tags: requireStringList(doc, "tags", file),
-    ontologyVersion: requireString(doc, "ontologyVersion", file),
   };
   const description = optionalString(doc, "description", file);
   if (description !== undefined) manifest.description = description;
@@ -450,8 +445,11 @@ function toManifest(value: unknown, file: string): BundleManifest {
 
 function requireString(doc: Record<string, unknown>, key: string, file: string): string {
   const raw = doc[key];
-  // YAML happily reads `ontologyVersion: 1.0.0` as a string but `1.0` as a number,
-  // and a version is a string either way — coercing beats an error nobody expects.
+  /* YAML reads an unquoted `1.0.0` as a string but `1.0` as a number, and every value this
+     helper returns is text either way, so coercing beats an error nobody expects. The
+     manifest key that made this necessary was `ontologyVersion`, which no longer exists;
+     the coercion stays because the next unquoted numeric-looking value is a `slug` or a
+     `title`, and the failure mode is the same. */
   if (typeof raw === "number") return String(raw);
   if (typeof raw !== "string" || raw.trim() === "") {
     throw new Error(`${file} is missing a \`${key}\`, or it is not a non-empty string.`);

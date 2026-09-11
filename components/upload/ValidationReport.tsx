@@ -1,12 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { hasErrors, shortDigest, summarize, type LoadBundleResult } from "@/lib/core";
-import { autonomyStatement, cx } from "@/lib/format";
+import { isReleasable, shortDigest, summarize, type LoadBundleResult } from "@/lib/core";
+import { cx } from "@/lib/format";
 import { graphForBlueprint } from "@/lib/graph-seed";
-import { SourceBadge } from "@/components/ui/Badge";
-import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
-import { DiagnosticList } from "@/components/ui/DiagnosticList";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { BLOCK_MAX_HEIGHT, BLOCK_WIDTH } from "@/components/graph/block";
@@ -21,14 +18,10 @@ import { bundleProgress } from "./progress";
 /**
  * The bundle-relative name every diagnostic on the topology is located against —
  * `lib/core/bundle/resolve.ts`'s own `DOT_FILE`. The source panel below wears it as its
- * title so a reader reading `blueprint.dot:2:3` in the validator report can see, without
+ * title so a reader reading `topology.dot:2:3` in the validator report can see, without
  * translating anything, which panel holds line 2.
  */
-const DOT_FILE = "blueprint.dot";
-
-function clamp(value: number, low: number, high: number): number {
-  return value < low ? low : value > high ? high : value;
-}
+const DOT_FILE = "topology.dot";
 
 /**
  * "2 errors · 1 warning", or the affirmative form. Words, never a colour alone.
@@ -48,11 +41,10 @@ export function verdictLine(result: LoadBundleResult): string {
   return parts.length === 0 ? "nothing to report" : parts.join(" · ");
 }
 
-const LABEL = "label";
 
 /**
  * What the validator found, and — only when it found nothing fatal — the schematic and
- * the two computed scores it unlocked.
+ * the two computed readings it unlocked.
  *
  * §8.3: the validator is the gate. A bundle carrying an error gets its diagnostics and
  * nothing else, because a score read off a graph the engine could not resolve is a
@@ -72,7 +64,7 @@ const LABEL = "label";
  * branch only, which put the DOT one click away exactly when nothing was wrong with it
  * and out of reach the moment a diagnostic cited a line of it. It is rendered for any
  * bundle that carries a topology now, open by default when the bundle was rejected, and
- * the cited lines are named above it so `blueprint.dot:2:3` and the gutter agree.
+ * the cited lines are named above it so `topology.dot:2:3` and the gutter agree.
  */
 export function ValidationReport({
   result,
@@ -93,8 +85,16 @@ export function ValidationReport({
   className?: string;
 }) {
   const { blueprint, analysis } = result;
-  const failed = hasErrors(result.diagnostics);
-  const usable = blueprint !== undefined && analysis !== undefined && !failed;
+  /* D-109: `usable` decides whether a score is shown, and it has to keep agreeing with
+     `bundleProgress`'s `resolves` or the same bundle gets two verdicts on one screen. Both
+     ask `isReleasable`, so a port that does not fit is now printed as a finding under a
+     score rather than used to withhold one.
+
+     A separate `failed = hasErrors(...)` stood here and fed only this line. It is gone
+     rather than re-pointed at `isStorable`: `progress.state === "rejected"` below is that
+     question already, and a second spelling of it beside the first is how two readings of
+     one bundle start disagreeing on one screen. */
+  const usable = blueprint !== undefined && analysis !== undefined && isReleasable(result.diagnostics);
 
   /* Which of three states this bundle is in, and how far the graph got. `components/
      upload/progress.ts` says at length why "rejected" is the wrong word for a folder the
@@ -162,9 +162,6 @@ export function ValidationReport({
   /* The bytes the reader dropped when nothing resolved, the bytes the digest was taken
      over when something did. */
   const source = blueprint?.dot ?? dot;
-
-  const securityPercent =
-    analysis === undefined ? 0 : Math.round((clamp(analysis.security.raw, 0, 4) / 4) * 100);
 
   return (
     <div className={cx("flex flex-col gap-5", className)}>
@@ -266,90 +263,37 @@ export function ValidationReport({
       {!usable && (
         <div className="rounded-lg border border-line bg-surface-2/40 p-5">
           <h3 className="font-display text-xl font-semibold text-fg">
-            {unfinished ? "Not finished, and nothing wrong" : "No schematic and no scores"}
+            {unfinished ? "Not finished. Nothing wrong." : "No schematic and no readings"}
           </h3>
           <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
             {blueprint === undefined
               ? "The DOT could not be parsed into a directed graph, so there is no topology to draw and nothing to analyse. The source is open below, with the lines the validator named."
               : unfinished
-                ? `Your topology parsed and ${progress.placed} of its ${progress.total} nodes have their card. The rest are named below, one line each, and none of it is a defect: a blueprint is written a card at a time and this is what the middle of that looks like. The schematic and the two computed readings wait for the last card, because a number taken over nodes the engine could not open would have nothing behind it. Drop the folder again whenever you like.`
-                : "The bundle resolved far enough to report on, but it still carries errors. DarkPrint will not put a number on a graph whose references it could not check, fix the errors below and the schematic, the autonomy fraction and the security ledger appear here."}
+                ? `Your topology parsed. ${progress.placed} of its ${progress.total} nodes have their card. The rest are named below, one line each. A blueprint is written a card at a time, and this stage is normal. The schematic and the two computed readings wait for the last card, because a number taken over nodes the engine could not open would have no basis. Drop the folder again whenever you like.`
+                : "The bundle resolved far enough to report on, but it still has errors. DarkPrint will not put a number on a graph whose references it could not check. Fix the errors below. Then the schematic, the autonomy fraction and the security ledger appear here."}
           </p>
         </div>
       )}
 
-      {/* ---------- every complaint, errors first ---------- */}
-      <DiagnosticList diagnostics={result.diagnostics} title="Validator report" />
+      {/* THREE READINGS CAME OFF THIS PREVIEW, 2026-09-06, on the owner's instruction:
+         "in preview of the upload, remove Validator report, Auto-computed from your graph,
+         Autonomy and static risk sections as we removed that feature."
+
+         `Validator report` was the whole diagnostic list. `Auto-computed from your graph`
+         was the heading over the pair, and the pair was `Autonomy` (the meter and its
+         per-node contributions) and `Static risk exposure`. They were the last mounts of
+         the scoring reading the owner has been taking off the site since 2026-09-04, and
+         this was the surface where it survived longest because it is the one place a reader
+         is looking at their OWN graph rather than somebody else's.
+
+         WHAT STAYS, and it is the reason this is a sub-range cut rather than dropping the
+         `usable` branch whole: `BlueprintCanvas` below is the drawing of the uploaded graph,
+         and the topology panel under it is the file. Neither is a score. An earlier pass
+         nearly deleted `BlueprintCanvas` as dead and it is live only here, so the branch
+         that renders it is load-bearing. */}
 
       {usable && (
         <>
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="font-display text-xl font-semibold text-fg">
-                Auto-computed from your graph
-              </h3>
-              <p className="prose-lane mt-2 text-sm leading-relaxed text-muted">
-                Two of the six scores are produced by static analysis of the schematic
-                the moment it validates, no run required.
-              </p>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              {/* Autonomy */}
-              <div className="panel flex flex-col gap-3 bg-surface-2/40 p-5">
-                <div className="flex items-center justify-between">
-                  <span className={LABEL}>Autonomy</span>
-                  <SourceBadge source="auto" />
-                </div>
-                {/* The per-node reading goes with the class here for the same reason it
-                    does on the gallery tile and the blueprint header: the dark factory
-                    token is gated on the flag alone, while both counterpart statements
-                    are gated on having the contributions. Without them a closed-loop
-                    upload answered with two tokens and a supervised one with a single
-                    token and nothing in its place — on the one surface where somebody is
-                    looking at their own graph, which is exactly where doc 2 §1.1 says the
-                    asymmetry does its damage. */}
-                <AutonomyMeter
-                  autonomy={{
-                    autonomyClass: analysis.autonomy.autonomyClass,
-                    isDarkFactory: analysis.autonomy.isDarkFactory,
-                    level: analysis.autonomy.level,
-                    label: analysis.autonomy.label,
-                    blurb: autonomyStatement(analysis.autonomy.rationale),
-                  }}
-                  contributions={analysis.autonomy.contributions}
-                />
-                <p className="font-mono text-xs text-dim">
-                  {analysis.autonomy.autonomousNodes} of {analysis.autonomy.totalNodes}{" "}
-                  nodes run unattended
-                </p>
-                <p className="text-xs leading-relaxed text-muted">
-                  {autonomyStatement(analysis.autonomy.rationale)}
-                </p>
-              </div>
-
-              {/* Security */}
-              <div className="panel flex flex-col gap-3 bg-surface-2/40 p-5">
-                <div className="flex items-center justify-between">
-                  <span className={LABEL}>Static risk exposure</span>
-                  <SourceBadge source="auto" />
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-display text-3xl font-semibold text-cyan tabular-nums">
-                    {securityPercent}
-                  </span>
-                  <span className="font-mono text-xs text-dim">/ 100</span>
-                </div>
-                <p className="font-mono text-xs text-dim">
-                  level {analysis.security.level} · {analysis.security.raw.toFixed(2)} of
-                  4 points kept
-                </p>
-                <p className="text-xs leading-relaxed text-muted">
-                  {analysis.security.rationale}
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* The ledger the two readings are made of: every contribution and every
               finding, cross-referenced by node. The drawing above is the other half. */}
@@ -359,7 +303,7 @@ export function ValidationReport({
 
       {/* ---------- the topology, whatever the verdict ----------
           This sat inside the branch above, so a reader told the problem was at
-          `blueprint.dot:2:3` was shown the file only in the case where nothing was wrong
+          `topology.dot:2:3` was shown the file only in the case where nothing was wrong
           with it. It is here now for any bundle that carries a topology at all, and it
           opens itself on a rejection: the fix starts by looking at the line. */}
       {source !== undefined && (

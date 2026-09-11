@@ -122,8 +122,9 @@ interface AncestorChain {
  * on top. An extension sharing an id with a base term replaces it in place — the view keeps
  * working, and `validate()` reports the shadowing.
  *
- * The view keeps the *base* version: a local overlay does not mint a new vocabulary version,
- * which is what lets a card still declare `ontology_version: 0.1.0` while using local terms.
+ * A local overlay does not mint a vocabulary of its own. There is nothing left to mint:
+ * the vocabulary carries no version, so an overlay is exactly what it looks like, the core
+ * terms with the bundle's own terms layered on, and the merged view keeps the base title.
  */
 export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[]): OntologyView {
   /* ---------- merge (§7) ---------- */
@@ -185,7 +186,6 @@ export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[
   for (const ofKind of termsByKind.values()) ofKind.sort((a, b) => cmpId(a.id, b.id));
 
   const merged: Ontology = Object.freeze({
-    version: base.version,
     title: base.title,
     terms: Object.freeze(terms.slice()),
   });
@@ -484,4 +484,169 @@ export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[
     },
     validate,
   };
+}
+
+/* ============================================================
+   Who acts at a node — the one answer, in one place
+   ------------------------------------------------------------
+   A card used to say twice whether a person acts at its node:
+   once as `type`, once as a `requires_human` boolean beside it.
+   Nothing held the two together in the direction that mattered,
+   so `type: human-gate` with `requires_human: false` was a
+   document the archive would load, the schematic would draw with
+   a person on it, and the autonomy reading would count as
+   unattended. Two surfaces of the same page, disagreeing, with
+   no diagnostic between them.
+
+   The field is gone and `type` is the whole answer. This is
+   where that answer is computed, and every reader of it —
+   `card/validate.ts`, `analysis/autonomy.ts`, the node shelf,
+   the profile shelves, the search facet — calls in here rather
+   than testing the category itself. A second implementation is
+   a second source of truth wearing a different name, which is
+   the defect this replaced.
+
+   Membership is `isA(type, "human-in-the-loop")` and nothing
+   else (doc 3 §6). `impliesHuman` is deliberately NOT a second
+   membership rule: it only picks the most specific term to cite
+   inside a chain that already qualifies. A local type carrying
+   the flag but rooted outside the category is not a human node,
+   because two independent ways to be "human" would defeat the
+   point of having the category at all.
+   ============================================================ */
+
+/** Doc 3 §3's abstract category, and the only membership test performed on a `type`. */
+export const HUMAN_IN_THE_LOOP = "human-in-the-loop";
+
+/** The term to name as the reason a node is staffed, and how the declared type reaches it. */
+export interface HumanCitation {
+  term: string;
+  /** `self` — the type itself; `broader` — an ancestor; `deprecation` — its successor. */
+  via: "self" | "broader" | "deprecation";
+}
+
+/**
+ * Whether this `node-type` puts a person in the loop, and which term says so.
+ *
+ * `undefined` is the complete answer for a type that does not: a node runs unattended
+ * because nothing in its type asks for a person, not because a second field said so.
+ */
+export function humanCitation(ontology: OntologyView, type: string): HumanCitation | undefined {
+  const own = citationWithin(ontology, type);
+  if (own !== undefined) return own;
+
+  // Doc 1 §6.2: a deprecated term stays valid, and it may predate the category its
+  // successor sits under, so follow the redirect once before concluding otherwise.
+  const resolved = ontology.resolve(type, "node-type");
+  if (resolved === undefined || resolved.term.id === type) return undefined;
+  if (citationWithin(ontology, resolved.term.id) === undefined) return undefined;
+  // The successor is cited rather than the ancestor that carries the flag: "superseded by
+  // human-gate" is true, "superseded by human-in-the-loop" would not be.
+  return { term: resolved.term.id, via: "deprecation" };
+}
+
+/**
+ * True when a person acts at a node of this type.
+ *
+ * The derived reading of what `requires_human` used to store, and the only one. A caller
+ * with no vocabulary cannot ask this question, which is why it takes a view rather than
+ * defaulting to `false` on an absent one: "nobody is here" and "nothing could tell me" are
+ * different answers and a surface has to be able to draw them differently.
+ */
+export function requiresHuman(ontology: OntologyView, type: string): boolean {
+  return humanCitation(ontology, type) !== undefined;
+}
+
+/** The citation for a type taken as written, or `undefined` when it is not in the category. */
+function citationWithin(ontology: OntologyView, id: string): HumanCitation | undefined {
+  if (!ontology.isA(id, HUMAN_IN_THE_LOOP)) return undefined;
+  for (const term of ontology.ancestors(id)) {
+    if (term.impliesHuman === true) {
+      return { term: term.id, via: term.id === id ? "self" : "broader" };
+    }
+  }
+  // Reached by a term that sits under the category without repeating the flag — and by
+  // the category itself, which `isA` answers reflexively even if the view has never
+  // heard of it, so this branch never depends on the term object existing.
+  return { term: HUMAN_IN_THE_LOOP, via: id === HUMAN_IN_THE_LOOP ? "self" : "broader" };
+}
+
+/* ============================================================
+   What a node decides — the graph's control points
+   ------------------------------------------------------------
+   The autonomy reading used to be one headcount: the share of
+   nodes nobody stands in. A headcount weighs every node the same,
+   so it cannot tell a graph whose six branches all run alone from
+   a graph with one node in it, and it has no way at all to say
+   that a `manager-loop` decides whether the rest of the graph
+   runs a second time. Who does the work and who decides what work
+   happens are two questions, and one fraction was answering only
+   the first.
+
+   A *control point* is a node whose type decides whether and how
+   other nodes run. Three families qualify and they do not share a
+   parent: `evaluative` (a verdict the graph branches on),
+   `orchestration` (how many copies of a step exist, when they
+   converge, whether the run repeats), and `human-gate`, whose
+   definition in doc 3 §3 is that a person approves or rejects.
+
+   Membership is therefore the inherited `governsFlow` flag rather
+   than an `isA` test. `human-gate` is the reason: `broader` holds
+   one parent and its parent is already `human-in-the-loop`, so no
+   single ancestor contains the set. This is the mirror image of
+   the section above, where a category does exist and `isA` is the
+   whole rule — and it is the one place in this file where a flag
+   decides membership, which is why it is stated here rather than
+   left to be inferred from the call site.
+   ============================================================ */
+
+/** The term to name as the reason a node decides, and how the declared type reaches it. */
+export interface ControlCitation {
+  term: string;
+  /** `self` — the type itself; `broader` — an ancestor; `deprecation` — its successor. */
+  via: "self" | "broader" | "deprecation";
+}
+
+/**
+ * Whether this `node-type` decides whether and how other nodes run, and which term says so.
+ *
+ * `undefined` is the complete answer for a type that does not: an agent that writes code
+ * shapes nothing about the run around it, however much of the run's value it produces.
+ */
+export function controlCitation(
+  ontology: OntologyView,
+  type: string,
+): ControlCitation | undefined {
+  const own = controlWithin(ontology, type);
+  if (own !== undefined) return own;
+
+  // Doc 1 §6.2, exactly as `humanCitation` reads it: a deprecated term stays valid and may
+  // predate the branch its successor sits under, so follow the redirect once before
+  // concluding the node decides nothing.
+  const resolved = ontology.resolve(type, "node-type");
+  if (resolved === undefined || resolved.term.id === type) return undefined;
+  if (controlWithin(ontology, resolved.term.id) === undefined) return undefined;
+  return { term: resolved.term.id, via: "deprecation" };
+}
+
+/** True when a node of this type is one of the graph's control points. */
+export function isControlPoint(ontology: OntologyView, type: string): boolean {
+  return controlCitation(ontology, type) !== undefined;
+}
+
+/**
+ * The citation for a type taken as written, or `undefined` when nothing in its chain
+ * governs the flow.
+ *
+ * Nearest first, so a local type rooted at `decision` cites `decision` and not
+ * `evaluative`: "a kind of decision" is the specific thing that is true, the way
+ * `citationWithin` prefers `human-gate` over the category above it.
+ */
+function controlWithin(ontology: OntologyView, id: string): ControlCitation | undefined {
+  for (const term of ontology.ancestors(id)) {
+    if (term.governsFlow === true) {
+      return { term: term.id, via: term.id === id ? "self" : "broader" };
+    }
+  }
+  return undefined;
 }

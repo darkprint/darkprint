@@ -44,3 +44,12 @@ next-env.d.ts
 # came with them. They are read while a pass is built and never shipped, and the
 # repository has never carried one — see the note this line replaces in git history.
 /design_handoff_*/
+
+# design-sync (claude.ai/design import). Staged converter scripts, generated
+# bundle, and machine state. The durable inputs under .design-sync/ — config,
+# NOTES, conventions, previews, overrides, shims, fonts — are committed.
+/.ds-sync/
+/ds-bundle/
+/.design-sync/.cache/
+/.design-sync/learnings/
+/.design-sync/node_modules

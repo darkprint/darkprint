@@ -51,7 +51,7 @@ export function absencesFor(
   const cost =
     demo === undefined
       ? ""
-      : ` Write it and the same analyzer reads security level ${demo.leaked.security.level} where it reads ${demo.published.analysis.security.level} now.`;
+      : ` Write it, and the same analyzer will read security level ${demo.leaked.security.level} at the place it now reads ${demo.published.analysis.security.level}.`;
 
   return [
     {

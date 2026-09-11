@@ -28,13 +28,12 @@ outputs:
     type: text
     description: The question as asked, trimmed to a single stated ask with its scope attached.
 dependencies: []
-cannot:
+cannot: []
+will_not:
   - answer the question it opens the run with
   - retrieve anything
 
-requires_human: false
 risk_markers: []
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

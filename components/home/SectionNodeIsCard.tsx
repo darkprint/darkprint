@@ -1,190 +1,52 @@
 /* ============================================================
-   Beat 3 of redesign spec §2: every node is a card, and here is
-   one being read.
+   Beat 3: every node is a card, and here is one.
 
-   ── The reversal, recorded ──
-   This beat carried an annotated YAML listing. Spec §2 ruled a
-   YAML block off the landing, the listing moved whole to
-   `/spec/card`, and what stood here instead was a drawing: one lit
-   disc with a blank document hanging off it, four grey rules
-   standing in for lines nobody could read.
+   The figure is `CardStackFigure`, the shape `/what-a-blueprint-is`
+   draws too: the blueprint's nodes in a row with this one lit and
+   tethered, over a plate carrying the card's identity, what it does,
+   its interface and the one thing that may never arrive. One figure
+   for one idea, drawn the same way wherever the idea appears.
 
-   The author has overruled that: "I'd like you reprohose in the
-   home in the current Every node is a card the idea reported in
-   spec/card, where you scroll down and you can show all the
-   component of a card. But in a lightweight version without using
-   as background the blueprint."
+   `code-builder@1.0.0`, off the archive, because its plate ends on
+   `cannot: acceptance-criteria`, and the resolver really does enforce
+   that line. `/spec/card` opens the same document in full, so the two
+   beats are one card seen twice rather than two examples.
 
-   So the listing is back, in `CardWalk`. **Do not move it off
-   again** on the strength of spec §2: that line is superseded, and
-   the drawing it protected said a node has a document behind it
-   without ever showing one, which is the weaker claim on the page
-   that has to make it.
-
-   `CardWalk` began as `NodeCardStage`'s choreography at a third of
-   its weight, on a plain ground rather than the graticule. It is no
-   longer a lighter copy of anything: the author asked `/spec/card`
-   for "the same as the home's" panel, the stage is deleted, and
-   this beat and that page are now two mounts of one component. The
-   only prop that differs is `bodies` — this one keeps the shorter
-   landing wording, which is what `beats.test.ts` measures the beat
-   against.
-
-   ── Why the card is read and not typed ──
-   `code-builder@1.0.0`, off the archive, because the seventh part
-   of the walk is `cannot: [acceptance-criteria]` and the resolver
-   really does enforce it. `/spec/card` opens the same document at
-   full length, so the two beats are one card seen twice rather
-   than two examples.
-
-   Server component: `lib/content` is server-only, and the YAML has
-   to be *text* here so the listing that lands in the prerendered
-   HTML is the finished one.
+   Server component: `lib/content` is server-only, and the figure has
+   no interaction, so the prerendered HTML is the finished beat.
    ============================================================ */
 
-import { cardSource, getNodeCard } from "@/lib/content";
+import { getNodeCard } from "@/lib/content";
+import { CardStackFigure } from "@/components/learn/PartFigures";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 import { BeatCaption } from "./BeatCaption";
-import { CardWalk } from "./nodecard/CardWalk";
-
-const CARD_REF = "code-builder@1.0.0";
-
-/**
- * Top-level keys this beat does not show.
- *
- * `notes` went first (2026-08-08): a nine-line paragraph arguing doc 1 §3.2 — what
- * isolation looks like on a card, the 3-gram Jaccard similarity against
- * `spec-planner@1.0.0` measured at 0.0356 against a 0.35 threshold, and what
- * `bundle/prohibition-violated` fires on. Every word of it is true, it stays in the file
- * and on `/nodes/code-builder`, and a third of the listing being a footnote about a
- * similarity metric is the reference arriving inside the introduction.
- *
- * The other five went the same day, on the same instruction: "remove from the yaml of the
- * card in the home page the fields requires_human, risk_markers, version, author,
- * ontology_version as they are unuseful details here to show to the user."
- *
- * They are the card's METADATA, and this beat is not about a card's metadata. Two of them
- * are empty or false, `version` is already printed in the figure's own header and in the
- * rail above the listing, and `author` and `ontology_version` are provenance — real, worth
- * having, and the business of `/nodes/[...id]`, where a reader is deciding whether to trust
- * a card rather than learning what one is.
- *
- * Nothing annotated is at risk: `annotations.ts` anchors its nine runs on `id`/`name`/
- * `type`/`phase`, `action`, `spec`, `model`, `tools`/`mcp`, `skill`, `inputs`, `outputs`
- * and `cannot`, and not one of these six is among them. The last run ends at `cannot`, and
- * all six sit below it.
- */
-const HIDDEN_KEYS = [
-  "notes",
-  "requires_human",
-  "risk_markers",
-  "version",
-  "author",
-  "ontology_version",
-] as const;
-
-/**
- * The card with those keys, and anything indented under them, taken out.
- *
- * Block scalars and lists are why the value is "the indented run under the key" rather than
- * "the rest of the line": `notes:` is a `>-` block and `risk_markers:` could hold a list, so
- * the filter drops the key's line and every line indented under it, stopping at the first
- * line that starts in column zero. `resolveAnnotations` re-derives its parts from whatever
- * it is handed, so the walk renumbers itself and re-marks its lines rather than pointing at
- * lines that moved.
- *
- * Trailing blank lines collapse so the file does not end in the holes the removals left —
- * five of the six are consecutive at the foot of this card, and without it the listing
- * closed on four empty rows.
- */
-function withoutKeys(card: string, keys: readonly string[]): string {
-  let lines = card.split("\n");
-  for (const key of keys) {
-    const at = lines.findIndex((line) => new RegExp(`^${key}:`).test(line));
-    if (at === -1) continue;
-    let end = at + 1;
-    while (end < lines.length && (lines[end].trim() === "" || /^\s/.test(lines[end]))) end += 1;
-    lines = [...lines.slice(0, at), ...lines.slice(end)];
-  }
-  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
-}
 
 export function SectionNodeIsCard() {
-  const source = cardSource(CARD_REF);
-  /* The parsed card as well as its text. The face `CardWalk` opens on is
-     `CardStackFigure`, which `/what-a-blueprint-is` already draws — the author asked for
-     that shape rather than the one this beat had — and it reads a `NodeCard` rather than
-     the document. Same card, two readings, and both come off the archive. */
   const card = getNodeCard("code-builder", "1.0.0")?.card;
-  if (source === undefined || card === undefined) return null;
+  if (card === undefined) return null;
 
   return (
     <section id="node" className="bg-surface py-20 sm:py-28">
       <div className="container-page">
-        {/* Centred, on the author's instruction (2026-08-08), and the reason the old note
-            here gave for the left margin has expired. It argued that "the walk below is a
-            listing beside a list, and both start on the left margin" — but the walk no
-            longer OPENS on the listing. It opens on the card, which is a 38rem figure
-            centred in its own cell, and a left-aligned heading over a centred card is the
-            mismatch the note was written to prevent, pointing the other way.
+        {/* Centred over a centred figure, matching the beat above it. No eyebrow, because
+            `.eyebrow` is rationed to one per page and the hero spends it. Amber is the card
+            register's own colour: `app/globals.css` gives it that job, and the figure under
+            it draws copper, a neighbour on the wheel, so the beat reads as one warm block
+            against the cyan blueprint beat above. */}
+        <SectionHeading
+          title={<span className="text-amber">Every node is a card</span>}
+          lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it."
+          align="center"
+          className="mx-auto"
+        />
 
-            It matches the beat above it either way: `SectionBlueprint` centres the same
-            pair over the same kind of figure. */}
-        {/* No eyebrow. `.eyebrow` is rationed to one per page or per full-bleed band, and
-            "ONE NODE" spent one of them saying what the headline beside it already says
-            in bigger type. What was left was a cyan mono run competing with the cyan keys
-            in the listing below it for the same reader's attention. */}
-        {/* The lead ended "Nine parts, on a card the archive really stores." until the
-            author asked it out. It was the deck counting the figure's own steps: the walk
-            numbers its nine parts 01 to 09 down the rail and marks each one's lines in the
-            margin, so the sentence was telling a reader a number they were about to be
-            shown — and "the archive really stores" is a claim the figure makes by being
-            drawn from the file, not one the deck has to assert. */}
-        {/* The heading is passed INTO the walk and rendered inside its pinned box rather
-            than drawn here.
-
-            It was a sticky SIBLING of the figure, which is the bug the author caught: two
-            sticky boxes in one scroll container each take their own offset, so the distance
-            between them depended on which of the two had pinned yet — 40px in flow, and
-            something else once both were stuck. One box cannot come apart from itself. */}
-
-        {/* `mt-4`, not `mt-10`. The other 24px of the author's "it is too distant" — the
-            rest came out of the card's own placement inside the cell, see `FACE_TOP`. A
-            figure that turns into the file it describes belongs against its deck rather
-            than a section-gap away from it; the 40px rhythm is for a section following a
-            section, and this is a caption following its own picture. */}
-        <div className="mt-4">
-          <CardWalk
-            /* The trailing newline every file on disk ends with would render as a blank
-               line 53 under a 52-line card, and would count in the walk's arithmetic. */
-            source={withoutKeys(source, HIDDEN_KEYS)}
-            cardRef={CARD_REF}
-            card={card}
-            heading={
-              <SectionHeading
-                /* The card's own register, on the author's instruction: "colour using the
-                   amber colour typical of a node."
-
-                   `copper-line` and NOT `--color-amber`: `app/globals.css` declares the
-                   copper pole for exactly this and writes down why it must never become
-                   amber, which is spent on `ComingSoonBadge` and `.route-box`. A node card
-                   is the most literally-built thing on this site, read off `content/cards/`
-                   at build time with the engine enforcing what it declares. Copper IS the
-                   warm colour a reader means when they point at the card figure. */
-                title={<span className="text-copper-line">Every node is a card</span>}
-                lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it."
-                align="center"
-                className="mx-auto"
-              />
-            }
-          />
+        <div className="mt-10 flex justify-center">
+          <CardStackFigure card={card} nodes={5} size="stage" />
         </div>
 
-        {/* Copper, on the author's instruction. The whole beat is the card's register —
-            heading, the lit node in the strip, the plate's own tether, the step numbers and
-            line spans down the walk — and the link out of it was the one thing in the block
-            still wearing the site default. */}
+        {/* Copper rather than cyan, so the beat does not hand off in the blueprint's colour;
+            `BeatCaption`'s tone map has no amber entry. */}
         <BeatCaption href="/spec/card" cta="Card format reference" tone="copper">
           Each node pins an exact card version: its job, interface, tool reach, and
           prohibitions. Reuse the card in another graph.

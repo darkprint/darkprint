@@ -1,7 +1,7 @@
 /* ============================================================
    DarkPrint core — ontology term model
    The controlled vocabulary the cards are instances of.
-   Doc 3 (ontology v0.1) §1 and §8, doc 1 §6.
+   Doc 3 §1, doc 1 §6.
    ============================================================ */
 
 /**
@@ -16,7 +16,17 @@ export type TermKind = "phase" | "node-type" | "risk-marker" | "data-type" | "to
 
 /** §6.2 — nothing is ever deleted; it is deprecated and pointed at its successor. */
 export interface TermDeprecation {
-  /** Ontology version in which it was deprecated. */
+  /**
+   * The release this term was retired in. **Provenance, not a version of the vocabulary.**
+   *
+   * It said "ontology version" until 2026-09-05, and that stopped being true when the owner
+   * had vocabulary versioning removed: there is no `Ontology.version` for this to name and
+   * nothing compares two of these. What survives is the fact a reader of a retired term
+   * actually wants — when it went — so the field is kept and the claim is corrected.
+   *
+   * `replacedBy` is the half a reader can act on and the half every surface prints; no
+   * surface prints this one, and `components/ontology/full-width.test.ts` keeps it that way.
+   */
   since: string;
   /** Canonical id that supersedes it. */
   replacedBy?: string;
@@ -34,7 +44,22 @@ export interface OntologyTerm {
   broader?: string;
   /** §6.2 — a deprecated term stays valid and points at its successor. */
   deprecated?: TermDeprecation;
-  /** Ontology version that introduced the term. */
+  /**
+   * The release this term entered the vocabulary in. **Provenance, not a version of the
+   * vocabulary.**
+   *
+   * The vocabulary has no version (see `Ontology` below), so this names no contract, gates
+   * nothing and is compared against nothing — every core term carries the release doc 3 was
+   * published as, and `core.test.ts` asserts they still agree with each other rather than
+   * with a number the ontology no longer has. It is kept because "when did this term appear"
+   * is a real question about a controlled vocabulary that outlives any one release, and the
+   * answer has nowhere else to live: a term is data, and data carries its own history or
+   * loses it.
+   *
+   * It is required rather than optional because `lib/content/ontology-file.ts` has always
+   * demanded it of a local term, and a field half the vocabulary omits answers "unknown"
+   * and "not recorded" with the same absence.
+   */
   since: string;
   /**
    * Security weight for a *locally namespaced* risk marker (doc 3 §7). Core markers
@@ -50,12 +75,37 @@ export interface OntologyTerm {
    * counted without touching the metric.
    */
   impliesHuman?: boolean;
+  /**
+   * True when a node of this type decides whether and how *other* nodes run: the
+   * `evaluative` branch, the `orchestration` branch, and `human-gate`, whose entire
+   * definition in doc 3 §3 is that a person approves or rejects.
+   *
+   * Unlike `impliesHuman` this flag **is** the membership rule, and it is inherited
+   * down `broader` the way `impliesHuman` is read. That asymmetry is forced: doc 3 §3
+   * already has a category for "a person acts here", so `isA` answers that question,
+   * while the nodes that govern control flow are spread across three categories and
+   * `human-gate`'s single `broader` slot is spent on `human-in-the-loop`. No `isA` test
+   * can name the set, and giving the vocabulary a second parent per term to make one
+   * possible would change the shape of every walk in `resolve.ts` for one metric.
+   *
+   * `ontology/resolve.ts`'s `controlCitation` is the only reader, for the same reason
+   * `humanCitation` is the only reader of `impliesHuman`: two implementations of a
+   * membership rule are two answers to one question.
+   */
+  governsFlow?: boolean;
 }
 
-/** A whole vocabulary: the core one, or a namespaced extension of it. */
+/**
+ * A whole vocabulary: the core one, or a namespaced extension of it.
+ *
+ * There is no `version` here. The vocabulary exists to name what an Attractor node IS,
+ * and Attractor has no ontology and no vocabulary version — it has shapes and handlers,
+ * fixed by its spec. A DarkPrint-only semver on top of that named a thing nothing else
+ * moved with, which is why D-105 suspended its own bump rule for want of a reason to
+ * apply it. Terms are still added and retired inside the one living vocabulary, through
+ * `deprecated`, which is the mechanism §6.2 actually needs.
+ */
 export interface Ontology {
-  /** Semver of the vocabulary itself. §6.2 */
-  version: string;
   title: string;
   terms: readonly OntologyTerm[];
 }

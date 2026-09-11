@@ -218,7 +218,9 @@ export function NodeInterfaces({
                   {dependency.known ? (
                     <Link
                       href={nodeHref(dependency.id)}
-                      className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg transition-colors hover:border-cyan hover:text-cyan"
+                      /* Amber on hover, the card register: every one of these
+                         dependencies is another CARD, and the link lands on its page. */
+                      className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg transition-colors hover:border-amber hover:text-amber"
                     >
                       <span
                         className="h-1 w-1 rounded-full bg-current"
@@ -240,9 +242,10 @@ export function NodeInterfaces({
               ))}
             </ul>
             <p className="text-xs leading-relaxed text-dim">
-              The upstream nodes this card expects to hear from. The resolver
-              checks each one against a real edge in every blueprint that pins the
-              card; unlinked names belong to a graph rather than to the library.
+              The upstream nodes this card expects to receive from. Whenever a
+              blueprint pins this card, each name is checked against a real edge in
+              that graph. A name without a link is not a published card; it refers to
+              a node inside some graph.
             </p>
           </>
         )}

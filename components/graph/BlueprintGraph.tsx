@@ -195,7 +195,7 @@ function SchematicEdge({
      that a graph whose columns are 54px apart with a 139px name to place has no clearance
      to find anyway. The first half is right and the second was an argument for the drawing
      the exemption was written against, not for the drawing this is. `/build` at stage
-     width has room now, and what the exemption actually bought there was `acceptance
+     width had room, and what the exemption actually bought there was `acceptance
      criteria` printed across the tester's kind row — the reader was shown `RIFIER` — and
      `failure evidence` across the debugger's `Debugger`. A label written over its own
      target's name is not reading as belonging to it; it is deleting it.
@@ -489,16 +489,19 @@ function WholeFrame({ across, className }: { across: FlowSpan; className: string
  *
  * A node whose seed carries a `cardId` draws its name as a link to `/nodes/<id>`, which
  * is spec part 3. Nothing on this component switches that on: the seed carries the id
- * only when the caller told `graphForBlueprint` the cards are in the registry, so
- * `/build`'s stage and the upload wizard's schematics carry none and the archive's do.
+ * only when the caller told `graphForBlueprint` the cards are in the registry, so the
+ * upload wizard's schematics carry none and the archive's do. `/build`'s stage was the
+ * other caller that carried none; the owner deleted that route on 2026-09-06 and the rule
+ * is unchanged by its going, since it was always about what the caller declared.
  *
  * That flag alone does **not** decide which mounted schematic shows links, and reading it
  * that way was a bug. One graph object can be handed to more than one mount: the blueprint
  * page passes the archive graph both to the canvas, where the links belong, and to the
  * four-pane view, where a pane reads a click on a node as its selection and an anchor
  * would navigate out of the page instead. A container that claims the click strips the
- * ids with `withoutCardLinks` before drawing — see `components/panes/GraphPane` and
- * `components/build/ChoiceGraphPane`. The explainability panel needs nothing: its
+ * ids with `withoutCardLinks` before drawing — see `components/panes/GraphPane`, which is
+ * the only such container left; `components/build/ChoiceGraphPane` was the second until
+ * `/build` was deleted on 2026-09-06. The explainability panel needs nothing: its
  * highlight buttons live outside this canvas and only ever set the `highlighted` prop.
  * See `AgentNode` for why the name and not the block.
  */
@@ -572,8 +575,10 @@ export function BlueprintGraph({
        be drawn on top of each other. A NUL cannot appear in a node id, so it is a
        collision-proof separator between the two halves of the key — written as the escape
        sequence rather than a raw byte, since a raw NUL in a source file is invisible in every
-       editor and makes git treat the whole file as binary (`components/build/source-hygiene.test.ts`
-       guards against this coming back). */
+       editor and makes git treat the whole file as binary. `components/site/source-hygiene.test.ts`
+       guards against this coming back, over every tracked `.ts` and `.tsx` in the repository;
+       it lived under `components/build` until the owner deleted that tree on 2026-09-06 and
+       the guard was moved out whole rather than deleted with it. */
     const runs = new Set(graph.edges.map((e) => `${e.source}\u0000${e.target}`));
 
     return graph.edges.map((e) => {
@@ -665,6 +670,12 @@ export function BlueprintGraph({
         panOnDrag
         preventScrolling={false}
         nodesConnectable={false}
+        /* The library's default screen-reader text promises moving and deleting nodes on a
+           drawing nothing here lets a reader edit. */
+        ariaLabelConfig={{
+          "node.a11yDescription.default": "Press Enter or Space to select a node and show its card.",
+          "edge.a11yDescription.default": "Press Enter or Space to select an edge.",
+        }}
         /* A selected node is lifted to z 1000 by default, which would put it back over
            the labels the moment a reader clicks one. Nothing in these graphs overlaps a
            sibling, so the lift buys nothing and costs the fix above. */

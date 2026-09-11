@@ -8,9 +8,12 @@
 
    This is, because everything downstream of that number assumes the drawn block is exactly
    `BLOCK_WIDTH` wide: `lib/content/layout.ts`'s `layerGap` clears it, `framing.ts` sizes a
-   frame edge beside it, and `components/build/stage-labels.test.ts` measures a node's name
-   inside it with no browser to check against. A block that quietly drew at 220 again would
-   leave all three arguing about a drawing none of them was looking at.
+   frame edge beside it, and `components/graph/schematic-boxes.ts` measures a node's name
+   inside it, with no browser to check against, by placing the box at `BLOCK_TEXT_INSET`
+   either side. That third name used to be `components/build/stage-labels.test.ts`, which
+   went with `/build`; `schematic-boxes.ts` is where that measurement lives now and
+   `components/panes/archive-labels.test.ts` is what calls it. A block that quietly drew at
+   220 again would leave all three arguing about a drawing none of them was looking at.
    ============================================================ */
 
 import { execFileSync } from "node:child_process";

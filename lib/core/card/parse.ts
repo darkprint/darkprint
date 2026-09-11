@@ -40,7 +40,7 @@ export function parseDocument(text: string, format: CardFormat, file?: string): 
     return {
       diagnostics: [
         error("card/parse-error", "The document is empty.", {
-          hint: "A card needs at least `id`, `name`, `type`, `action`, `version` and `ontology_version`.",
+          hint: "A card needs at least `id`, `name`, `type`, `action` and `version`.",
           location: locate(file, 1, 1),
         }),
       ],

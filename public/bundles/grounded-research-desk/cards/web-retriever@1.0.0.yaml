@@ -37,11 +37,11 @@ outputs:
     description: Retrieved passages, each with its URL, retrieval timestamp and rank.
 dependencies:
   - retrieval-planner
-cannot:
+cannot: []
+will_not:
   - summarise or rank a page for truth
   - drop a page it disbelieves
 
-requires_human: false
 risk_markers: []
 notes: >-
   This is the only node on the line that reaches outside the process, and nothing vets what it
@@ -53,4 +53,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

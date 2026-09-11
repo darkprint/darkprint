@@ -41,10 +41,9 @@ function card(spec: NodeSpec): NodeCard {
     outputs: spec.outputs ?? [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: spec.markers ?? [],
     version: "1.0.0",
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -69,7 +68,6 @@ function blueprint(
       title: "fixture",
       summary: "fixture",
       tags: [],
-      ontologyVersion: CORE_ONTOLOGY.version,
     },
     dot: "digraph g {}",
     digest: "sha256:fixture",

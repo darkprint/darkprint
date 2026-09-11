@@ -1,0 +1,58 @@
+-- 0009 -- drop ontology versioning: the registry keeps one vocabulary, the
+-- Attractor spec language's, and stops storing published versions of it.
+--
+-- DESTRUCTIVE, AND THE FIRST MIGRATION IN THIS DIRECTORY THAT IS. Two tables
+-- and one column are dropped. Read `0009_drop_ontology_versioning.down.sql`
+-- before rolling back: the down script restores the SHAPE and cannot restore
+-- the ROWS, and the owner was shown that trade and chose it.
+--
+-- WHY NOW, WHEN `lib/db/schema.ts` ARGUED THE DECLARATIONS SHOULD STAY.
+-- The comment above `ontologyVersion` in `lib/db/schema.ts` said the tables were
+-- read by nothing and written by nothing, that a row in them was therefore inert
+-- and could "neither help nor mislead", and that dropping them was "a schema
+-- change with its own ordering, and it is a separate decision from removing the
+-- code". That reasoning was right about the ordering and right to refuse to make
+-- the decision on its own. This migration is the owner making it: the product no
+-- longer scores a blueprint, so there is no score to resolve against a
+-- historical vocabulary, and the one living vocabulary is `CORE_ONTOLOGY` in the
+-- process rather than a row here.
+--
+-- WHAT THE OWNER WAS SHOWN BEFORE CHOOSING. `release.scored_ontology_version_id`
+-- is the only column in the database that ever named WHICH published vocabulary
+-- a stored score was computed under, as a foreign key rather than as a string. A
+-- down migration can recreate the column but not repopulate it, so this drop is
+-- one-way for the data even though it is reversible for the schema. The owner
+-- was told that and chose the drop anyway. The reason the loss is survivable and
+-- not merely accepted: the version a score was computed under is ALSO stamped
+-- inside the score itself, at `release.autonomy ->> 'ontologyVersion'`, which is
+-- the copy `lib/server/registry/scores.ts` has always read. The column was the
+-- redundant copy and the jsonb one is the copy every reader used.
+--
+-- WHY `ontology_term` GOES TOO, WHEN THE INSTRUCTION NAMED ONLY `ontology_version`.
+-- Not a scope decision, a foreign key. `ontology_term.ontology_version_id` is NOT
+-- NULL and references `ontology_version`, and the table's only unique key is
+-- (`ontology_version_id`, `term_id`) -- so `ontology_term` cannot be kept once
+-- versions are gone without leaving a NOT NULL column pointing at a table that
+-- does not exist and a uniqueness rule keyed on it. The alternative spelling,
+-- `DROP TABLE "ontology_version" CASCADE`, produces exactly that wreck silently.
+-- It is dropped here explicitly instead, and it is dead by the same measurement
+-- as its parent: no module under `lib/server/**` reads or writes it.
+--
+-- REPORTED RATHER THAN SILENTLY AVOIDED, THE SAME WAY 0007_drafts REPORTED ITS OWN.
+-- `ontology_version` and `ontology_term` are two of the ten tables
+-- `tests/server/t005/existing.test.ts` freezes against `baseline.json`
+-- (BASE_TABLES), and `release` is a third. This migration removes two of those
+-- ten tables and one column from a third, which is the largest delta that guard
+-- has ever been asked to license. `tests/server/t005/**` is not this task's
+-- `Owns`, so the fix is the orchestrator's: `LICENSED_DELTAS` needs the removed
+-- cells added by name, and `BASE_TABLES` itself has to lose two entries or
+-- `existing.test.ts`'s "all ten base tables are still present" cell reds. That
+-- second half is not a licensed delta at all -- it is the freeze's own subject
+-- shrinking -- and it wants a ruling rather than an edit.
+
+-- Dependency order: the referencing column first, then the child table, then the
+-- parent. No CASCADE anywhere -- a `DROP ... CASCADE` reaches past the objects
+-- this migration wrote, and `release` is a table eight merged tasks query.
+alter table "release" drop column "scored_ontology_version_id";
+drop table "ontology_term";
+drop table "ontology_version";

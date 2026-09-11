@@ -38,17 +38,15 @@ outputs:
     description: The work passed straight through, untouched, because confidence cleared the bar.
 dependencies:
   - qa
-cannot:
+cannot: []
+will_not:
   - decide a parked case itself
 
-requires_human: true
 risk_markers: []
 notes: >-
   `context` is optional because an edge carries a single value: the QA step wires its verdict,
-  and the escalation pulls the draft it graded from the run record. The `requires_human` flag is
-  redundant with the node type and set anyway, the human gate should be legible without an
-  ontology lookup.
+  and the escalation pulls the draft it graded from the run record. The `human-gate` type is the
+  whole of what says a person acts here, and nothing on the card can contradict it.
 
 version: 1.0.0
 author: sol-antczak
-ontology_version: 0.1.0

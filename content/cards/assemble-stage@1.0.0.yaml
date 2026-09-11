@@ -33,12 +33,11 @@ outputs:
     description: The finished artefact plus the trace of which stages contributed which part of it.
 dependencies:
   - transform-stage
-cannot:
+cannot: []
+will_not:
   - emit a half-built bundle
 
-requires_human: false
 risk_markers: []
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

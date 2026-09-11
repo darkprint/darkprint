@@ -254,7 +254,7 @@ export function SideRail({
                  state. So on `/nodes/<id>`, where every row is an anchor and every row
                  carries a `:target` mark, the mark lit only for a reader who ARRIVED on
                  the fragment: opening `#interfaces` in the address bar drew the cyan edge,
-                 clicking `Cannot receive` in the rail moved the scroll and left the edge
+                 clicking the prohibition row in the rail moved the scroll and left the edge
                  where it was. Measured in Chrome, both halves, before and after.
 
                  A native anchor to a fragment in the same document is exactly the case the

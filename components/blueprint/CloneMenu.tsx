@@ -1,73 +1,76 @@
 "use client";
 
-import { useCallback, useId, useRef, type KeyboardEvent } from "react";
+import { useCallback, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "@/lib/format";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/ui/menu-group";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-23): n/a — CLI, unbuilt
-
 /* ============================================================
-   Taking the folder from a terminal — GitHub's "Code ▾", honestly.
+   "Get card ▾": GitHub's "Code ▾" for a card, with its two items.
 
-   The author asked for "a sort of `git clone blueprint_name` as for github … when
-   downloading a blueprint or a yaml card". Half of that ask is real and half of it is a
-   word, and this component is built to keep the two apart.
+   Download is the card document itself, as a link the browser saves; Clone is the
+   `npx -y darkprint clone <owner>/<name>@<version>` line with a copy button. The panel is a
+   native `<details>` for the reasons `components/bundle/CodeMenu.tsx` gives: keyboard
+   operable with no code, findable in page, and wholly in the prerendered HTML whether open
+   or shut, which is what lets `components/site/honesty.test.ts` hold the sentence under
+   Clone in place.
 
-   ── What is real ──
-   The bundles are static files under `public/bundles/<slug>/`, and curl's own URL
-   globbing fetches all of them in one command, recreating `cards/` and `ontology/` under
-   a folder named after the blueprint. `lib/content/bundle-export.ts` builds the string —
-   `bundleDownloadCommand`, whose docblock records every flag and the alternative it was
-   measured against — from `bundleFilePaths`, so the command names exactly the files the
-   generator wrote and cannot drift from them. Verified end to end: exit 0, the folder
-   lands, `diff -r` against `public/bundles/<slug>` reports no differences.
+   There is no repository behind a card. The word "git" is not rendered by this component,
+   and the panel says in words what Download and Clone each hand over.
 
-   ── What is a word ──
-   There is no repository. No history, no remote, nothing to pull, nothing to check out.
-   The command copies a **snapshot**, and the difference is stated under it rather than
-   left for a reader to discover when `git pull` fails. The word "git" is not rendered by
-   this component at all: `components/site/honesty.test.ts` asserts its absence over both
-   kinds of this panel, and `lib/content/bundle-export.test.ts` asserts it over every
-   command the archive can produce. The word "clone" survives in exactly one place — the
-   `darkprint clone` line — because that is the thing that would genuinely be a clone, and
-   it wears `ComingSoonBadge` because it does not exist.
-
-   ── Why a native `<details>` ──
-   `components/ui/More.tsx` and every disclosure around it are `<details>`, and this is a
-   disclosure. That buys three things this panel specifically needs: it is keyboard
-   operable with no code (Enter/Space on the summary, tab into the panel), find-in-page
-   reaches the command inside it, and — the reason it is allowed to carry a "not built
-   yet" claim at all — the whole panel is in the prerendered HTML whether it is open or
-   shut. `ForkAction` gates its panel on `open && (…)`, so its badge is simply absent from
-   the static markup and no honesty assertion can be written over it. This one is always
-   there, which is the precondition for the ledger entry in
-   `components/site/honesty.test.ts` that holds the CLI's disclaimer in place.
-
-   ── Two shapes, one body ──
-   `menu` is the dropdown for a header row, where the reader is one click from it. `plain`
-   is the same body with no trigger, for inside `DownloadPanel`, which already sits behind
-   a `<More summary="Download">` — a dropdown inside a disclosure would be two clicks and
-   a floating panel inside a panel.
+   A client component, unlike `CodeMenu`, because a card page carries two dropdowns and
+   `menu-group` closes one when the other opens; a `<details>` alone cannot hear its
+   neighbour.
    ============================================================ */
 
-/** Which page this renders on, so the copy names the right thing. */
+/** Which page this renders on, so the trigger and the fence name the right thing. */
 type CloneKind = "blueprint" | "node";
+
+/**
+ * The trigger, per kind. A card is amber, the register the owner gave the card pages so a
+ * reader can tell at a glance which of the two they are on; a blueprint keeps the site's
+ * neutral outline. The amber trigger carries no amber ground at rest: a filled amber slab is
+ * the shape an honesty claim wears, and the register must not borrow it.
+ *
+ * `h-9` on the card, `h-10` on the blueprint. On a card this trigger stands third in a row
+ * of three beside two `ActionPill`s, which are `h-9`.
+ */
+const TRIGGER: Record<CloneKind, { label: string; pill: string; caret: string; download: string }> = {
+  blueprint: {
+    label: "Get blueprint",
+    pill: "h-10 border-line-bright bg-transparent text-fg hoverable:hover:border-cyan hoverable:hover:text-cyan",
+    caret: "text-dim",
+    download: "border-line-bright text-fg hoverable:hover:border-cyan hoverable:hover:text-cyan",
+  },
+  node: {
+    label: "Get card",
+    pill: "h-9 border-amber/60 bg-transparent text-amber hoverable:hover:border-amber hoverable:hover:bg-amber/10",
+    caret: "text-amber",
+    download: "border-amber/60 text-amber hoverable:hover:border-amber hoverable:hover:bg-amber/10",
+  },
+};
 
 export function CloneMenu({
   kind,
-  command,
-  cliCommand,
+  cloneCommand,
+  download,
   variant = "menu",
   className,
 }: {
   kind: CloneKind;
-  /** `bundleDownloadCommand(...)` / `cardDownloadCommand(...)`, computed at build time. */
-  command: string;
-  /** What `darkprint clone` would read once there is a `darkprint`. Never runnable. */
-  cliCommand: string;
+  /** The `npx -y darkprint clone …` line, built by the caller so the CLI's grammar has one home. */
+  cloneCommand: string;
+  /**
+   * The Download item: an `<a download>` the reader presses to save the file.
+   *
+   * A `ReactNode` rather than an href, so it stays SERVER-rendered in the caller. The card
+   * page's link carries the whole card document in a `data:` URI; handed over as a string
+   * it would be serialised into this client component's payload as well as into the markup,
+   * for a link that does not need a client at all. Absent when there is no stored document,
+   * and the item then says so rather than offering a link to nothing.
+   */
+  download?: ReactNode;
   variant?: "menu" | "plain";
   className?: string;
 }) {
@@ -79,7 +82,7 @@ export function CloneMenu({
   }, []);
   useCloseWhenAnotherMenuOpens(id, close);
 
-  const body = <CloneBody kind={kind} command={command} cliCommand={cliCommand} />;
+  const body = <CloneBody kind={kind} cloneCommand={cloneCommand} download={download} />;
 
   if (variant === "plain") {
     return (
@@ -107,34 +110,31 @@ export function CloneMenu({
       }}
     >
       {/* `Button`'s outline variant, spelled out: a `<summary>` cannot be a `<button>`,
-          and the two triggers in this header row have to look like one pair. The press
-          list names `scale` explicitly — Tailwind v4 compiles `scale-[0.97]` to the
-          standalone `scale:` property, which a `transition-property` naming only
-          `transform` does not cover (see `components/ui/Button.tsx`). */}
+          and the triggers in this header row have to look like one set. The press list
+          names `scale` explicitly: Tailwind v4 compiles `scale-[0.97]` to the standalone
+          `scale:` property, which a `transition-property` naming only `transform` misses. */}
       <summary
-        className="inline-flex h-10 cursor-pointer select-none list-none items-center justify-center gap-2 whitespace-nowrap rounded-md border border-line-bright bg-transparent px-4 text-sm text-fg transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-cyan hoverable:hover:text-cyan hoverable:active:scale-[0.97] [&::-webkit-details-marker]:hidden"
+        className={cx(
+          "inline-flex cursor-pointer select-none list-none items-center justify-center gap-2 whitespace-nowrap rounded-md border px-4 text-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97] [&::-webkit-details-marker]:hidden",
+          TRIGGER[kind].pill,
+        )}
       >
-        {kind === "node" ? "Get the file" : "Get the folder"}
+        {TRIGGER[kind].label}
         <span
           aria-hidden
-          className="inline-block text-dim transition-transform group-open:rotate-180"
+          className={cx(
+            "inline-block transition-transform group-open:rotate-180",
+            TRIGGER[kind].caret,
+          )}
         >
           ▾
         </span>
       </summary>
 
-      {/* `right-0`, where `ForkAction`'s sibling panel is centred, and the difference is
-          measured rather than stylistic. Both triggers sit in a header group the page
-          pushes to the right with `ml-auto … justify-end`, so this one — the last item
-          before the download button — has its right edge at or near the column's right
-          edge at every width. Centring it there is what breaks: at 390px the trigger runs
-          229→366, a centred 358px panel lands 118→476, and 86px of it is off the screen
-          with the body scrolling sideways to reach it. Anchored right, the same panel
-          lands 8→366 and is wholly visible. `ForkAction` is the leftmost of the group and
-          measured the mirror image of this, which is why the two differ.
-
-          `z-30` rather than `z-20`: if a reader somehow gets both panels open, the one
-          they just asked for is the readable one. */}
+      {/* `right-0` rather than centred under the trigger: this is the last item in a header
+          group the page pushes to the right, so its right edge sits at the column's edge at
+          every width, and a centred panel runs off a 390px screen. `z-30` so that if a
+          reader somehow gets both panels open, the one they just asked for is readable. */}
       <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(26rem,calc(100vw-2rem))] rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40">
         {body}
       </div>
@@ -143,89 +143,72 @@ export function CloneMenu({
 }
 
 /**
- * The command, what it does not do, and the CLI that would.
+ * The two items, Download then Clone, and one sentence under them saying what each hands
+ * over. Download first because it needs nothing installed.
  *
- * Order is the argument: the thing that works is first and largest, its limit is directly
- * under it, and the thing that does not exist is last and fenced off in amber. Amber is
- * spent here on exactly the two jobs it is reserved for — `ComingSoonBadge` and the
- * surround around the half of this panel that is not built. The working command, its copy
- * button and the prose around it stay cyan and `text-dim`; tinting a command that runs
- * today to match its neighbour would say the opposite of the truth in this panel.
+ * Amber also carries the card's whole accent register (see `TRIGGER`), so the fence under
+ * Clone cannot rely on hue alone to say "this half is not built". It relies on shape: a
+ * filled ground, a heavy leading rule, a badge and the refusal in words. Nothing in the
+ * register around it carries a fill or a leading rule.
  */
 function CloneBody({
   kind,
-  command,
-  cliCommand,
+  cloneCommand,
+  download,
 }: {
   kind: CloneKind;
-  command: string;
-  cliCommand: string;
+  cloneCommand: string;
+  download?: ReactNode;
 }) {
-  /** What lands on disk: a directory for a blueprint, one document for a card. */
-  const thing = kind === "node" ? "card" : "folder";
-  /** What the reader is on the page of. The noun the ledger's claim is written with. */
+  /** What the reader is on the page of. */
   const subject = kind === "node" ? "card" : "blueprint";
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="label-lead text-fg">
-        {kind === "node" ? "Take the file" : "Take the whole folder"}
-      </p>
-
-      {/* One unwrapped line in its own horizontal scroller. A `\`-continued multi-line
-          form breaks the moment it is pasted into a terminal that eats the backslash, and
-          the longest bundle's command is 462 characters — nothing wraps that readably on
-          a 390px phone either. `overflow-x-auto` keeps it off the page's own scrollbar. */}
-      <div className="flex items-start gap-2">
-        <pre className="min-w-0 flex-1 overflow-x-auto rounded border border-line bg-void px-2 py-1.5 font-mono text-[11px] leading-relaxed text-fg">
-          <code>{command}</code>
-        </pre>
-        <CopyButton
-          text={command}
-          ariaLabel={`Copy the command that downloads this ${thing}`}
-        />
+    <div className="flex flex-col gap-4">
+      {/* ---- 1. Download ---- */}
+      <div className="flex flex-col gap-2">
+        <p className="label-lead text-fg">Download</p>
+        {download ?? (
+          <p className="text-xs leading-relaxed text-dim">
+            No stored document for this {subject}, so there is no file to save.
+          </p>
+        )}
       </div>
 
-      {/* The honest difference from a clone, beside the command rather than behind
-          anything. Both halves are load-bearing: what it is not (a repository), and what
-          that costs (the list of files is fixed at the moment this page was built, so a
-          copy kept in a script goes stale when a pin moves). */}
-      <p className="text-xs leading-relaxed text-muted">
-        These are static files over HTTP.{" "}
+      {/* ---- 2. Clone ---- */}
+      <div className="flex flex-col gap-2 border-t border-line pt-4">
+        <p className="label-lead text-fg">Clone</p>
+        {/* One unwrapped line in its own horizontal scroller. A `\`-continued multi-line
+            form breaks the moment it is pasted into a terminal that eats the backslash. */}
+        <div className="flex items-start gap-2">
+          <pre className="min-w-0 flex-1 overflow-x-auto rounded border border-line bg-void px-2 py-1.5 font-mono text-[11px] leading-relaxed text-fg">
+            <code>{cloneCommand}</code>
+          </pre>
+          <CopyButton text={cloneCommand} ariaLabel="Copy the clone command" />
+        </div>
+
+        {/* The fence: a filled ground under a heavy leading rule, a badge and the limit in
+            words. `border-l-2` after the `border` shorthand, which is the order Tailwind
+            emits them in, so the leading edge wins. The verb clones either kind by name;
+            what neither kind has yet is a package on npm for npx to fetch. */}
+        <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
+          <ComingSoonBadge className="self-start" />
+          <p className="text-xs leading-relaxed text-muted">
+            Not installable yet: the darkprint package is not published to npm, so npx finds
+            nothing to run. The verb itself runs from a build of the repository.
+          </p>
+        </div>
+      </div>
+
+      {/* What both items are, said once under them: nothing here is a repository. */}
+      <p className="border-t border-line pt-3 text-xs leading-relaxed text-muted">
         <span className="text-fg">
-          The command copies {kind === "node" ? "the file" : "the folder"} as it stands
-          right now — a snapshot, not a clone.
+          There is no repository and no history behind a {kind === "node" ? "card" : "release"}.
         </span>{" "}
-        There is no repository behind it, no history, and nothing to pull later. When{" "}
-        {kind === "node" ? "a new version is published" : "a card in this blueprint is repinned"},
-        come back for the command again rather than re-running an old copy of it.
+        {kind === "node"
+          ? "Download hands you the document as it stands, and Clone fetches the same document by name."
+          : "Download hands you its files as they stand, and Clone fetches the same files by name."}
       </p>
-
-      {/* PowerShell 5.1 aliases `curl` to `Invoke-WebRequest`, which rejects every flag in
-          the line above with a parameter-binding error. One sentence is cheaper than a
-          Windows reader concluding that the one working thing on this menu is broken. */}
-      <p className="text-xs leading-relaxed text-dim">
-        On Windows PowerShell, write <code className="font-mono text-muted">curl.exe</code>:
-        the bare <code className="font-mono text-muted">curl</code> there is an alias for a
-        different program.
-      </p>
-
-      {/* Not built. No copy button, on purpose — a copy button is an affordance that says
-          "run this", and there is nothing to run. */}
-      <div className="flex flex-col gap-2 rounded-md border border-amber/30 bg-amber/5 p-3">
-        <ComingSoonBadge className="self-start" />
-        <code className="block overflow-x-auto font-mono text-[11px] leading-relaxed text-dim select-none">
-          {cliCommand}
-        </code>
-        <p className="text-xs leading-relaxed text-muted">
-          Not built yet: a darkprint CLI that clones a {subject} by name
-          {kind === "node"
-            ? ", and fetches the version you ask for"
-            : ", resolves every card it pins and tells you when one of them moves"}
-          . There is nothing to install today, so the line above is a preview and not a
-          command.
-        </p>
-      </div>
     </div>
   );
 }

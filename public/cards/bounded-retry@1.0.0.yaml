@@ -35,11 +35,11 @@ outputs:
     description: The final error, surfaced once the cap is spent instead of being swallowed.
 dependencies:
   - acceptance-verifier
-cannot:
+cannot: []
+will_not:
   - retry past the declared cap
   - swallow the error from the final attempt
 
-requires_human: false
 risk_markers: []
 notes: >-
   `max_retries` is not decoration. The security analyzer reads it as the declared bound for
@@ -47,4 +47,3 @@ notes: >-
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

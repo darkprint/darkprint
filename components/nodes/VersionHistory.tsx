@@ -1,11 +1,8 @@
 import Link from "next/link";
-import { inferBump, shortDigest, type BumpLevel, type NodeCard } from "@/lib/core";
+import { inferBump, type BumpLevel, type NodeCard } from "@/lib/core";
 import { cx } from "@/lib/format";
-import { contentHref } from "@/lib/href";
+import { blueprintRecordHref } from "@/lib/href";
 import { Ticked } from "@/components/ui/Ticked";
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-11) (cited at line 1): folded into SEAM-09
 
 /** One published version of a card, plus the blueprints pinning that exact ref. */
 export interface NodeVersion {
@@ -15,12 +12,27 @@ export interface NodeVersion {
   /** "sha256:…" over the card's content. */
   digest: string;
   card: NodeCard;
-  usedIn: { slug: string; title: string }[];
+  /**
+   * The blueprints pinning this exact version.
+   *
+   * `ownerHandle` is optional for the reason `lib/types.ts`'s `Blueprint.ownerHandle` is
+   * (D-261-07): the registry answers it and a fixture cannot, so a row that has it links to
+   * the canonical B-09 URL and a row that does not rides the 308 for one hop. Not
+   * `BlueprintSummary` — this shape also carries the `title` a summary keeps inside its
+   * manifest, which is what the link actually prints.
+   */
+  usedIn: { ownerHandle?: string; slug: string; title: string }[];
 }
 
 /**
  * What each bump level means, in the terms §4 decides it by. The word carries the
  * meaning; the colour only ranks it.
+ *
+ * Left alone by the 2026-09-06 card-register pass, and the cyan on `patch` is the reason
+ * to say so. This is a four-step ranked scale, not an accent: every row prints its glyph,
+ * its word and a gloss, so the colour is the last thing a reader is going on. Repointing
+ * `patch` to the register would collide with `minor`, which has been amber here since
+ * before the ruling, and would leave the scale with two steps in one hue and no rank.
  */
 const BUMP_META: Record<BumpLevel, { word: string; glyph: string; color: string; gloss: string }> =
   {
@@ -28,19 +40,19 @@ const BUMP_META: Record<BumpLevel, { word: string; glyph: string; color: string;
       word: "major",
       glyph: "▲",
       color: "var(--color-signal)",
-      gloss: "breaks something a blueprint had pinned",
+      gloss: "moving a pin to this version may break a blueprint that resolved against the old one",
     },
     minor: {
       word: "minor",
       glyph: "▴",
       color: "var(--color-amber)",
-      gloss: "the declared surface grew",
+      gloss: "something was added; old pins still resolve",
     },
     patch: {
       word: "patch",
       glyph: "▪",
       color: "var(--color-cyan)",
-      gloss: "wording and values, nothing wired",
+      gloss: "wording or values changed; nothing wired changed",
     },
     none: {
       word: "none",
@@ -148,11 +160,13 @@ export function VersionHistory({
             <li key={entry.ref} className="flex gap-4">
               {/* rail */}
               <div className="flex flex-col items-center" aria-hidden>
+                {/* The newest version's dot, in the card register. Amber since the owner
+                    ruled it on 2026-09-06; it was cyan, which is the blueprint's. */}
                 <span
                   className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
                   style={{
                     background:
-                      i === 0 ? "var(--color-cyan)" : "var(--color-line-bright)",
+                      i === 0 ? "var(--color-amber)" : "var(--color-line-bright)",
                   }}
                 />
                 {!last && <span className="w-px flex-1 bg-line" />}
@@ -167,15 +181,38 @@ export function VersionHistory({
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
                   <span className="font-mono text-sm text-fg">{entry.ref}</span>
                   {i === 0 && (
-                    <span className="rounded border border-cyan/50 bg-cyan/10 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan">
+                    /* `current` in the card register. #ffb020 on this panel's ground
+                        reads 10.2:1 against cyan's 8.71:1, and the 50% edge composites to
+                        3.34:1 where the cyan one sat at 3.05:1.
+
+                        It is a small filled amber pill in uppercase mono, which is also
+                        `ComingSoonBadge`'s shape, and the two never meet: nothing in this
+                        panel is unbuilt, the badge lives in the download menu at the top of
+                        the page, and this pill says a word no status badge on the site
+                        says. Worth stating rather than leaving to luck, since
+                        `app/globals.css` now makes shape the thing that separates a claim
+                       from the register. */
+                    <span className="rounded border border-amber/50 bg-amber/10 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-amber">
                       current
                     </span>
                   )}
-                  <span
-                    className="font-mono text-[11px] text-dim"
-                    title={entry.digest}
-                  >
-                    {shortDigest(entry.digest)}
+                  {/* The whole digest, as text, and no `title`.
+                      ------------------------------------------------------------
+                      It used to be `shortDigest(entry.digest)` with the full string in a
+                      `title`, and the card page carried the long form twice more: once in
+                      the Identity panel's row and once as selectable text under the Card
+                      source panel. The author asked both of those panels off (2026-09-05),
+                      which would have left the full digest existing only inside a tooltip
+                      — unreachable by keyboard, unreachable by touch, and impossible to
+                      copy, which is the one thing anybody wants a digest for.
+
+                      So the string is printed. Measured on `merge-executor`: `sha256:` and
+                      64 hex characters, about 470px at 11px mono, on a page that is one
+                      full-width column since its aside went — it sits on the row it was
+                      already on. `break-all` because a hex run gives a browser nowhere it
+                      would choose to break. */}
+                  <span className="break-all font-mono text-[11px] text-dim">
+                    {entry.digest}
                   </span>
                 </div>
 
@@ -186,16 +223,25 @@ export function VersionHistory({
                     <>
                       <span>pinned by</span>
                       {entry.usedIn.map((blueprint, index) => (
-                        <span key={blueprint.slug}>
+                        <span key={`${blueprint.ownerHandle ?? ""}/${blueprint.slug}`}>
                           <Link
-                            href={contentHref({
-                              kind: "blueprint",
-                              slug: blueprint.slug,
-                            })}
+                            href={blueprintRecordHref(blueprint)}
+                            /* Cyan on hover, and deliberately NOT the card register the
+                               rest of this panel now wears: every link in this list leaves
+                               for a BLUEPRINT page, and the two registers only earn their
+                               keep if a control that crosses between them says which side
+                               it lands on. */
                             className="text-muted underline-offset-4 transition-colors hover:text-cyan hover:underline"
                           >
                             {blueprint.title}
                           </Link>
+                          {/* Two owners can hold one slug with one title, so the owner is
+                              what tells two rows apart. */}
+                          {blueprint.ownerHandle !== undefined && (
+                            <code className="ml-1.5 text-dim">
+                              {blueprint.ownerHandle}/{blueprint.slug}
+                            </code>
+                          )}
                           {/* Inherits the paragraph's `text-dim`: the comma is what
                               separates two blueprint names, so it has to be legible. */}
                           {index < entry.usedIn.length - 1 && <span>,</span>}
@@ -214,16 +260,26 @@ export function VersionHistory({
         })}
       </ol>
 
+      {/* What a digest is, once, under the list that prints one per row. This paragraph
+          stood under the card page's Card source panel and the author asked that panel
+          off; the sentences are about the digests, so they moved to where the digests
+          are rather than going with the YAML. */}
+      <p className="border-t border-line px-4 py-3 text-xs leading-relaxed text-dim sm:px-5">
+        A digest is a fingerprint (SHA-256) of the card&apos;s content, computed without the
+        author and provenance fields. The same card from two people gets the same digest;
+        any edit gets a new one.
+      </p>
+
       {sole && (
         <p className="flex items-start gap-2 border-t border-line px-4 py-3 text-[13px] leading-relaxed text-muted sm:px-5">
-          <span className="font-mono text-cyan" aria-hidden>
+          {/* The card register, not cyan. */}
+          <span className="font-mono text-amber" aria-hidden>
             ✓
           </span>
           <span>
-            First published version, there is nothing to compare it against yet.
-            A version is never edited in place, so the next change arrives as a new
-            one and the diff between them shows up here, worked out from the two
-            documents.
+            First published version, so there is nothing to compare yet. Versions are
+            never edited in place: the next change arrives as a new version, and the
+            differences between the two documents are listed here.
           </span>
         </p>
       )}

@@ -143,10 +143,13 @@ import { BeatCaption } from "./BeatCaption";
 
    The reason it was written is unchanged and is worth keeping here, because nothing on the
    page says it any more. `0.62 → 0.86` is a worked example. DarkPrint runs nobody's graph:
-   there is no per-run number anywhere in the product, no runner and no endpoint, and
-   `/reading-the-radar` states that in the open. The right panel draws four runs, four scores
-   and three deltas in fixed tabular columns, which is the shape of a readout off a real
-   harness, and the qualifier was the one thing on the landing saying it is not one.
+   there is no per-run number anywhere in the product, no runner and no endpoint. That used
+   to be stated in the open on `/reading-the-radar`, and the owner asked that page off the
+   site on 2026-09-04, so the sentence is not published anywhere a reader can reach it now.
+   Recorded rather than quietly dropped, because it changes what this beat is standing on:
+   the right panel draws four runs, four scores and three deltas in fixed tabular columns,
+   which is the shape of a readout off a real harness, and the two things that used to say
+   it is not one were an amber line the author removed and a page the owner removed.
 
    What still holds the line, and it is weaker than a sentence beside the numbers: the beat
    never uses the word for a graded run, the verb stays `attribute`, the improving is
@@ -600,7 +603,7 @@ export function SectionSameRun() {
                  `--color-dim` here, and the reason is the one the panel is about. This is
                  the side without a specification, so it does not get spoken about in the
                  colour a specification is drawn in. */
-              title={<span className="text-dim">same prompt · three routes · nothing to credit</span>}
+              title={<span className="text-dim">same prompt · three routes · no step to credit for the score</span>}
               /* `px-5 pt-5 pb-3.5` is the mock's 20/20/14 around the drawing, where `Sheet`
                  would otherwise spend `p-4 sm:p-6`. The 14 under the scene is what keeps the
                  drawing off the title strip. */

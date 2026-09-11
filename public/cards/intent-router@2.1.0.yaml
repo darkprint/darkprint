@@ -1,0 +1,76 @@
+id: intent-router
+name: Intent Router
+type: decision
+
+action: >-
+  Classify the inbound event against the label set, overridden by a taxonomy supplied for this
+  run, when there is one, and dispatch it down the matching lane, sending anything below the
+  confidence threshold to the escalation lane instead of guessing.
+spec: >-
+  Read the inbound alert as it arrived and decide which one of `outage`, `degradation`,
+  `capacity`, `security` or `noise` it is, unless a label set is supplied for this run, in
+  which case classify against that one instead and ignore the configured labels entirely.
+  Emit the lane you picked on `lane` with the confidence you had in it, and emit the alert on
+  `routed` with its label added and payload and metadata otherwise untouched. If your
+  confidence in the best label is below 0.75, route to the `on-call` lane: handing a misread
+  alert to a person costs far less than confidently sending it down the wrong runbook. Record
+  the lane in your status file as well: put `lane` in `context_updates`, set to the value you
+  picked, so a graph downstream can branch on `context.lane`. A run that leaves that key
+  unwritten reads back as the empty string, and no lane name matches it.
+agent: Alert classifier
+tools: []
+mcp: []
+skill: skills/intent-router.md
+params:
+  labels:
+    - outage
+    - degradation
+    - capacity
+    - security
+    - noise
+  default_lane: triage
+  confidence_threshold: 0.75
+  escalation_lane: on-call
+
+inputs:
+  - name: event
+    type: json
+    description: The inbound event as it arrived, payload and metadata untouched.
+  - name: taxonomy
+    type: json
+    required: false
+    description: A label set supplied per run, which replaces the configured one when present.
+outputs:
+  - name: lane
+    type: status
+    description: The lane the event was routed to, with the classifier's confidence attached.
+  - name: routed
+    type: json
+    description: The event enriched with its label, ready for whichever branch picks it up.
+dependencies:
+  - ticket
+cannot: []
+will_not:
+  - change the payload it routes
+  - leave an alert unrouted
+
+risk_markers: []
+notes: >-
+  A named `escalation_lane` and a higher threshold are the difference from 1.1.0: an incident
+  line would rather hand a misread alert to a person than route it confidently to the wrong
+  runbook. `taxonomy` is optional, so a deployment that never supplies one behaves as before.
+  The version is 2.x because the undertaking was reworded: `leave an event unrouted` went
+  and `leave an alert unrouted` arrived. `inferBump` reads both directions of `will_not` as
+  minor, since the resolver holds no graph to a sentence. The major is the author's, on the
+  ground that a reworded promise is a changed promise until somebody reads both and decides
+  otherwise.
+  2.1.0 adds the same sentence 1.1.0 does, on the same lane this card's own threshold names:
+  the lane goes into `context_updates` as well as onto the port, which is Appendix C's field
+  for a node handing a key to the run context. Until then nothing wrote `context.lane`, so a
+  guard reading it compared the empty string and the fork on it took its negation arm whatever
+  the classifier decided. A `decision` card runs as a no-op under engine spec 4.7 and writes
+  neither a status distinction nor a `preferred_label`, so the spec sentence is the only place
+  this key can come from.
+
+version: 2.1.0
+author: hachi

@@ -39,10 +39,39 @@ export type DiagnosticCode =
   // The same phase declared twice on one card. A warning: it describes one node in one
   // phase either way, so the card still loads with the repeat collapsed.
   | "card/duplicate-phase"
-  // doc 3 §3 — `type` ⊂ `human-in-the-loop` while `requires_human` is not true.
-  | "card/human-type-inconsistent"
+  // A key the schema used to carry and no longer does.
+  //
+  // `requires_human` is the one that put it here. It stored whether a person acts at the
+  // node beside a `type` that already said so, the two could disagree, and nothing
+  // compared them; `type` is now the whole answer. A card written before that still
+  // carries the key, and the generic unknown-key `info` would tell its author their field
+  // was "not part of the card schema" and invite them to check the spelling — true, and
+  // useless, for a key that was deliberately withdrawn.
+  //
+  // A WARNING, never an error. Every card published before the withdrawal carries the
+  // key, and refusing to load them would turn a schema change into an archive-wide
+  // outage; the value is also recoverable, since the answer the key used to give is
+  // derivable from the field that remains. The message says where the answer comes from
+  // now and what the card's own `type` currently answers, so the author can see whether
+  // deleting the line changes anything.
+  | "card/retired-field"
   // doc 1 §3.2 — `spec` is present but too short to instruct an agent on its own.
   | "card/spec-too-thin"
+  // A `will_not` entry names a `data-type` the resolver could have enforced.
+  //
+  // The one diagnostic the `cannot` / `will_not` split needed. `cannot` holds the term ids
+  // the resolver checks and `will_not` holds the author's own sentences, and the failure
+  // mode of two fields is writing a value into the wrong one: an author who puts
+  // `acceptance-criteria` under `will_not` has stated a rule the engine could have held
+  // the graph to, in the field where it never will. Nothing else would say so, because a
+  // free-text field has nothing to be wrong against.
+  //
+  // A WARNING rather than an error, on two grounds. The entry still says what it says and
+  // the card is still readable, so refusing to load it would report a legible card as
+  // broken. And the vocabulary grows: a sentence that names no term today can name one
+  // after the next ontology version, and a card published clean must not become a card
+  // that fails to load because somebody else minted a term.
+  | "card/prohibition-misfiled"
   // bundle/
   | "bundle/missing-card"
   | "bundle/orphan-card"
@@ -56,6 +85,13 @@ export type DiagnosticCode =
   | "bundle/no-entry"
   | "bundle/no-exit"
   | "bundle/unreachable-node"
+  // An overlay term reuses a curated core id, so that id means something different for
+  // everybody reading this bundle. Raised by `ontology/resolve.ts`'s `validate()`, and by
+  // nothing else: `bundle/resolve.ts` used to raise it twice more, once when a manifest's
+  // declared `ontologyVersion` disagreed with the vocabulary it was being read against and
+  // once per card that disagreed with the manifest. Those were three hand-maintained copies
+  // of one number reporting that they had drifted, and neither the manifest nor a card
+  // declares a version any more. This one is about the vocabulary itself and stays.
   | "bundle/ontology-mismatch"
   // A card's `cannot` names an ontology `data-type` and an incoming edge can carry it.
   //
@@ -66,10 +102,26 @@ export type DiagnosticCode =
   // An error rather than a warning, because the card and the graph state opposite things
   // and only the author knows which one they meant.
   //
-  // Entries in `cannot` that name no `data-type` reach nothing here. They are free text
-  // for a reader (see `NodeCard.cannot`), and a code that fired on them would report a
-  // legal card as broken.
+  // Reads `cannot` and nothing else. `will_not` holds the author's own sentences about
+  // what the node undertakes never to do, and this resolver has no way to decide "never
+  // opens a shell" against a topology — so it does not look, and nothing here may report
+  // an unchecked undertaking as a defect.
   | "bundle/prohibition-violated"
+  // §4's bump rule, applied to a blueprint rather than to a card. A blueprint's diff is
+  // its DOT plus the set of card refs it pins, and a release declaring a smaller bump than
+  // that diff implies is refused. Namespaced `bundle/` rather than `blueprint/` because
+  // that is the namespace this union gives a bundle, and `diagnostics.test.ts` enforces it.
+  | "bundle/version-bump-too-small"
+  // COMPATIBILITY (format rename, topology.dot replaces blueprint.dot): raised by the
+  // upload classifier, not by `resolveBundle` — a `Bundle` carries one `dot: string` with
+  // no filename of its own, so a dropped-folder concern like "which of two .dot files did
+  // we read" cannot be reported from in here. Declared in this shared union anyway, since
+  // `Diagnostic[]` is how every stage of this app reports a user-data problem and the
+  // upload flow already merges non-engine diagnostics into the same list (see
+  // `components/upload/UploadFlow.tsx`'s `ontology.validate()` merge). Fires only when a
+  // dropped folder carries BOTH names — `blueprint.dot` alone still resolves silently, as
+  // it always did before the rename.
+  | "bundle/legacy-topology-file"
   // attractor/ — the DOT subset Attractor reads (doc 1 §0.1.1, doc 2 §11 item 0).
   // Every one of these is a `warning`: a bundle that breaks an Attractor rule is
   // still a valid DarkPrint bundle, it just will not run under Attractor, and the
@@ -83,6 +135,10 @@ export type DiagnosticCode =
   | "attractor/hash-comment"
   | "attractor/unsupported-value"
   | "attractor/reserved-attribute"
+  // §7.2 grades `condition_syntax` ERROR and §7.1 makes the engine refuse a pipeline
+  // carrying one, so this is the first `attractor/` code that reports a file a runner
+  // would take and then decline to run, rather than one it would read differently.
+  | "attractor/condition-syntax"
   // ontology/ — defects in a *vocabulary*, reported by `OntologyView.validate()`.
   // `ontology/unknown-term` is declared and deliberately not emitted by any stage today:
   // a term referenced but undefined inside a vocabulary is already
@@ -100,6 +156,18 @@ export type DiagnosticCode =
   // Doc 3 §5 subtracts a marker's weight, so a negative one is a credit, not a cheap
   // marker: a local term could cancel a core one. Reported, and counted as unweighted.
   | "ontology/local-marker-bad-weight"
+  // The same rule for a vocabulary version: removing a term or narrowing a `broader` chain
+  // is major, adding one is minor, and a release declaring less than it did is refused.
+  //
+  // RESERVED as of 2026-09-05, and the second name in this union that nothing emits. The
+  // owner had vocabulary versioning removed (§11.0 Q26), which took `inferOntologyBump` and
+  // then `checkDeclaredBump`'s `ontology` subject with it, so there is no longer a declared
+  // vocabulary version for anything to price. Kept rather than deleted for two reasons: the
+  // classification in `gate.ts` is unchanged and correct — a release stored under a version
+  // that does not describe it is still unaddressable — and this name shipped, so freeing it
+  // for reuse would let a later stage give a stored code a second meaning. It comes back if
+  // a vocabulary is ever versioned again. `diagnostics.test.ts` keeps that statement honest.
+  | "ontology/version-bump-too-small"
   // analysis/
   | "analysis/empty-graph"
   // Doc 3 §6 divides by *nodi totali*, and a node whose card is not in the bundle has no
@@ -132,7 +200,7 @@ export type DiagnosticCode =
 
 /** Where a diagnostic points. Every field is optional — a bundle-wide problem has none. */
 export interface DiagnosticLocation {
-  /** Bundle-relative file, e.g. "blueprint.dot" or "cards/solver@1.2.0.yaml". */
+  /** Bundle-relative file, e.g. "topology.dot" or "cards/solver@1.2.0.yaml". */
   file?: string;
   /** 1-based. */
   line?: number;

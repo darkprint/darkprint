@@ -33,10 +33,10 @@ outputs:
     description: The winning article verbatim, so the composer quotes it rather than paraphrasing.
 dependencies:
   - intent-router
-cannot:
+cannot: []
+will_not:
   - edit the article it returns
 
-requires_human: false
 risk_markers: []
 notes: >-
   Read-only against the knowledge base, and it returns nothing at all below `min_score` rather than
@@ -45,4 +45,3 @@ notes: >-
 
 version: 1.0.0
 author: hachi
-ontology_version: 0.1.0

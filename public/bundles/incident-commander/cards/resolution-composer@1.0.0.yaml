@@ -39,11 +39,11 @@ outputs:
 dependencies:
   - classify
   - kb
-cannot:
+cannot: []
+will_not:
   - fill a gap from memory when no reference arrived
   - present its draft as approved
 
-requires_human: false
 risk_markers: []
 notes: >-
   `reference` is optional because the router sends the simple lane straight here without a lookup.
@@ -53,4 +53,3 @@ notes: >-
 
 version: 1.0.0
 author: hachi
-ontology_version: 0.1.0

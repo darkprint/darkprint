@@ -24,9 +24,6 @@ import { BUNDLE_VOCABULARY, localTermsUsed } from "./bundle-export";
 import { contentOntology, contentVocabulary, readContent } from "./read";
 import { toBlueprintView } from "./view";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-04) (cited at line 169): GET /api/blueprints/{slug}/source
-
 /** The raw text behind a bundle, for the "source" panels. */
 export interface BundleSource {
   dot: string;

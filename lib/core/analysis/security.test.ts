@@ -6,7 +6,7 @@ import type { ResolvedBlueprint, ResolvedEdge, ResolvedNode } from "../bundle/ty
 import { buildGraph } from "../dot/graph";
 import { CORE_ONTOLOGY } from "../ontology/core";
 import { ontologyView, type OntologyView } from "../ontology/resolve";
-import type { Ontology, OntologyTerm } from "../ontology/types";
+import type { OntologyTerm } from "../ontology/types";
 import { jaccardSimilarity } from "./similarity";
 import { computePhaseCoverage } from "./phase-coverage";
 import { computeSecurity, INFERRED_MARKERS, type SecurityFinding } from "./security";
@@ -75,10 +75,9 @@ function card(spec: NodeSpec): NodeCard {
     outputs: spec.outputs ?? [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: spec.markers ?? [],
     version: "1.0.0",
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -116,7 +115,6 @@ function blueprint(
       title: "Fixture",
       summary: "A hand-built blueprint for the security metric.",
       tags: [],
-      ontologyVersion: "0.1.0",
     },
     dot: "digraph fixture {}",
     digest: "sha256:fixture",
@@ -203,27 +201,10 @@ describe("a clean graph", () => {
     );
   });
 
-  it("records the ontology version the score was computed under (doc 3 §8)", () => {
-    expect(computeSecurity(clean).ontologyVersion).toBe("0.1.0");
-    expect(computeSecurity(clean).ontologyVersion).toBe(CORE_ONTOLOGY.version);
-    // On the shipped path the config agrees, and `config.test.ts` pins that it must.
-    expect(computeSecurity(clean).ontologyVersion).toBe(DARKPRINT_CONFIG.ontologyVersion);
-  });
-
-  it("names the vocabulary it queried, not the one the config ships with", () => {
-    // Rewritten at integration. The version now comes from the view the blueprint was
-    // resolved against, matching `computeAutonomy`: a score computed by asking an 0.0.9
-    // vocabulary about every term is an 0.0.9 score, whatever the shipped constant says.
-    const older: Ontology = { ...CORE_ONTOLOGY, version: "0.0.9" };
-    const bp = blueprint([{ id: "a" }], [], { ontology: ontologyView(older) });
-    expect(computeSecurity(bp).ontologyVersion).toBe("0.0.9");
-    expect(computeSecurity(bp).ontologyVersion).not.toBe(DARKPRINT_CONFIG.ontologyVersion);
-  });
-
-  it("does not take the version from the config it was handed", () => {
-    const config: DarkprintConfig = { ...DARKPRINT_CONFIG, ontologyVersion: "9.9.9" };
-    expect(computeSecurity(clean, config).ontologyVersion).toBe(CORE_ONTOLOGY.version);
-  });
+  /* Three cells stood here, all of them about `SecurityResult.ontologyVersion`: that it was
+     recorded, that it came from the view rather than the config, and that a config could
+     not override it. The vocabulary carries no version, so there is nothing left for the
+     reading to name. */
 });
 
 /* ------------------------------------------------------------------ */
@@ -2347,7 +2328,6 @@ describe("degenerate blueprints", () => {
     expect(result.raw).toBe(4);
     expect(result.findings).toEqual([]);
     expect(result.rationale).toContain("empty graph");
-    expect(result.ontologyVersion).toBe("0.1.0");
   });
 
   it("scores a graph whose cards are all missing without throwing", () => {

@@ -33,10 +33,10 @@ inputs:
 outputs: []
 dependencies:
   - record-store
-cannot:
+cannot: []
+will_not:
   - advance the watermark before the views have refreshed
 
-requires_human: false
 risk_markers:
   - irreversible-action
 notes: >-
@@ -45,4 +45,3 @@ notes: >-
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

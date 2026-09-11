@@ -1,0 +1,29 @@
+// §2.10 derives a node's class from the label of the subgraph it sits in, which is a
+// second way to reach the model stylesheet and one DarkPrint does not implement.
+// DarkPrint's parser flattens a subgraph and keeps its members; nothing records that they
+// were grouped, and the emitter writes no subgraph at all. So the grouping is gone on the
+// way home and the classes Attractor would have derived from it go with it.
+digraph subgraph_classes {
+  goal="Draft a piece, then check it, with the two halves grouped.";
+  label="Subgraph-derived classes";
+
+  start [label="start", shape=Mdiamond];
+
+  subgraph cluster_writing {
+    label="Writing";
+    outline [label="Outline", shape=box, prompt="Write the outline for the piece."];
+    draft   [label="Draft", shape=box, prompt="Write the piece from the outline."];
+  }
+
+  subgraph cluster_review {
+    label="Review";
+    facts [label="Fact-check", shape=box, prompt="Check every claim in the piece against a source."];
+  }
+
+  exit [label="exit", shape=Msquare];
+
+  start -> outline;
+  outline -> draft;
+  draft -> facts;
+  facts -> exit;
+}

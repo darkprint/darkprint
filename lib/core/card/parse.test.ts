@@ -6,7 +6,6 @@ const MINIMAL_YAML = `id: solver-a
 name: Solver A
 type: agent
 version: 1.0.0
-ontology_version: 1.0.0
 action: Draft a candidate solution for the sub-task
 inputs:
   - { name: task, type: text }
@@ -19,7 +18,6 @@ const MINIMAL_OBJECT = {
   name: "Solver A",
   type: "agent",
   version: "1.0.0",
-  ontology_version: "1.0.0",
   action: "Draft a candidate solution for the sub-task",
   inputs: [{ name: "task", type: "text" }],
   outputs: [{ name: "draft", type: "json" }],

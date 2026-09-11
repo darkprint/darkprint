@@ -1,0 +1,26 @@
+// Every reserved name a DarkPrint blueprint has no field for, in one file.
+// The header `emitAttractorDot` writes into every export says these are dropped. This is
+// where that sentence is checked instead of believed: each attribute below is asserted to
+// be absent from the re-export, by name, so the disclosure and the behaviour cannot drift.
+// The node `type` override is here too, and it is the one name held back on purpose
+// rather than missing — a DarkPrint node's type arrives as its `shape`.
+digraph runner_only {
+  goal="Do one thing, under every control the runner offers.";
+  label="Runner-only attributes";
+  model_stylesheet="sheets/house.css";
+  default_max_retries="4";
+  default_fidelity="high";
+  retry_target="work";
+  fallback_retry_target="work";
+  "stack.child_dotfile"="child.dot";
+  "stack.child_workdir"="/tmp/child";
+  "tool_hooks.pre"="pre.sh";
+  "tool_hooks.post"="post.sh";
+
+  start [label="start", shape=Mdiamond];
+  work  [label="Work", shape=box, prompt="Do the work you were asked to do.", type="codergen", goal_gate="done", timeout="10m", fidelity="high", thread_id="t1", llm_provider="anthropic", reasoning_effort="high", auto_status="running", allow_partial="false", "stack.child_autostart"="true"];
+  exit  [label="exit", shape=Msquare];
+
+  start -> work;
+  work -> exit [fidelity="low", thread_id="t1", loop_restart="false"];
+}

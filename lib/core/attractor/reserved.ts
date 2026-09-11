@@ -33,9 +33,95 @@
    that Appendix A does not tabulate carries the section that reads
    it.
 
+   ── Which of these names DarkPrint actually writes. Reserving a
+   name and emitting one are different claims, and this file only
+   makes the first. The second is declared in `emit.ts` as
+   `ATTRACTOR_EMITTED_ATTRIBUTES`, whose every entry has to be a
+   member of a set below, beside `DARKPRINT_EMITTED_ATTRIBUTES`,
+   whose every entry has to be a member of none of them. That pair
+   is the private / runtime-read line, and it is checked rather
+   than described: this file stays the transcription, and nothing
+   here needs to know what the emitter chose.
+
+   ── this is a HAND TRANSCRIPTION and the source can move ──
+   Everything above is copied out of a document in somebody else's
+   repository, by a person, once. Nothing in this file re-reads it,
+   and nothing can: `lib/core` is isomorphic and network-free by
+   contract, and a test that fetched the spec would make the suite
+   fail when GitHub is slow. So the source is pinned instead, as
+   `ATTRACTOR_SPEC_PIN` below, and `scripts/check-attractor-drift.mjs`
+   compares the pin against the live file from CI. A revision
+   upstream turns that job red and says to re-verify this file. It
+   is the only thing standing between "the formats ARE compatible"
+   and a claim that was true in March.
+
    Source: https://github.com/strongdm/attractor (attractor-spec.md),
    quoted in the Fase 0 implementation contract, PART 0.
    ============================================================ */
+
+/**
+ * The exact bytes the three sets above were transcribed from.
+ *
+ * Two digests of one file, because they answer to different readers. `blob` is the git
+ * object id, which is what `https://api.github.com/repos/strongdm/attractor/contents/
+ * attractor-spec.md` reports and what `git hash-object attractor-spec.md` prints, so a
+ * person can check the pin by hand in one command against either. `sha256` is the one to
+ * trust when the two disagree: a blob id is sha1, and a drift guard whose whole job is to
+ * notice a changed document should not rest on a hash with a public collision.
+ *
+ * `bytes` is here for the same reason the pair is: a truncated download has the right
+ * length far less often than it has the wrong digest, and a length mismatch says
+ * "transfer" where a digest mismatch says "revision".
+ *
+ * `upstreamCommit` and `movedOn` are the commit that last touched the file when the pin
+ * was taken, so a reader who has to re-verify starts from a diff rather than from the
+ * whole 93 KB document:
+ *
+ *     https://github.com/strongdm/attractor/commits/main/attractor-spec.md
+ *
+ * `verifiedOn` is when the spec was last read against the sets above, which is a different
+ * claim from when the digests were taken and is the one that decays.
+ *
+ * Moved to 2026-09-05 on a MECHANICAL re-verification rather than a reading, and the method
+ * is written down so the next person repeats it instead of re-inventing it. Two directions,
+ * both run against the pinned bytes:
+ *
+ *   1. every name in Appendix A's three tables is a member of the matching set here.
+ *      Extracted with `^\|\s*\`([a-z_.]+)\`` over the Appendix A section, split by its
+ *      three `###` headings: 11 graph, 17 node, 6 edge. Result: nothing missing.
+ *   2. every attribute the spec's own pseudocode READS is a member of some set here.
+ *      Extracted with `attrs.get("…")` and `attrs["…"]` over the whole document: ten names,
+ *      all of them already present. Result: nothing missing.
+ *
+ * The sets are deliberately WIDER than Appendix A by twelve names, and that difference is
+ * the point of the second direction: `default_max_retry` (§3.5's legacy alias) and eleven
+ * node names read by the handler pseudocode in §4.6, §4.8, §4.10 and §4.11 and by §9.7's
+ * tool hooks. Each carries its section inline below. A name the spec reads and this file
+ * does not reserve is the failure mode that matters, because DarkPrint would then be free
+ * to park its own data there and would be configuring a run instead of being ignored.
+ *
+ * **Values are read out of this file by regex** (`scripts/check-attractor-drift.mjs`), so
+ * every member stays a plain string literal on its own line. A computed value here would
+ * make the guard report a drift that is really a parse failure.
+ *
+ * PUBLISHED on `lib/core/index.ts` since 2026-09-05, having been deliberately withheld
+ * before it. The withholding reasoned that nothing in the product should BRANCH on when a
+ * document was last read, and that stands: no code reads these values to decide anything,
+ * and none may. What arrived is a consumer that DISPLAYS them. `/spec/attractor` states
+ * which revision of the spec DarkPrint's compatibility is against, because an undated
+ * compatibility claim has no shelf life and no surface named one until that page existed.
+ * Printing a provenance value and branching on it are different acts, and the original
+ * sentence forbade the second while its export rule blocked both.
+ */
+export const ATTRACTOR_SPEC_PIN = Object.freeze({
+  rawUrl: "https://raw.githubusercontent.com/strongdm/attractor/main/attractor-spec.md",
+  blob: "aaaa969f0d5c1144b5c3b30b389e5fb6c588e53a",
+  sha256: "235354496e2bc35cba9822cded2ebd71ff35a8fb7fce4e51f52b2788586e92ec",
+  bytes: "93036",
+  upstreamCommit: "fb57a55ed97372a27ac90102f436947e29f48426",
+  movedOn: "2026-03-17",
+  verifiedOn: "2026-09-05",
+});
 
 /**
  * Where an attribute is attached. Attractor reserves a different set of names in
@@ -78,10 +164,19 @@ export const ATTRACTOR_GRAPH_ATTRIBUTES: readonly string[] = Object.freeze([
  * never a DOT attribute — the Fase 0 contract says "keep it that way", which
  * `lint.ts` enforces as `attractor/reserved-attribute`.
  *
- * The last eight are read by handler pseudocode rather than tabulated in Appendix A.
- * They are only reachable through a shape DarkPrint does not emit today, which is
- * precisely why they belong here: the day the mapping table grows a `component` or a
- * `house` row, the names must already be spoken for.
+ * The last eleven are read by handler pseudocode or by §9.7 rather than tabulated in
+ * Appendix A. They were listed here while nothing could reach them, against the day the
+ * mapping table grew a `component` or a `house` row. That day arrived: `emit.ts` now emits
+ * both, plus `tripleoctagon`, for the `orchestration` branch of doc 3 §3. So `join_policy`,
+ * `max_parallel`, the three `manager.*` names and `human.default_choice` are now live
+ * configuration for shapes DarkPrint writes, and the emitter deliberately writes none of
+ * them: a fan-out with no `join_policy` and a manager loop with no `manager.max_cycles`
+ * take the runner's own defaults, which is the honest output for a card that declares
+ * neither. The names stay reserved so nothing later parks DarkPrint data in one.
+ *
+ * `tool_command` is the exception and it is not a default: §4.10 FAILs a node whose
+ * command is empty, so `emit.ts` writes it for a `shell-tool` card rather than leaving a
+ * parallelogram that cannot start.
  */
 export const ATTRACTOR_NODE_ATTRIBUTES: readonly string[] = Object.freeze([
   "label",
@@ -101,6 +196,12 @@ export const ATTRACTOR_NODE_ATTRIBUTES: readonly string[] = Object.freeze([
   "reasoning_effort",
   "auto_status",
   "allow_partial",
+  // §4.6 WaitForHumanHandler (shape=hexagon) — the choice taken when a person does not
+  // answer in time; §6.5 names it again from the interviewer's side ("For `wait.human`
+  // nodes, the node attribute `human.default_choice` specifies which edge target to select
+  // on timeout"). Without it the handler returns RETRY, so this is read on a shape
+  // `emit.ts` writes for every `human-gate` and `human-input` card.
+  "human.default_choice",
   // §4.8 ParallelHandler (shape=component).
   "join_policy",
   "max_parallel",
@@ -112,6 +213,13 @@ export const ATTRACTOR_NODE_ATTRIBUTES: readonly string[] = Object.freeze([
   "manager.stop_condition",
   "manager.actions",
   "stack.child_autostart",
+  // §9.7: "Graph-level or node-level attributes `tool_hooks.pre` and `tool_hooks.post`
+  // specify shell commands executed around each LLM tool call". The same two names in a
+  // second scope, so a node carrying one runs a command; reserving them at graph scope
+  // alone would have said a node-level hook is ignored, which is the opposite of what a
+  // runner does with it.
+  "tool_hooks.pre",
+  "tool_hooks.post",
 ]);
 
 /** Edge-level reserved attributes. */

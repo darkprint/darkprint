@@ -30,11 +30,11 @@ inputs:
 outputs: []
 dependencies:
   - acceptance-tester
-cannot:
+cannot: []
+will_not:
   - alter the artefact on the way through
   - release work the tester did not sign off
 
-requires_human: false
 risk_markers: []
 notes: >-
   No `irreversible-action`, deliberately, and the same judgement call `result-delivery@1.0.0`
@@ -47,4 +47,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

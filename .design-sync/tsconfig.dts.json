@@ -1,0 +1,16 @@
+{
+  "_comment": "Declaration-only emit for the design-system types tree. The repo ships no .d.ts, so the converter's prop extractor had nothing to read and every component came out as `[key: string]: unknown`. Emitting real declarations gives the design agent the actual prop contracts.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": false,
+    "rootDir": "..",
+    "outDir": ".cache/pkg/types",
+    "incremental": false,
+    "plugins": []
+  },
+  "include": ["../components/**/*.ts", "../components/**/*.tsx", "../lib/**/*.ts"],
+  "exclude": ["../**/*.test.ts", "../**/*.test.tsx", "../node_modules", "../lib/db/**", "../lib/server/**"]
+}

@@ -3,6 +3,40 @@
    The contract that holds everything else up: identity,
    behaviour, interfaces and evaluation metadata for one node.
    Design doc §3–§4, engine spec §4.
+
+   ── Who reads which of these fields ──
+   A card is read twice, by two parties that never meet, and it
+   is worth knowing which of them is reading a field before
+   deciding what to write in it.
+
+   Some fields are handed to the RUNTIME. When a bundle is
+   exported, `attractor/emit.ts` writes them onto the DOT under
+   the names Attractor reserves for them, and the runner acts on
+   them: `spec` becomes `prompt`, `name` becomes `label`, `model`
+   becomes `llm_model`, `params.max_iterations` becomes
+   `max_retries`, `params.tool_command` becomes the node attribute
+   of the same name, and `type` and `phases` become the node's
+   `class` (prefixed `dp-`), which a `model_stylesheet` selects
+   on. Write those fields for a machine that will execute them.
+
+   Everything else is read by DARKPRINT, and by whoever opens the
+   card. `cannot`, `will_not`, `risk_markers`, `inputs`,
+   `outputs`, `dependencies`, `notes`, `tools`, `mcp` and `skill`
+   are scored, indexed, drawn and shown; no Attractor runner sees
+   any of them. The one thing that crosses back is the card's
+   identity, which travels as `card="id@version"` on the node.
+   Attractor does not reserve that name, so it ignores it, and
+   that is the entire reason a DarkPrint bundle runs unchanged.
+
+   The line between the two is a property of the NAME a value is
+   written under, never of the intention behind it: a DarkPrint
+   field emitted under a reserved Attractor name would not be
+   ignored, it would configure a run. `attractor/emit.ts` declares
+   both halves as lists and its tests hold the emitter to them, so
+   nothing crosses that line by accident. Nothing here asks a card
+   author to check anything; it asks them to know that `type` and
+   `spec` are instructions somebody's machine will follow, and
+   that `will_not` is a promise addressed to a person.
    ============================================================ */
 
 /** Any value that survives a JSON round-trip — what `params` is allowed to hold. */
@@ -20,15 +54,32 @@ export interface Port {
 
 /**
  * One node, fully described. The wire format (YAML/JSON on disk) is snake_case —
- * `requires_human`, `risk_markers`, `ontology_version` — and `validate.ts` maps it
- * onto this camelCase model.
+ * `risk_markers`, `will_not` — and `validate.ts` maps it onto this camelCase model.
  */
 export interface NodeCard {
   /* 3.1 identity */
   /** Unique id, optionally namespaced ("berti/solver-a"). Ties the card to its DOT node. */
   id: string;
   name: string;
-  /** `node-type` term id. Doc 3 §1: exactly one. */
+  /**
+   * `node-type` term id. Doc 3 §1: exactly one.
+   *
+   * It is also the whole of the card's answer to whether a person acts at this node. A
+   * type subsumed by doc 3 §3's `human-in-the-loop` category is staffed and nothing else
+   * is, and `ontology/resolve.ts`'s `requiresHuman` is where that is read. There used to
+   * be a `requires_human` boolean here as well, so a card could say `type: human-gate`
+   * and `requires_human: false` in the same document: the archive loaded it, the
+   * schematic drew a person on the node, and the autonomy reading counted it unattended.
+   * Nothing in the system compared the two, and a field that can contradict the field
+   * beside it is not a second opinion, it is a second source of truth.
+   *
+   * It is also the field the exporter reads twice: once for the node's `shape`, which is
+   * how Attractor picks the handler that runs the node, and once for its `class`, where
+   * the type and every category above it are written out as `dp-agent`, `dp-human-gate`,
+   * `dp-orchestration` and so on. A `model_stylesheet` selects on class, so the second
+   * one is what lets whoever runs the bundle say "every agent on this machine runs on the
+   * cheap model" without editing a single card.
+   */
   type: string;
   /**
    * `phase` term ids: any number of doc 3 §2's five, never namespaced (doc 3 §7 keeps the
@@ -44,6 +95,11 @@ export interface NodeCard {
    *
    * Nothing downstream may render an empty list as a defect: it feeds phase coverage,
    * which doc 2 §1.1 and doc 3 §2 make descriptive rather than a score.
+   *
+   * Each declared phase is also written onto the exported node as a `dp-planning`,
+   * `dp-testing` class beside the type's, so a stylesheet can route by lifecycle stage as
+   * well as by what the node is. A card that declares none carries no phase class, which
+   * is the same answer `phases: []` gives everywhere else.
    *
    * The wire key stays the singular `phase` and accepts a scalar or a sequence, because
    * both spellings read naturally in YAML; `validate.ts` normalises them onto this field.
@@ -69,9 +125,25 @@ export interface NodeCard {
    * **A default rather than a binding**, and that is the whole of its contract. Engine
    * spec §2.6 reserves `llm_model` as "LLM model identifier. Overridable by stylesheet",
    * and §8 gives the graph a `model_stylesheet` whose rules set the model for every node
-   * matching a shape, a class or an id. An explicit node attribute outranks the sheet, so
-   * `attractor/emit.ts` writing this field onto the node is what makes the downloaded
-   * bundle run on the named model until whoever runs it says otherwise.
+   * matching a shape, a class or an id.
+   *
+   * **An explicit node attribute outranks the sheet**, and the spec says so twice. §8.5
+   * gives the resolution order and puts the explicit node attribute first, above the
+   * matching stylesheet rule, above the graph-level default, above the handler default,
+   * and it gives the mechanism in the same section: the stylesheet is a transform that
+   * "only sets properties that the node does not already have explicitly". §8.3 states the
+   * same rule from the selector side, "Explicit node attributes always override stylesheet
+   * values (highest precedence)", and its specificity table ranks the sheet's own rules
+   * against each other rather than against the node. So `attractor/emit.ts` writing this
+   * field onto the node is what makes the downloaded bundle run on the named model until
+   * whoever runs it says otherwise, and a sheet the recipient adds cannot take it back.
+   *
+   * §2.6 is cited above for the NAME and never for the ranking. Its whole gloss is
+   * "Overridable by stylesheet", which says the sheet can reach a node and says nothing
+   * about what happens when both speak; reading it as a ranking is how four surfaces on
+   * this site came to print the reverse, and `components/spec/rows.test.ts` holds those
+   * four to §8.5 now. This docblock is the fifth carrier of the same claim, and
+   * `schema.test.ts` holds it to the same thing.
    *
    * Absent on most cards, and absence is an answer rather than a hole: the node takes
    * whatever the graph or the runner supplies. Nothing that renders a card may draw the
@@ -108,7 +180,36 @@ export interface NodeCard {
    * instruction, and absence carries no judgement.
    */
   skill?: string;
-  /** Nested configuration, free-form but JSON-serializable. */
+  /**
+   * Nested configuration for the node, free-form but JSON-serializable.
+   *
+   * Free-form is not the same as unread. Two top-level keys are interpreted, and an author
+   * who does not know which they are is one edit away from moving a published score or a
+   * runnable bundle without meaning to:
+   *
+   * `max_iterations`, also spelled `maxIterations` or `max_retries`, is the iteration cap.
+   * `card/iteration-cap.ts` is its one reader and two callers ask it the same question:
+   * `analysis/security.ts` charges doc 3 §4.1's `unbounded-loop` against a cycle no node
+   * of which declares a cap, and `attractor/emit.ts` writes the value onto the exported
+   * node as Attractor's reserved `max_retries`. One key, a security score and a runnable
+   * DOT.
+   *
+   * `tool_command` is the shell command a `shell-tool` node runs, and it is the whole of
+   * that node's instruction. Engine spec §4.10's tool handler reads a node attribute of
+   * that name and FAILs the node outright when it is empty ("No tool_command specified"),
+   * so a `shell-tool` card that omits it describes a node that cannot run: `validate.ts`
+   * says so at warning severity. Carrying it onto the exported node under Attractor's own
+   * name is `attractor/emit.ts`'s half.
+   *
+   * It sits in `params` rather than as a top-level card field on the owner's call. `params`
+   * already carries runner configuration and a command is more of that, so a shell-tool
+   * node costs the wire format no new key and every card written before the term still
+   * parses.
+   *
+   * Every other key travels with the card to whoever runs the graph and is read by nothing
+   * here, which is what the field is for. A third interpreted key belongs in this list on
+   * the day it is added.
+   */
   params: Record<string, JsonValue>;
 
   /* 3.3 interfaces */
@@ -117,45 +218,103 @@ export interface NodeCard {
   /** Ids of other cards this one receives data from. */
   dependencies: string[];
   /**
-   * What this node must never do or receive. The negative half of the interface: `inputs`
-   * and `dependencies` say what arrives, and this says what may not.
+   * What this node must never RECEIVE, as ontology `data-type` term ids the engine
+   * enforces. The negative half of the interface: `inputs` and `dependencies` say what
+   * arrives, and this says what may not.
    *
-   * **An entry naming an ontology `data-type` is enforced.** It is a declared prohibition
-   * on receiving that type, and `bundle/resolve.ts` holds the graph to it: an incoming
-   * edge able to carry the type, meaning the type itself or a narrower kind of it, raises
+   * `bundle/resolve.ts` holds the graph to every entry: an incoming edge able to carry
+   * the type, meaning the type itself or a narrower kind of it, raises
    * `bundle/prohibition-violated` at error severity, naming the card, the edge and the
    * type. That is what turns doc 2 §3's isolation argument from prose into something the
    * engine enforces. `code-builder` declaring `cannot: [acceptance-criteria]` makes the
    * starter's absent edge a rule the analyzer checks, in place of a convention the author
    * happened to remember.
    *
-   * A `data-type` is the only kind of term enforced here, because it is the only kind an
-   * edge carries. An entry naming a `phase`, a `node-type` or a `tool` is read as free
-   * text.
+   * A `data-type` is the only thing this field takes, because a data type is the only
+   * thing an edge carries and therefore the only thing the resolver can refuse. An entry
+   * naming a `phase`, a `node-type`, a `tool` or nothing at all is a `card/unknown-term`
+   * or a `card/wrong-term-kind` here, and belongs in `willNot` instead.
    *
-   * **An entry naming no ontology term is free text.** It is shown to the reader and
-   * checked by nothing, because the engine has no way to decide "never opens a shell"
-   * against a topology. Writing one is legitimate, and it addresses a reader rather than
-   * the resolver.
-   *
-   * `[]` when the node declares no prohibitions.
+   * `[]` when the node declares no enforced prohibition, which is the ordinary case.
    */
   cannot: string[];
+  /**
+   * What this node undertakes never to do, in the author's own sentences. The prohibitions
+   * that are real and that no engine can check: "never opens a shell", "does not edit the
+   * code under test", "cannot recommend an outcome".
+   *
+   * ── Why this is a field of its own, and why it is named this ──
+   * These two lists were one list until the split. That list carried two different
+   * promises under one key, and the only way to tell them apart was to resolve each entry
+   * against the vocabulary yourself — so a page that showed the list either lied by
+   * omission or grew a count (`enforcedCount`) to apologise for the conflation. A reader
+   * has to be able to tell which promise they are being given without running anything,
+   * and two keys is the only way to say it in the file itself.
+   *
+   * `will_not` rather than `unenforced`, `advisory`, `notes` or `soft_cannot`. Those words
+   * grade the promise, and this half is not the lesser half: a node that undertakes not to
+   * push to a repository is making the more consequential statement of the two on most
+   * cards in the archive. The English already draws the line the engine draws. `cannot` is
+   * an incapacity somebody else imposes and holds you to. `will not` is an undertaking you
+   * give, in your own words, and stand behind. The difference between them is exactly the
+   * difference between a rule `bundle/resolve.ts` checks and a rule it has no way to see,
+   * and it survives being read aloud by somebody who has never opened this file.
+   *
+   * Nothing in the engine checks an entry here, and nothing may report one as a defect for
+   * that reason. It is addressed to whoever reads the card and to the agent instantiated
+   * from it, which is a real audience: on `maintainer-approval` the entries here are
+   * restated in the `spec` the agent actually executes.
+   *
+   * An entry that names a `data-type` term is a `card/prohibition-misfiled` warning, since
+   * the author has written something the engine could have enforced into the field where
+   * it never will be. The card still loads and the entry is still shown, because what it
+   * says is what this field says.
+   *
+   * `[]` when the node states no undertaking.
+   */
+  willNot: string[];
 
   /* 3.4 evaluation metadata */
-  requiresHuman: boolean;
   /** `risk-marker` term ids. */
   riskMarkers: string[];
   notes?: string;
 
   /* 3.5 service fields */
-  /** Semver of the card itself. §4: a published version is never edited in place. */
+  /**
+   * Semver of the card itself. §4: a published version is never edited in place.
+   *
+   * The only version anywhere in DarkPrint that names a contract. There used to be an
+   * `ontology_version` here too, naming the vocabulary the author wrote the card against,
+   * and the engine resolved that string to a stored vocabulary before reading the card.
+   * Nothing consumed the resolution, and the field asked every author to maintain an
+   * answer no reader had a question for. The vocabulary has since stopped carrying a
+   * version at all: it names what an Attractor node is, and Attractor's shapes are fixed
+   * by its spec. `deprecated: {since, replacedBy}` is what lets the one living vocabulary add and
+   * retire terms without any of that.
+   *
+   * This one stays, and it is not the same kind of thing: it pins a node to an exact card,
+   * it travels to Attractor as `card="id@version"`, and §4 makes a published version
+   * immutable so the pin means something.
+   */
   version: string;
   author?: string;
   provenance?: string;
-  /** Semver of the vocabulary the card is written against. */
-  ontologyVersion: string;
 }
+
+/**
+ * The `params` key that carries a `shell-tool` node's command (engine spec §4.10).
+ *
+ * Two modules ask the same question of it. `card/validate.ts` warns when a `shell-tool`
+ * card leaves it empty, and `attractor/emit.ts` writes the value onto the exported node
+ * under Attractor's own `tool_command`. They have to spell it the same way and agree on
+ * what counts as empty, or a card is told it is complete and exports without a command, or
+ * told it is incomplete and exports with one. That is the accident `card/iteration-cap.ts`
+ * was extracted to end over the same bag, with three keys instead of one.
+ *
+ * Named here because this file owns the wire vocabulary, so there is one spelling to import
+ * rather than two literals to keep level.
+ */
+export const TOOL_COMMAND_KEY = "tool_command";
 
 /** "id@version" — how a DOT node pins the exact card it instantiates. */
 export type CardRef = string;

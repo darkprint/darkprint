@@ -46,9 +46,11 @@ import {
    this compact they land at roughly 7 CSS pixels, under the
    10-pixel floor `components/viz/flow.ts` sets, and they collide
    with the discs either side. So each edge wears a numeral and the
-   five names are listed under the drawing as real DOM text at 11px,
-   which is the same numbered-annotation move `/reading-the-radar`
-   makes with the radar. A plate and its key.
+   five names are listed under the drawing as real DOM text at 11px:
+   a plate and its key. The move was borrowed from `/reading-the-radar`,
+   which annotated its radar the same way; that page came off the site
+   on 2026-09-04 and this figure keeps the treatment on its own
+   arithmetic, which is the paragraph above.
 
    ── One register for a node, site-wide ──
    The graph figure drew every node as a rounded `<rect>` with a
@@ -382,9 +384,9 @@ function Field({
    * so I suggested to use a more evocative name … but ONLY for the home page". A term with
    * a footnote is still a term first. See `CardStackFigure` for what replaced it.
    *
-   * The prop stays because a card whose `cannot[0]` has no plain sibling in the archive
-   * will want it, and because it is the only place the two-line row's alignment is worked
-   * out. Nothing calls it today.
+   * The prop stays because a card that refuses a type under `cannot` and states no
+   * `will_not` sentence beside it will want it, and because it is the only place the
+   * two-line row's alignment is worked out. Nothing calls it today.
    */
   hint?: string;
   /**
@@ -700,8 +702,8 @@ function StatusRow({ filled, children }: { filled?: boolean; children: React.Rea
  * ── Every value is the card's ──
  * Nothing here is authored except four labels: `IN`, `OUT`, `Must never arrive:` and the
  * glyph. Id, version, author, type, phase, model, the first input and output with their
- * types, and both `cannot` entries are read off the `card` prop, which the caller reads off
- * `content/cards/`. A picture with an invented field in it is the one thing this beat cannot
+ * types, and the `cannot` term and the `will_not` sentence are read off the `card` prop,
+ * which the caller reads off `content/cards/`. A picture with an invented field in it is the one thing this beat cannot
  * afford, because three seconds later it turns into the file it is a picture of.
  */
 function StagePlate({ card }: { card: NodeCard }) {
@@ -713,19 +715,25 @@ function StagePlate({ card }: { card: NodeCard }) {
      acceptance-criteria` so I suggested to use a more evocative name instead of
      `acceptance-criteria` but ONLY for the home page."
 
-     `cannot` is a list, and this archive writes it as a pair: the ontology term the resolver
-     enforces, then the same rule in words. `code-builder@1.0.0` has `acceptance-criteria`
-     and "read the checks the work will be run against". So the band prints the SECOND entry
-     and nothing is invented — the evocative name was already in the file, one line down from
-     the technical one.
+     The pair the band prints is `will_not[0]` in words and `cannot[0]` as the term.
+     `code-builder@1.0.0` has `acceptance-criteria` under `cannot` and "read the checks the
+     work will be run against" under `will_not`, so the evocative name is already in the
+     file and nothing here is invented.
 
-     That is the whole reason the term is not simply rewritten. It names a data type in the
-     ontology, and drawing a different word would have this figure disagree with the file it
-     turns into three seconds later, on the beat whose one claim is that the two are the same
-     thing. The term stays visible at the right end of the band, so the plate shows both
-     halves of the pair rather than choosing between them. */
-  const plain = card.cannot[1] ?? card.cannot[0];
-  const term = card.cannot[0];
+     Read off two fields now, and that is the repair rather than a rename. This was
+     `cannot[1] ?? cannot[0]` and `cannot[0]`, which is index-0-is-the-term as a
+     convention: it held because the one card in the archive with an enforced entry happened
+     to write it first, and a card that wrote the two the other way round would have put a
+     sentence where the term goes and a term in the band. The split makes the read say what
+     it means, and the fallbacks cover a card that fills only one of the two.
+
+     The term is not simply rewritten into plain words, for the reason it never was. It
+     names a data type in the ontology, and drawing a different word would have this figure
+     disagree with the file it turns into three seconds later, on the beat whose one claim
+     is that the two are the same thing. The term stays visible at the right end of the
+     band, so the plate shows both halves rather than choosing between them. */
+  const plain = card.willNot[0] ?? card.cannot[0];
+  const term = card.cannot[0] ?? card.willNot[0];
 
   return (
     <div
@@ -1024,18 +1032,22 @@ export function CardStackFigure({
 /**
  * One list, two things written against it.
  *
- * The prose says the graph and the cards are "both written against" the vocabulary, and
+ * The prose says the topology and the cards are "both written against" the vocabulary, and
  * that relation is the whole point of the part, so the drawing is the relation rather than
  * a sample of terms: two sources, a brace, and the kinds with how many terms each holds.
  * The counts come off the ontology at build time, which `architecture/ontology.md` requires
  * and which also means a term landing tomorrow redraws this without anyone editing it.
+ *
+ * The head read "ontology v0.4.0" until 2026-09-04 and takes no `version` now. The owner
+ * removed ontology versioning outright, on the reading that this project has one vocabulary
+ * and the Attractor spec language is the thing it answers to; a figure printing a number the
+ * vocabulary no longer carries would be labelling the drawing with a field nothing sets.
+ * What the head names is the file, and the file has one name.
  */
 export function VocabularyFigure({
   kinds,
-  version,
 }: {
   kinds: readonly { kind: string; count: number }[];
-  version: string;
 }) {
   return (
     <div className="flex w-full max-w-[21rem] items-center gap-3">
@@ -1045,7 +1057,7 @@ export function VocabularyFigure({
           read as broken. */}
       <div className="flex shrink-0 flex-col gap-6 font-mono text-[11px] text-fg">
         <span className="flex h-8 items-center rounded border border-line bg-surface px-2">
-          the graph
+          the topology
         </span>
         <span className="flex h-8 items-center rounded border border-line bg-surface px-2">
           the cards
@@ -1067,7 +1079,7 @@ export function VocabularyFigure({
 
       <div className="min-w-0 flex-1 rounded-lg border border-line-bright bg-surface px-3 py-2.5">
         <div className="border-b border-line pb-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan">
-          ontology {version}
+          ontology
         </div>
         <dl className="pt-1.5">
           {kinds.map((k) => (

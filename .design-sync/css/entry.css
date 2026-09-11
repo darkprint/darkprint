@@ -1,0 +1,22 @@
+/* Tailwind entry for the design-system bundle.
+   app/globals.css is a source file: it carries the @theme tokens but none of the
+   utilities, which Tailwind generates by scanning markup. The app gets that scan
+   from Next; this file reproduces it for the bundle, and adds the preview sources
+   so a class used only in an authored card still lands in the stylesheet. */
+@import "../../app/globals.css";
+@import "../../node_modules/@xyflow/react/dist/style.css";
+
+@source "../../components/**/*.tsx";
+@source "../../app/**/*.tsx";
+@source "../../lib/**/*.ts";
+@source "../previews/**/*.tsx";
+
+/* The preview card template closes its <head> with `body{background:#fff}`,
+   which lands after this stylesheet and, against globals.css's near-white
+   `--color-fg`, would render every card white-on-white. `html body` outranks it
+   on specificity instead of order. The values are the ones app/globals.css
+   already sets, so a design built from this DS gets the product's dark ground. */
+html body {
+  background: var(--color-void);
+  color: var(--color-fg);
+}

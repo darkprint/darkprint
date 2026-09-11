@@ -32,7 +32,8 @@ import { layeredLayout, type LayoutEdge } from "@/lib/content/layout";
  * Ontology `node-type` (doc 3 §3) → the schematic's visual role.
  *
  * v0.1 closed the type dimension down to six concrete terms plus the two abstract
- * categories they sit under. The schematic's `AgentNodeKind` is older and wider, so
+ * categories they sit under, and the `orchestration` branch has since added three more
+ * (see the third loss below). The schematic's `AgentNodeKind` is older and wider, so
  * the map is many-to-one in both directions and coming back is a judgement call —
  * this is where it is made. Everything visual downstream (icon, accent colour, legend
  * entry) hangs off the answer.
@@ -64,6 +65,17 @@ import { layeredLayout, type LayoutEdge } from "@/lib/content/layout";
  *   A retry node is recognisable from the loop it closes, not from its card, and the
  *   loop is the layout's business (`edgeVariant` already draws the back edge as
  *   control), so nothing here guesses at it.
+ *
+ * TBD: the `orchestration` branch — `parallel`, `parallel.fan-in`, `manager-loop` — has
+ * no row and therefore draws as `executor`, which is the same defect the `human-input`
+ * row above was added to fix: a working node drawn where something quite different is
+ * standing. It is left open rather than guessed at because every candidate in
+ * `AgentNodeKind` carries a legend label that would be a wrong one on the schematic
+ * (`Router` for a fan-out, `Negotiator` for a join, `Retry` for a supervisor loop), and
+ * the honest fix is three new kinds with three glyphs and three accents — a design
+ * decision with a colour-token budget, since `NODE_KIND_META`'s violet and amber are
+ * both already spoken for (`lib/format.ts`). No shipped card declares one of the three,
+ * so nothing draws wrong today; the first card that does will.
  */
 const KIND_BY_TYPE: Readonly<Record<string, AgentNodeKind>> = {
   /* doc 3 §3 — the six concrete types */
@@ -247,6 +259,20 @@ export function graphForBlueprint(
         ),
       };
       if (edge.label !== undefined) seed.label = edge.label;
+      /* `edge.condition` is deliberately NOT drawn, and this is where that was decided.
+
+         A guarded edge could be given its own stroke, and the reason not to is the rule
+         on `ResolvedEdge.condition`: the analyzers count a conditional edge exactly as
+         much as an unconditional one, because a leak that can happen is a leak. A second
+         stroke would tell a reader the opposite in the one place they look first — a
+         "maybe" line beside a Security number computed as though it were certain, on the
+         same screen — and a picture that contradicts the score printed next to it is the
+         defect this file's own header records for `human-input`.
+
+         Nothing is hidden by the decision. The condition is carried verbatim on the edge,
+         it is written into the exported DOT, and the DOT source panel beside the
+         schematic shows it in the author's own words, where a guard reads as the
+         expression it is instead of as a dotted line somebody has to interpret. */
       return seed;
     });
 

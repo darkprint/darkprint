@@ -3,7 +3,7 @@
 
    The section's header comment has always claimed that "every
    node, every edge and every label below is read off
-   `content/blueprints/starter-software-factory/blueprint.dot` and
+   `content/blueprints/starter-software-factory/topology.dot` and
    the five cards it names". It was not: the labels, the wires and
    the iteration cap were transcribed literals in the JSX with
    nothing holding them to the archive, so the claim was a promise
@@ -58,7 +58,7 @@ export const ROLE_BOXES: readonly RoleBox[] = [
   { id: "planner", label: "Planner", card: "spec-planner@1.0.0", kind: "executor" },
   { id: "builder", label: "Builder", card: "code-builder@1.0.0", kind: "executor" },
   { id: "tester", label: "Tester", card: "acceptance-tester@1.0.0", kind: "verifier" },
-  { id: "debugger", label: "Debugger", card: "targeted-debugger@1.0.0", kind: "executor" },
+  { id: "debugger", label: "Debugger", card: "targeted-debugger@1.1.0", kind: "executor" },
   { id: "deployer", label: "Deployer", card: "release-gate@1.0.0", kind: "ship" },
 ];
 
@@ -98,17 +98,21 @@ export const ROLE_ABSENCE = {
  * The cap on the tester/debugger loop, and where it is declared.
  *
  * Quotable because a published version is archived rather than edited in place: changing
- * `params.max_iterations` on this card produces a new version and leaves 1.0.0 saying what
- * it says today.
+ * the cap on this card produces a new version rather than moving what an existing one says.
+ *
+ * The key is `max_retries` and the number is 2, which is the same cap the card has always
+ * declared, spelled the way the runner counts it. Engine spec §2.6 counts the attempts that
+ * follow the initial execution, so three patches is written as two, and 1.0.0's
+ * `max_iterations: 3` said four. That off-by-one is why the version moved.
  */
 export const ROLE_LOOP_CAP = {
-  card: "targeted-debugger@1.0.0",
-  param: "max_iterations",
-  value: 3,
+  card: "targeted-debugger@1.1.0",
+  param: "max_retries",
+  value: 2,
 } as const;
 
 /** The blueprint every fact above is taken from. */
-export const ROLE_BLUEPRINT = "content/blueprints/starter-software-factory/blueprint.dot";
+export const ROLE_BLUEPRINT = "content/blueprints/starter-software-factory/topology.dot";
 
 /** The box for a DOT node id. Throws rather than rendering a hole. */
 export function roleBox(id: string): RoleBox {

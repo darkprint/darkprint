@@ -24,7 +24,16 @@ export interface BundleManifest {
   category?: string;
   tags: string[];
   author?: string;
-  ontologyVersion: string;
+  /*
+   * There is no `ontologyVersion` here. The manifest used to declare which vocabulary the
+   * bundle was written against, the resolver compared it to the vocabulary it was actually
+   * being read against, and each card declared a third copy of the same number. All three
+   * copies were maintained by hand and the only thing the comparison could report was that
+   * they had drifted. Nothing anywhere declares one now: the vocabulary itself carries no
+   * version, because DarkPrint's terms name what an Attractor node is and Attractor fixes
+   * that by its spec. A bundle's own terms still travel with it, in
+   * `ontology/extensions.yaml`.
+   */
   /** ISO date string, supplied by the caller — `lib/core` never reads the clock. */
   createdAt?: string;
   updatedAt?: string;
@@ -58,6 +67,45 @@ export interface ResolvedEdge {
   /** Resolved input port on `target`. */
   toPort?: Port;
   label?: string;
+  /**
+   * Attractor's edge guard, carried verbatim and **never parsed**.
+   *
+   * Attractor reserves `condition` on an edge (Appendix A) and gives it a whole
+   * expression grammar in §10. DarkPrint implements none of it. The string is stored the
+   * way the author wrote it, emitted the way it was stored, and read by nothing in this
+   * package: a registry publishes what somebody else runs, and a second implementation of
+   * somebody else's expression language is a second implementation that can disagree with
+   * the first. Absent when the edge declares no guard, which is the ordinary case.
+   *
+   * ── THE RULE, and it is the reason this field is documented at this length ──
+   * **A conditional edge counts exactly as much as an unconditional one, in every risk
+   * analysis, always.** A leak that can happen is a leak. Every analyzer in
+   * `lib/core/analysis` is reachability-based, and until this field existed "path" and
+   * "possible path" were the same words because every edge was unconditional. They are no
+   * longer the same words, and the answer DarkPrint gives is the first one: the guard is
+   * evaluated at run time, on somebody else's machine, against data DarkPrint never sees,
+   * and a check that cannot see the data cannot claim the branch is not taken.
+   *
+   * So: do not weight a path by its guard, do not skip an edge whose condition looks
+   * false, do not add a "probably not taken" tier to a finding. Every one of those reads
+   * as an improvement and every one of them lowers Security across the whole archive by
+   * exactly the amount somebody would gain by writing `condition="false"` on the edge
+   * that leaks. `analysis/analyze.test.ts` holds two blueprints that differ only in their
+   * guards to the same scores, findings and diagnostics, so the improvement fails there
+   * rather than in production.
+   */
+  condition?: string;
+  /**
+   * Attractor's routing priority, carried verbatim as the source spells it.
+   *
+   * A string rather than a number because it is a passenger: `attrs` holds strings, the
+   * DOT the author wrote is what the runner reads, and coercing `weight=3.0` to `3` would
+   * change the file for no reader's benefit. Nothing in DarkPrint compares two weights,
+   * for the same reason nothing evaluates a `condition` — priority decides which of
+   * several open branches a run takes, and every one of them is still open. Absent when
+   * the edge declares none.
+   */
+  weight?: string;
   attrs: DotAttrs;
 }
 

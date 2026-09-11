@@ -21,12 +21,19 @@ export type AgentFlowNode = Node<AgentNodeFlowData, "agent">;
  * **Why the name and nothing wider.** Spec part 3 leaves the interaction open and lists
  * three candidates. Turning the whole block into a link is the one that looks obvious and
  * is wrong: a React Flow node is draggable and the canvas is pannable, so every drag that
- * started on a node would end in a navigation, and two of this component's three mounts
- * sit inside a container that already claims a plain click. `components/panes/GraphPane`
- * reads a click on a node as doc 2 §5.1's synchronised selection, and
- * `components/build/ChoiceGraphPane` reads one as doc 2 §5.7's "le scelte si fanno dentro
- * la vista del grafo, cliccando sul nodo interessato". A whole-block link would have taken
- * a reader off `/build` at the exact moment they were making a choice in its graph.
+ * started on a node would end in a navigation, and this component is mounted inside a
+ * container that already claims a plain click. `components/panes/GraphPane` reads a click
+ * on a node as doc 2 §5.1's synchronised selection.
+ *
+ * `components/build/ChoiceGraphPane` was the second such container and read a click as doc
+ * 2 §5.7's "le scelte si fanno dentro la vista del grafo, cliccando sul nodo interessato",
+ * so a whole-block link would have taken a reader off `/build` at the exact moment they
+ * were making a choice in its graph. That pane went with the route on 2026-09-06. The
+ * argument did not depend on there being two of them and it is left standing on the one
+ * that remains. Count the mounts before quoting a number here: this component is drawn
+ * through `BlueprintGraph`, and which surfaces mount that is being reshuffled.
+ * `components/graph/schematic-boxes.ts`'s header carries that count as of 2026-09-06, and
+ * carries the reason a bare grep for the tag overcounts it.
  * A modifier click was the other candidate and it fails a different way: nothing on screen
  * would say it exists, and a keyboard reader has no modifier to hold.
  *
@@ -73,8 +80,9 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
       /* `w-[150px]` is `BLOCK_WIDTH` (`./block.ts`), written as a literal because Tailwind
          reads classes and not values. One width and not a `min`/`max` range: a block that
          could grow to 220 reached 20 flow units into the next column, which `layerGap`
-         puts 200 away, and on `/build` — whose names are generated and long — every block
-         sat at that ceiling. See `./block.ts` for the measurement and for what a stated
+         puts 200 away, and on `/build`, whose names were generated and long, every block
+         sat at that ceiling. That route was deleted on 2026-09-06; the measurement is why
+         this width is a literal, so it is kept in the past tense rather than dropped. See `./block.ts` for the measurement and for what a stated
          width buys the guard. */
       className="group relative w-[150px] rounded-md border bg-surface-2/95 px-3 py-2 backdrop-blur-sm"
       style={{

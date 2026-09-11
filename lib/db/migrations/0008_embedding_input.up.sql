@@ -1,0 +1,49 @@
+-- 0008 -- embedding_input: a watermark of what the encoder was actually fed.
+--
+-- ADDITIVE ONLY: one nullable column on each of the two vector tables, no table
+-- created, no column altered or dropped, and neither table is one of the ten
+-- `tests/server/t005/existing.test.ts` freezes (both arrived in 0003_search), so
+-- this migration carries no baseline delta.
+--
+-- WHY THE COLUMN EXISTS NOW, WHEN 0003 ARGUED IT SHOULD NOT.
+-- `0003_search.up.sql` and `lib/db/schema.ts` both argued that a row's presence
+-- was the whole of the idempotency, because a `release` row is content-addressed
+-- and "a row here is already a vector for that digest". That argument has one
+-- premise, and the premise is that the described row is never rewritten. Commit
+-- ed3ae85 falsified it: the stored-card registry migration issued
+-- `update card_version set body, source, digest where id = ...` over 58 rows and
+-- `update release set manifest, card_digests, digest` over 16, in place, under
+-- unchanged primary keys. Every card and release digest moved. `on delete
+-- cascade`, which 0003 named as the thing that "makes a stale vector
+-- unrepresentable", never fired, because nothing was deleted. The 42 card and 7
+-- release vectors survived a content change to their subjects with no record of
+-- which content they had been computed from.
+--
+-- That run did no damage, and the reason is luck rather than design: the encoder
+-- reads a hand-picked subset of fields (`cardText` and `manifestText` in
+-- `lib/server/search/reembed.ts`), and ed3ae85 moved `cannot`, `will_not`,
+-- `notes`, `requires_human` and `ontology_version`, none of which is in either
+-- subset. Nothing in the schema or in the tests would have said otherwise if it
+-- had touched `spec`.
+--
+-- WHY A TEXT HASH AND NOT `embedded_digest`, WHICH IS WHAT 0003 ARGUED AGAINST.
+-- 0003's objection is kept and narrowed rather than overruled. A column that
+-- MIRRORS a current value really is a second source for one quantity, and
+-- `release.digest` is the wrong quantity twice over: `bundleDigest` hashes
+-- `{dot, cardDigests}` and does not include the manifest at all, while the
+-- release vector is nothing but manifest fields. It would have reported all 16
+-- releases stale last week while zero embedded characters changed, and it would
+-- not move at all if someone edited `manifest.title`. `cardDigest` covers the
+-- whole card minus author/provenance, so it is over-broad in the same direction.
+-- This column records a PAST value instead, the identity of the exact input the
+-- encoder was handed, and disagreement with the present input is the signal
+-- rather than the defect.
+--
+-- NULLABLE, AND THE NULL IS A THIRD STATE RATHER THAN A CONVENTION. A row
+-- written before this migration carries no record of its input and cannot be
+-- given one honestly, because re-deriving the hash from today's text would stamp
+-- "this vector matches the current text" onto a vector nobody checked. NULL means
+-- provenance unknown, `reembedRelease` treats unknown exactly as it treats
+-- disagreement, and after one sweep of every release there are none left.
+alter table "release_embedding" add column "embedded_input_sha256" text;
+alter table "card_version_embedding" add column "embedded_input_sha256" text;

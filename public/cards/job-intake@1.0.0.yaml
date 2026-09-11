@@ -26,11 +26,11 @@ outputs:
     type: json
     description: The submitted job, its goal, its payload references and the run id assigned here.
 dependencies: []
-cannot:
+cannot: []
+will_not:
   - begin any of the work the job describes
   - open a second run for a job id already in flight
 
-requires_human: false
 risk_markers: []
 notes: >-
   The run id is minted at intake rather than per stage so a resumed run keeps writing into the
@@ -38,4 +38,3 @@ notes: >-
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

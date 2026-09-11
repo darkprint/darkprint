@@ -24,7 +24,6 @@ function minimal(): Record<string, unknown> {
     type: "agent",
     phase: "implementation",
     version: "1.0.0",
-    ontology_version: "0.1.0",
     action: "Draft a candidate solution for the sub-task",
     spec: "Read the sub-task on the `task` input and write one candidate solution to `draft`.",
     inputs: [{ name: "task", type: "text" }],
@@ -69,10 +68,9 @@ describe("validateCard, the minimal card", () => {
       outputs: [{ name: "draft", type: "json" }],
       dependencies: [],
       cannot: [],
-      requiresHuman: false,
+      willNot: [],
       riskMarkers: [],
       version: "1.0.0",
-      ontologyVersion: "0.1.0",
     });
   });
 
@@ -87,16 +85,15 @@ describe("validateCard, the minimal card", () => {
         "inputs",
         "mcp",
         "name",
-        "ontologyVersion",
         "outputs",
         "params",
         "phases",
-        "requiresHuman",
         "riskMarkers",
         "spec",
         "tools",
         "type",
         "version",
+        "willNot",
       ].sort(),
     );
   });
@@ -146,16 +143,13 @@ describe("validateCard, a fully populated card", () => {
     ],
     outputs: [{ name: "verdict", type: "status", description: "pass or fail" }],
     dependencies: ["solver-a", "berti/criteria-store"],
-    cannot: ["code", "never edits the repository it audits"],
-    // Doc 3 §3 constrains only one direction: a human type forces the flag, a non-human
-    // type may still set it. `validation` with a person signing off is a legal card.
-    requires_human: true,
+    cannot: ["code"],
+    will_not: ["never edits the repository it audits"],
     risk_markers: ["arbitrary-code-execution", "unvalidated-external-access"],
     notes: "Runs the project's own test suite.",
     version: "2.3.1",
     author: "berti",
     provenance: "https://example.invalid/cards/auditor",
-    ontology_version: "0.1.0",
   };
 
   it("maps every wire field onto the camelCase model", () => {
@@ -186,16 +180,16 @@ describe("validateCard, a fully populated card", () => {
       ],
       outputs: [{ name: "verdict", type: "status", description: "pass or fail" }],
       dependencies: ["solver-a", "berti/criteria-store"],
-      // Both spellings of a prohibition survive the round trip in the order written. The
-      // first names a `data-type` and the resolver checks it; the second is for a reader.
-      cannot: ["code", "never edits the repository it audits"],
-      requiresHuman: true,
+      // Both prohibition fields survive the round trip, and they arrive on the model under
+      // the names the model gives them: the wire writes `will_not`, the card carries
+      // `willNot`, the same way `risk_markers` becomes `riskMarkers` one line down.
+      cannot: ["code"],
+      willNot: ["never edits the repository it audits"],
       riskMarkers: ["arbitrary-code-execution", "unvalidated-external-access"],
       notes: "Runs the project's own test suite.",
       version: "2.3.1",
       author: "berti",
       provenance: "https://example.invalid/cards/auditor",
-      ontologyVersion: "0.1.0",
     });
   });
 });
@@ -203,26 +197,23 @@ describe("validateCard, a fully populated card", () => {
 describe("validateCard, snake_case and camelCase", () => {
   it("accepts the camelCase spellings silently", () => {
     const doc = minimal();
-    doc["requiresHuman"] = true;
     doc["riskMarkers"] = ["secret-access"];
-    doc["ontologyVersion"] = "0.1.0";
-    delete doc["ontology_version"];
+    doc["willNot"] = ["never opens a shell"];
     const { card, diagnostics } = validateCard(doc, opts);
     expect(diagnostics).toEqual([]);
-    expect(card?.requiresHuman).toBe(true);
     expect(card?.riskMarkers).toEqual(["secret-access"]);
-    expect(card?.ontologyVersion).toBe("0.1.0");
+    expect(card?.willNot).toEqual(["never opens a shell"]);
   });
 
   it("prefers the wire spelling and says so when both are present", () => {
     const { card, diagnostics } = validateCard(
-      { ...minimal(), requires_human: true, requiresHuman: false },
+      { ...minimal(), risk_markers: ["secret-access"], riskMarkers: [] },
       opts,
     );
-    expect(card?.requiresHuman).toBe(true);
+    expect(card?.riskMarkers).toEqual(["secret-access"]);
     expect(diagnostics).toHaveLength(1);
     expect(diagnostics[0].severity).toBe("info");
-    expect(diagnostics[0].location?.path).toBe("requiresHuman");
+    expect(diagnostics[0].location?.path).toBe("riskMarkers");
   });
 
   it("has no camelCase alias for `phase` or `spec`, both are already plain names", () => {
@@ -311,7 +302,6 @@ describe("validateCard, missing required fields", () => {
     "action",
     "spec",
     "version",
-    "ontology_version",
     "inputs",
     "outputs",
   ];
@@ -332,7 +322,7 @@ describe("validateCard, missing required fields", () => {
     expect(codes(diagnostics)).toEqual(["card/missing-field"]);
   });
 
-  it.each(["id", "name", "type", "action", "spec", "version", "ontology_version"])(
+  it.each(["id", "name", "type", "action", "spec", "version"])(
     "treats a blank `%s` as missing",
     (field) => {
       const doc = minimal();
@@ -346,8 +336,10 @@ describe("validateCard, missing required fields", () => {
   it("reports every missing field at once, not just the first", () => {
     const { card, diagnostics } = validateCard({ notes: "nothing else here" }, opts);
     expect(card).toBeUndefined();
-    // No `phase` in this list: a document that declares nothing at all is missing nine
-    // fields, not ten. That is the ruling stated as an assertion.
+    // No `phase` in this list: a document that declares nothing at all is missing eight
+    // fields, not nine. That is the ruling stated as an assertion. It was nine until
+    // `ontology_version` was withdrawn, and it is one shorter for the same reason `phase`
+    // was never in it: a field a card does not declare is not a field it is missing.
     expect(paths(diagnostics)).toEqual([
       "id",
       "name",
@@ -357,7 +349,6 @@ describe("validateCard, missing required fields", () => {
       "inputs",
       "outputs",
       "version",
-      "ontology_version",
     ]);
     expect(new Set(codes(diagnostics))).toEqual(new Set(["card/missing-field"]));
   });
@@ -377,14 +368,12 @@ describe("validateCard, wrong JS types", () => {
     ["author", []],
     ["provenance", {}],
     ["version", 1],
-    ["ontology_version", 1.1],
     ["tools", "shell"],
     ["risk_markers", {}],
     ["dependencies", "solver-a"],
     ["params", []],
     ["inputs", {}],
     ["outputs", 3],
-    ["requires_human", "yes"],
   ])("rejects a %s of the wrong type", (field, wrong) => {
     const doc = minimal();
     doc[field] = wrong;
@@ -464,24 +453,14 @@ describe("validateCard, bad versions", () => {
     },
   );
 
-  it("checks ontology_version with the same rule", () => {
-    const { diagnostics } = validateCard({ ...minimal(), ontology_version: "1.x" }, opts);
-    expect(codes(diagnostics)).toEqual(["card/bad-version"]);
-    expect(paths(diagnostics)).toEqual(["ontology_version"]);
-  });
-
   it("accepts prerelease and build metadata", () => {
     expect(validateCard({ ...minimal(), version: "1.0.0-rc.1" }, opts).diagnostics).toEqual([]);
     expect(validateCard({ ...minimal(), version: "1.0.0+build.5" }, opts).diagnostics).toEqual([]);
   });
 
-  it("reports both versions in one pass", () => {
-    const { diagnostics } = validateCard(
-      { ...minimal(), version: "1.0", ontology_version: "0" },
-      opts,
-    );
-    expect(paths(diagnostics)).toEqual(["version", "ontology_version"]);
-  });
+  /* There is no second version to check. `ontology_version` went through the same
+     `requiredSemver` and had its own cell here, plus a "reports both versions in one pass"
+     cell beside it. A card declares one version now, its own. */
 });
 
 /* ============================================================
@@ -848,29 +827,34 @@ describe("validateCard, cannot", () => {
     expect(card?.cannot).toEqual(["acceptance-criteria"]);
   });
 
-  it("accepts free text, which no check will ever fire on", () => {
-    // The field would be unusable if this were an error: "never opens a shell" is a
-    // legitimate prohibition addressed to a reader, and the vocabulary has no term for it.
+  it("refuses a sentence, which is what the second field is for", () => {
+    /* This is the cell that inverted at the split, and the inversion IS the change. It used
+       to assert that "never opens a shell" loads clean here, on the ground that the field
+       would otherwise be unusable. It is refused now, and the field is still usable, because
+       the sentence has a field of its own. A prohibition the resolver cannot check no longer
+       has to be smuggled through the one it can. */
     const { card, diagnostics } = validateCard(
-      { ...minimal(), cannot: ["never opens a shell", "does not contact the network"] },
+      { ...minimal(), cannot: ["never opens a shell"] },
+      opts,
+    );
+    expect(codes(diagnostics)).toEqual(["card/unknown-term"]);
+    expect(card, "an error-severity diagnostic returns no card").toBeUndefined();
+  });
+
+  it("refuses a term of the wrong kind, since only a data type travels on an edge", () => {
+    // `planning` is a real term and resolves. It is a `phase`, and no edge carries one, so
+    // an entry naming it here could never be enforced and would read as though it were.
+    const { diagnostics } = validateCard({ ...minimal(), cannot: ["planning"] }, opts);
+    expect(codes(diagnostics)).toEqual(["card/wrong-term-kind"]);
+  });
+
+  it("keeps the entries in the order written", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), cannot: ["acceptance-criteria", "plan"] },
       opts,
     );
     expect(diagnostics).toEqual([]);
-    expect(card?.cannot).toEqual(["never opens a shell", "does not contact the network"]);
-  });
-
-  it("does not raise card/unknown-term on an entry the vocabulary does not define", () => {
-    const { diagnostics } = validateCard({ ...minimal(), cannot: ["not-a-term-at-all"] }, opts);
-    expect(codes(diagnostics)).not.toContain("card/unknown-term");
-  });
-
-  it("holds both spellings in one list, in the order written", () => {
-    const { card, diagnostics } = validateCard(
-      { ...minimal(), cannot: ["never opens a shell", "acceptance-criteria"] },
-      opts,
-    );
-    expect(diagnostics).toEqual([]);
-    expect(card?.cannot).toEqual(["never opens a shell", "acceptance-criteria"]);
+    expect(card?.cannot).toEqual(["acceptance-criteria", "plan"]);
   });
 
   it("reports a non-list and a non-string entry as bad types", () => {
@@ -883,68 +867,96 @@ describe("validateCard, cannot", () => {
   });
 });
 
+describe("validateCard, will_not", () => {
+  it("defaults to an empty list", () => {
+    const { card, diagnostics } = validateCard(minimal(), opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.willNot).toEqual([]);
+  });
+
+  it("accepts free text, which no check will ever fire on", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), will_not: ["never opens a shell", "does not contact the network"] },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.willNot).toEqual(["never opens a shell", "does not contact the network"]);
+  });
+
+  it("does not raise card/unknown-term on an entry the vocabulary does not define", () => {
+    const { diagnostics } = validateCard({ ...minimal(), will_not: ["not-a-term-at-all"] }, opts);
+    expect(codes(diagnostics)).toEqual([]);
+  });
+
+  it("warns when an entry names a data type, and says which field it belongs in", () => {
+    /* The one thing a free-text field beside a typed one can get wrong. A warning rather
+       than an error: what the entry says is what this field says, so the card still loads
+       and the entry is still shown. */
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), will_not: ["acceptance-criteria"] },
+      opts,
+    );
+    expect(codes(diagnostics)).toEqual(["card/prohibition-misfiled"]);
+    expect(diagnostics[0].severity).toBe("warning");
+    expect(diagnostics[0].hint).toContain("`cannot`");
+    expect(paths(diagnostics)).toEqual(["will_not[0]"]);
+    expect(card?.willNot, "the card loads and keeps the entry").toEqual(["acceptance-criteria"]);
+  });
+
+  it("does not warn on a term of a kind no edge carries", () => {
+    // `planning` resolves, and moving it to `cannot` would buy the author nothing, so
+    // telling them to do it would be bad advice. Pinned to the same kind `cannot` accepts.
+    expect(codes(validateCard({ ...minimal(), will_not: ["planning"] }, opts).diagnostics)).toEqual(
+      [],
+    );
+  });
+
+  it("reads the camelCase spelling too", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), willNot: ["never opens a shell"] },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.willNot).toEqual(["never opens a shell"]);
+  });
+
+  it("reports a non-list and a non-string entry as bad types", () => {
+    expect(
+      codes(validateCard({ ...minimal(), will_not: "never opens a shell" }, opts).diagnostics),
+    ).toEqual(["card/bad-type"]);
+    expect(codes(validateCard({ ...minimal(), will_not: [null] }, opts).diagnostics)).toEqual([
+      "card/bad-type",
+    ]);
+  });
+});
+
 /* ============================================================
-   requires_human and the human types, doc 3 §3
+   The human types, and the field that used to sit beside them
+   ------------------------------------------------------------
+   Doc 3 §3 used to give this file a cross-field rule: a `type`
+   under `human-in-the-loop` with `requires_human` not `true` was
+   an error, because the two fields fed the same metric and the
+   metric believed the flag. The field is gone. `type` is the whole
+   answer, the contradiction cannot be written, and what is left
+   here is the schema's half of that: a human type loads on its own,
+   and a card still carrying the withdrawn key is told what
+   happened to it.
+
+   The derivation itself is not tested here. It belongs to
+   `lib/core/ontology/resolve.ts` now, and `resolve.test.ts` drives
+   it — the local subtype, the deprecation redirect and the
+   category question that used to be exercised through this file's
+   diagnostic.
    ============================================================ */
 
-describe("validateCard, human types and requires_human", () => {
-  it.each(["human-gate", "human-input"])(
-    "rejects `%s` when requires_human is not set",
-    (type) => {
-      const { card, diagnostics } = validateCard(
-        { ...minimal(), type, phase: "planning" },
-        opts,
-      );
-      expect(card).toBeUndefined();
-      // An error, explicitly not a warning: the two fields feed the same metric and the
-      // analysis would believe the flag.
-      expect(codes(diagnostics)).toEqual(["card/human-type-inconsistent"]);
-      expect(diagnostics[0].severity).toBe("error");
-      expect(paths(diagnostics)).toEqual(["type"]);
-    },
-  );
-
-  it.each(["human-gate", "human-input"])("accepts `%s` with requires_human: true", (type) => {
+describe("validateCard, the human types", () => {
+  it.each(["human-gate", "human-input"])("accepts `%s` on its own", (type) => {
     const { card, diagnostics } = validateCard(
-      { ...minimal(), type, phase: "planning", requires_human: true },
+      { ...minimal(), type, phase: "planning" },
       opts,
     );
     expect(diagnostics).toEqual([]);
-    expect(card?.requiresHuman).toBe(true);
-  });
-
-  it("points at `requires_human` when the author wrote it out", () => {
-    const { diagnostics } = validateCard(
-      { ...minimal(), type: "human-gate", requires_human: false },
-      opts,
-    );
-    expect(codes(diagnostics)).toEqual(["card/human-type-inconsistent"]);
-    expect(paths(diagnostics)).toEqual(["requires_human"]);
-  });
-
-  it("points at the camelCase spelling when that is the one on the page", () => {
-    const { diagnostics } = validateCard(
-      { ...minimal(), type: "human-gate", requiresHuman: false },
-      opts,
-    );
-    expect(paths(diagnostics)).toEqual(["requiresHuman"]);
-  });
-
-  it("names both fields in the message", () => {
-    const { diagnostics } = validateCard({ ...minimal(), type: "human-input" }, opts);
-    expect(diagnostics[0].message).toBe(
-      "Type `human-input` puts a person in the loop, but `requires_human` is not `true`.",
-    );
-    expect(diagnostics[0].hint).toContain("human-in-the-loop");
-  });
-
-  it("allows the converse: a non-human type may still require a human", () => {
-    const { card, diagnostics } = validateCard(
-      { ...minimal(), type: "agent", requires_human: true },
-      opts,
-    );
-    expect(diagnostics).toEqual([]);
-    expect(card?.requiresHuman).toBe(true);
+    expect(card?.type).toBe(type);
   });
 
   it.each(["agent", "tool", "decision", "validation"])("leaves `%s` alone", (type) => {
@@ -952,69 +964,161 @@ describe("validateCard, human types and requires_human", () => {
     expect(diagnostics).toEqual([]);
   });
 
-  it("catches the abstract category declared directly", () => {
-    const { diagnostics } = validateCard({ ...minimal(), type: "human-in-the-loop" }, opts);
-    expect(codes(diagnostics)).toEqual(["card/human-type-inconsistent"]);
-  });
-
-  it("asks the category, never a list of ids: a local human subtype is caught too", () => {
-    // This is the test doc 3 §3 exists for, a human type added after this file was
-    // written must change the answer without the validator being touched.
-    const localHuman: OntologyTerm = {
-      id: "berti/design-review",
-      kind: "node-type",
-      label: "Design review",
-      description: "A person reviews the design before implementation starts.",
-      broader: "human-in-the-loop",
-      since: "0.1.0",
-    };
-    const view = ontologyView(CORE_ONTOLOGY, [localHuman]);
-    const { card, diagnostics } = validateCard(
-      { ...minimal(), type: "berti/design-review" },
-      { ontology: view },
-    );
-    expect(card).toBeUndefined();
-    expect(codes(diagnostics)).toEqual(["card/human-type-inconsistent"]);
-
-    const consistent = validateCard(
-      { ...minimal(), type: "berti/design-review", requires_human: true },
-      { ontology: view },
-    );
-    expect(consistent.diagnostics).toEqual([]);
-  });
-
-  it("follows a deprecation pointer before deciding", () => {
-    // §6.2 keeps a deprecated id valid, so an old spelling of a human type is held to
-    // the same rule as the term it now points at.
-    const legacy: OntologyTerm = {
-      id: "berti/manual-check",
-      kind: "node-type",
-      label: "Manual check",
-      description: "An older spelling of a human gate.",
-      broader: "human-in-the-loop",
-      deprecated: { since: "0.2.0", replacedBy: "human-gate" },
-      since: "0.1.0",
-    };
-    const view = ontologyView(CORE_ONTOLOGY, [legacy]);
-    const { card, diagnostics } = validateCard(
-      { ...minimal(), type: "berti/manual-check" },
-      { ontology: view },
-    );
-    expect(card).toBeUndefined();
-    expect(codes(diagnostics)).toEqual([
-      "card/deprecated-term",
-      "card/human-type-inconsistent",
-    ]);
-  });
-
   it("stays quiet when the type is not in the vocabulary at all", () => {
     const { diagnostics } = validateCard({ ...minimal(), type: "wizard" }, opts);
     expect(codes(diagnostics)).toEqual(["card/unknown-term"]);
   });
 
-  it("does not fire off the sibling category", () => {
-    const { diagnostics } = validateCard({ ...minimal(), type: "evaluative" }, opts);
-    expect(diagnostics).toEqual([]);
+  it("accepts an abstract category declared directly, and both of them the same way", () => {
+    /* A DOCUMENTED CHANGE, pinned here so it is visible rather than noticed later.
+       `type: human-in-the-loop` used to be refused, and it was refused as a side effect:
+       the consistency rule asked `isA(type, "human-in-the-loop")`, subsumption is
+       reflexive, and the category answered its own question with no `requires_human` to
+       satisfy. `evaluative` was never refused, because no rule ever looked at it.
+
+       With the rule gone the accident goes with it and the two categories are treated
+       alike: both are real `node-type` terms, both resolve, and neither has a rule of its
+       own. Refusing them would need a rule about abstractness, which the vocabulary has
+       no way to express — no `OntologyTerm` says it is a category — and inventing one
+       from "has children" would refuse a concrete type the day somebody gave it a
+       subtype. The authoring skill still tells an author not to do this. */
+    expect(validateCard({ ...minimal(), type: "human-in-the-loop" }, opts).diagnostics).toEqual([]);
+    expect(validateCard({ ...minimal(), type: "evaluative" }, opts).diagnostics).toEqual([]);
+  });
+});
+
+describe("validateCard, the retired `requires_human` key", () => {
+  it("warns rather than refusing, so a card published before the change still loads", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), requires_human: false },
+      opts,
+    );
+    // The card comes back. Every card in the archive carried this key, and turning a
+    // schema change into a refusal would have made all of them unloadable at once.
+    expect(card?.type).toBe("agent");
+    expect(codes(diagnostics)).toEqual(["card/retired-field"]);
+    expect(diagnostics[0].severity).toBe("warning");
+  });
+
+  it("lands on the key the author wrote, in the spelling they wrote it", () => {
+    /* The code is asserted beside the path because the generic unknown-key branch lands on
+       the same path: dropping the retired branch altogether left this cell green until the
+       code went in beside it. Measured, not assumed. */
+    for (const key of ["requires_human", "requiresHuman"]) {
+      const { diagnostics } = validateCard({ ...minimal(), [key]: true }, opts);
+      expect([key, codes(diagnostics)]).toEqual([key, ["card/retired-field"]]);
+      expect([key, paths(diagnostics)]).toEqual([key, [key]]);
+    }
+  });
+
+  it("says where the answer comes from now", () => {
+    const { diagnostics } = validateCard({ ...minimal(), requires_human: true }, opts);
+    expect(diagnostics[0].message).toBe(
+      "Field `requires_human` is no longer part of the card schema: whether a person acts at this node is read from `type`.",
+    );
+  });
+
+  it("quotes the card's own answer back, and the two types get different advice", () => {
+    /* The author's question is not what the rule is, it is whether deleting the line
+       changes what their card says. A `human-gate` that set the key is saying the same
+       thing twice and loses nothing; a `tool` that set it to `true` has just lost a claim
+       and has to move it into the type. Both hints have to be readable without the rule
+       in front of you. */
+    const staffed = validateCard(
+      { ...minimal(), type: "human-gate", requires_human: true },
+      opts,
+    );
+    expect(staffed.diagnostics[0].hint).toBe(
+      "`type: human-gate` already puts a person in the loop, so deleting the key changes nothing this card says.",
+    );
+
+    const unattended = validateCard({ ...minimal(), type: "tool", requires_human: true }, opts);
+    expect(unattended.diagnostics[0].hint).toBe(
+      "`type: tool` runs unattended. Delete the key, and if a person acts here declare a `human-in-the-loop` type such as `human-gate` instead.",
+    );
+  });
+
+  it("is not the generic unknown-key info, which would tell the author to check the spelling", () => {
+    const retired = validateCard({ ...minimal(), requires_human: true }, opts);
+    const unknown = validateCard({ ...minimal(), surprise: true }, opts);
+    expect(codes(unknown.diagnostics)).toEqual(["card/bad-type"]);
+    expect(unknown.diagnostics[0].severity).toBe("info");
+    expect(unknown.diagnostics[0].hint).toContain("check the spelling");
+    expect(retired.diagnostics[0].hint).not.toContain("check the spelling");
+  });
+
+  it("is reported once, not twice, when the withdrawn key is the only thing wrong", () => {
+    // The retired branch `continue`s, so the generic unknown-key `info` below it never also
+    // fires on the same key. Two diagnostics about one line is how a reader learns to stop
+    // reading them.
+    const { diagnostics } = validateCard({ ...minimal(), requires_human: true }, opts);
+    expect(codes(diagnostics)).toEqual(["card/retired-field"]);
+  });
+});
+
+describe("validateCard, the retired `ontology_version` key", () => {
+  it("warns rather than refusing, so every card published before the change still loads", () => {
+    /* All 57 cards in `content/` carried this key. Refusing them would have turned a schema
+       change into an archive-wide outage, which is the same argument `requires_human` was
+       withdrawn under. */
+    const { card, diagnostics } = validateCard({ ...minimal(), ontology_version: "0.1.0" }, opts);
+    expect(card?.version).toBe("1.0.0");
+    expect(codes(diagnostics)).toEqual(["card/retired-field"]);
+    expect(diagnostics[0].severity).toBe("warning");
+  });
+
+  it("lands on the key the author wrote, in the spelling they wrote it", () => {
+    /* The code beside the path, for the reason the `requires_human` block records: the
+       generic unknown-key branch lands on the same path, so a path-only assertion stays
+       green when the retired branch is removed. */
+    for (const key of ["ontology_version", "ontologyVersion"]) {
+      const { diagnostics } = validateCard({ ...minimal(), [key]: "0.1.0" }, opts);
+      expect([key, codes(diagnostics)]).toEqual([key, ["card/retired-field"]]);
+      expect([key, paths(diagnostics)]).toEqual([key, [key]]);
+    }
+  });
+
+  it("says where the answer comes from now, and gives advice that is not the human key's", () => {
+    /* Each retired key carries its OWN sentence and its OWN advice. A single message shared
+       across the map would say "check that `type` says what you meant" about a key that has
+       nothing to do with `type`, which is worse than the generic unknown-key info it
+       replaced. */
+    const { diagnostics } = validateCard({ ...minimal(), ontology_version: "0.1.0" }, opts);
+    expect(diagnostics[0].message).toBe(
+      "Field `ontology_version` is no longer part of the card schema: there is one living vocabulary and a card is always read against it.",
+    );
+    expect(diagnostics[0].hint).toBe(
+      "Delete the key. Terms are added and retired with `deprecated: {since, replacedBy}` inside the one vocabulary, and the version a score was computed under is recorded on the score.",
+    );
+    expect(diagnostics[0].hint).not.toContain("type");
+  });
+
+  it("is not checked as a semver any more, whatever it holds", () => {
+    /* It went through `requiredSemver`, so `ontology_version: "1.x"` was `card/bad-version`
+       at ERROR severity and the card did not load. A withdrawn key is not validated: the
+       card loads, and the one diagnostic says the key is gone rather than that its value is
+       malformed. */
+    const { card, diagnostics } = validateCard({ ...minimal(), ontology_version: "1.x" }, opts);
+    expect(card).toBeDefined();
+    expect(codes(diagnostics)).toEqual(["card/retired-field"]);
+  });
+
+  it("is reported once, not twice, when the withdrawn key is the only thing wrong", () => {
+    const { diagnostics } = validateCard({ ...minimal(), ontology_version: "0.1.0" }, opts);
+    expect(diagnostics).toHaveLength(1);
+  });
+
+  it("reports both withdrawn keys separately when a card carries both", () => {
+    /* The two are different withdrawals with different successors, and a card written before
+       either change carries both. One diagnostic per key, each naming its own. */
+    const { diagnostics } = validateCard(
+      { ...minimal(), requires_human: false, ontology_version: "0.1.0" },
+      opts,
+    );
+    expect(paths(diagnostics)).toEqual(["requires_human", "ontology_version"]);
+    expect(new Set(codes(diagnostics))).toEqual(new Set(["card/retired-field"]));
+    expect(diagnostics[0].message).toContain("read from `type`");
+    expect(diagnostics[1].message).toContain("one living vocabulary");
   });
 });
 
@@ -1034,6 +1138,27 @@ describe("validateCard, ontology terms", () => {
     expect(card).toBeUndefined();
     expect(codes(diagnostics)).toEqual(["card/unknown-term"]);
     expect(paths(diagnostics)).toEqual([path]);
+  });
+
+  it("offers a local namespace to an author whose term carries none", () => {
+    const { diagnostics } = validateCard({ ...minimal(), type: "check" }, opts);
+    expect(codes(diagnostics)).toEqual(["card/unknown-term"]);
+    expect(diagnostics[0].hint).toBe(
+      "Use an existing `node-type` term, or declare your own in a local namespace such as `me/check`.",
+    );
+  });
+
+  it("names the file instead, once the author has a namespace already", () => {
+    /* The hint above is advice an author takes by rewriting `check` as `me/check`. Handed
+       back unchanged it then reads as `me/me/check`, which is the namespace growing a
+       segment every time somebody follows it. */
+    const { diagnostics } = validateCard({ ...minimal(), type: "me/check" }, opts);
+    expect(codes(diagnostics)).toEqual(["card/unknown-term"]);
+    expect(diagnostics[0].hint).not.toContain("me/me/");
+    expect(diagnostics[0].hint).toBe(
+      "Use an existing `node-type` term, or declare `me/check` in `ontology/extensions.yaml` " +
+        "with a `broader` that reaches the core.",
+    );
   });
 
   it.each<[string, Record<string, unknown>, string, string]>([
@@ -1367,6 +1492,139 @@ describe("validateCard, params", () => {
 });
 
 /* ============================================================
+   params.tool_command, the one key a type requires
+   ------------------------------------------------------------
+   `shell-tool` is the node whose whole instruction is a command,
+   and engine spec §4.10's tool handler FAILs a node whose
+   `tool_command` is empty before it runs anything. Every cell here
+   is about the card that would resolve, score, export and then
+   fail on its first execution.
+
+   No card in `content/` declares `shell-tool`, so every fixture is
+   written here. That is the point of the term for now: it exists
+   so an imported Attractor `parallelogram` node has a type to be.
+   ============================================================ */
+
+describe("validateCard, params.tool_command", () => {
+  /** The minimal card retyped as the node that runs a command. */
+  function shellTool(params?: Record<string, unknown>): Record<string, unknown> {
+    const doc: Record<string, unknown> = { ...minimal(), type: "shell-tool" };
+    if (params !== undefined) doc.params = params;
+    return doc;
+  }
+
+  it("accepts a shell-tool card that declares a command", () => {
+    const { card, diagnostics } = validateCard(shellTool({ tool_command: "npm test" }), opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.params).toEqual({ tool_command: "npm test" });
+  });
+
+  it("warns when the card declares no params at all", () => {
+    const { card, diagnostics } = validateCard(shellTool(), opts);
+    // A warning and not an error: the card is legible and still loads, the way a draft
+    // imported with an empty `spec` does.
+    expect(codes(diagnostics)).toEqual(["card/missing-field"]);
+    expect(diagnostics[0].severity).toBe("warning");
+    expect(paths(diagnostics)).toEqual(["params.tool_command"]);
+    expect(card).toBeDefined();
+  });
+
+  it("warns when params are present and the key is not", () => {
+    const { diagnostics } = validateCard(shellTool({ max_iterations: 3 }), opts);
+    expect(codes(diagnostics)).toEqual(["card/missing-field"]);
+    expect(paths(diagnostics)).toEqual(["params.tool_command"]);
+  });
+
+  it("quotes the type back, so the author can see which half to change", () => {
+    const { diagnostics } = validateCard(shellTool(), opts);
+    expect(diagnostics[0].message).toContain("`type: shell-tool`");
+    expect(diagnostics[0].hint).toContain("4.10");
+  });
+
+  it.each(["", "   ", "\n"])("treats a blank command %j as no command", (blank) => {
+    // §4.10 tests the command for emptiness, so whitespace is the empty case rather than
+    // a command that happens to be short.
+    const { card, diagnostics } = validateCard(shellTool({ tool_command: blank }), opts);
+    expect(codes(diagnostics)).toEqual(["card/bad-type"]);
+    expect(diagnostics[0].severity).toBe("warning");
+    expect(diagnostics[0].message).toContain("blank");
+    expect(card).toBeDefined();
+  });
+
+  it.each<[string, unknown]>([
+    ["a number", 3],
+    ["a list", ["npm", "test"]],
+    ["a mapping", { run: "npm test" }],
+    ["null", null],
+    ["false", false],
+  ])("warns when the command is %s rather than a string", (_label, bad) => {
+    const { diagnostics } = validateCard(shellTool({ tool_command: bad }), opts);
+    expect(codes(diagnostics)).toEqual(["card/bad-type"]);
+    expect(paths(diagnostics)).toEqual(["params.tool_command"]);
+  });
+
+  it("asks the vocabulary, so a local type rooted at shell-tool is held to the same rule", () => {
+    // Doc 3 §7: a local type runs on the handler its core ancestor selects, so it needs
+    // the same command. `type === "shell-tool"` would let this card through.
+    const local: OntologyTerm = {
+      id: "berti/npm-script",
+      kind: "node-type",
+      label: "npm script",
+      description: "A shell tool that runs one npm script.",
+      broader: "shell-tool",
+      since: "0.1.0",
+    };
+    const view = ontologyView(CORE_ONTOLOGY, [local]);
+    const { diagnostics } = validateCard(
+      { ...minimal(), type: "berti/npm-script" },
+      { ontology: view },
+    );
+    expect(codes(diagnostics)).toEqual(["card/missing-field"]);
+    expect(diagnostics[0].message).toContain("`type: berti/npm-script`");
+  });
+
+  it("says nothing about a card of any other type, whatever its params hold", () => {
+    // `params` is a free-form bag that travels to whoever runs the graph. A key DarkPrint
+    // does not read on this type is not a defect, and reporting one would make the bag
+    // something other than free-form.
+    for (const type of ["agent", "tool", "validation", "decision", "human-gate"]) {
+      const { diagnostics } = validateCard(
+        { ...minimal(), type, params: { tool_command: "npm test" } },
+        opts,
+      );
+      expect(codes(diagnostics), type).toEqual([]);
+    }
+    for (const type of ["agent", "tool", "validation"]) {
+      const { diagnostics } = validateCard({ ...minimal(), type }, opts);
+      expect(codes(diagnostics), type).toEqual([]);
+    }
+  });
+
+  it("does not read an inherited key as a declared command", () => {
+    // `readParams` copies own keys only, so a prototype's `tool_command` never reaches the
+    // check and the card is one that declared nothing. Asserted from the outside because
+    // that is where the two halves meet: a `readParams` that started passing the raw
+    // mapping through would make this card silently complete.
+    const inherited = Object.create({ tool_command: "npm test" }) as Record<string, unknown>;
+    const { card, diagnostics } = validateCard(shellTool(inherited), opts);
+    expect(card?.params).toEqual({});
+    expect(codes(diagnostics)).toEqual(["card/missing-field"]);
+  });
+
+  it("still reports everything else in the same pass", () => {
+    const doc = shellTool();
+    delete doc.action;
+    const { card, diagnostics } = validateCard(doc, opts);
+    expect(card).toBeUndefined();
+    expect(codes(sortDiagnostics(diagnostics)).sort()).toEqual([
+      "card/missing-field",
+      "card/missing-field",
+    ]);
+    expect(paths(diagnostics).slice().sort()).toEqual(["action", "params.tool_command"]);
+  });
+});
+
+/* ============================================================
    Unknown keys
    ============================================================ */
 
@@ -1383,8 +1641,7 @@ describe("validateCard, unknown top-level keys", () => {
 
   it("does not treat an accepted camelCase alias as unknown", () => {
     const doc = minimal();
-    delete doc["ontology_version"];
-    doc["ontologyVersion"] = "0.1.0";
+    doc["riskMarkers"] = ["secret-access"];
     expect(validateCard(doc, opts).diagnostics).toEqual([]);
   });
 });
@@ -1404,7 +1661,6 @@ describe("validateCard, reports every problem at once", () => {
         action: 3,
         spec: "do it",
         version: "1.0",
-        ontology_version: "nope",
         tools: ["hammer"],
         params: { bad: Number.NaN },
         inputs: [
@@ -1413,7 +1669,12 @@ describe("validateCard, reports every problem at once", () => {
         ],
         outputs: [{ name: "draft" }],
         risk_markers: ["agent"],
+        // Both retired, so each is a `card/retired-field` warning whatever value it carries;
+        // the set below names them alongside the shapes that really are wrong. A bad semver
+        // in `ontology_version` used to be a `card/bad-version` here, which is the point:
+        // the key is not checked any more, it is reported as withdrawn.
         requires_human: "yes",
+        ontology_version: "nope",
         surprise: true,
       },
       { ontology, file: "cards/broken.yaml" },
@@ -1430,6 +1691,7 @@ describe("validateCard, reports every problem at once", () => {
         "card/duplicate-port",
         "card/namespaced-phase",
         "card/spec-too-thin",
+        "card/retired-field",
       ]),
     );
     expect(diagnostics.length).toBeGreaterThanOrEqual(14);
@@ -1629,10 +1891,14 @@ describe("validateCard, version bump", () => {
     expect(card?.tools).toEqual([]);
   });
 
-  it("treats requires_human false -> true as breaking", () => {
+  it("treats a changed node type as breaking, which is where staffing a node now shows up", () => {
+    /* This cell used to drive `requires_human: false -> true`, priced major because it
+       invalidated every autonomy score already computed against the card. There is no
+       such field now: staffing a node is a change of `type`, and `type` was already the
+       stricter of the two rules. The cell follows the fact rather than the field. */
     const previous = minimalCard();
     const { diagnostics } = validateCard(
-      { ...minimal(), version: "1.1.0", requires_human: true },
+      { ...minimal(), version: "1.1.0", type: "human-gate" },
       { ontology, previous },
     );
     expect(codes(diagnostics)).toEqual(["card/version-bump-too-small"]);
@@ -1690,7 +1956,7 @@ describe("checkVersionChain", () => {
 
   it("catches a prohibition added under a minor bump, wherever the versions arrived in", () => {
     const chain = [
-      { card: at("1.1.0", { cannot: ["read the acceptance criteria"] }), file: "b.yaml" },
+      { card: at("1.1.0", { cannot: ["acceptance-criteria"] }), file: "b.yaml" },
       { card: at("1.0.0"), file: "a.yaml" },
     ];
     const ds = checkVersionChain(chain);
@@ -1706,7 +1972,7 @@ describe("checkVersionChain", () => {
     expect(
       checkVersionChain([
         { card: at("1.0.0") },
-        { card: at("2.0.0", { cannot: ["read the acceptance criteria"] }) },
+        { card: at("2.0.0", { cannot: ["acceptance-criteria"] }) },
       ]),
     ).toEqual([]);
   });
@@ -1716,8 +1982,8 @@ describe("checkVersionChain", () => {
     // end to end would pass an illegal middle step in silence.
     const ds = checkVersionChain([
       { card: at("1.0.0"), file: "a.yaml" },
-      { card: at("1.0.1", { cannot: ["read the acceptance criteria"] }), file: "b.yaml" },
-      { card: at("2.0.0", { cannot: ["read the acceptance criteria"] }), file: "c.yaml" },
+      { card: at("1.0.1", { cannot: ["acceptance-criteria"] }), file: "b.yaml" },
+      { card: at("2.0.0", { cannot: ["acceptance-criteria"] }), file: "c.yaml" },
     ]);
     expect(codes(ds)).toEqual(["card/version-bump-too-small"]);
     expect(ds[0].location?.file).toBe("b.yaml");
@@ -1739,7 +2005,6 @@ name: Solver A
 type: agent
 phase: implementation
 version: 1.0.0
-ontology_version: 0.1.0
 action: Draft a candidate solution for the sub-task
 spec: >-
   Read the sub-task on the \`task\` input and write one candidate solution

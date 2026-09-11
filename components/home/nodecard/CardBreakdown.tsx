@@ -64,8 +64,25 @@
    exactly one job and this is it: the node card. `DotBreakdown` is
    the cyanotype register for the same reason — the two figures are
    two layers of one spec and a reader has to tell them apart at a
-   glance. Never amber, which is `ComingSoonBadge` and `.route-box`
-   and nothing else. Never cyan for the MARKING, which is
+   glance.
+
+   The sentence here used to say "never amber". That is no longer the
+   rule: the owner made amber the card register on 2026-09-06 and the
+   card SURFACES took it — the shelf, the card page, the download
+   controls, the heading over this very beat. This FIGURE did not,
+   and the reason is mechanical rather than a preference. It draws on
+   a sheet whose ground `components/viz/tokens.ts` mixes for itself
+   (`SHEET_REGISTER.copper`), and every ratio in this file and in
+   `YamlListing` is measured against that ground. Moving the ink
+   without moving the paper is exactly the ratio-across-a-hue-change
+   this repo forbids, and moving the paper is a `components/viz`
+   change rather than a card-register one. Amber and copper are
+   neighbours on the wheel, so the beat still reads warm against the
+   cyan blueprint beat above it in the meantime.
+   TODO: repoint the sheet and this palette together, with the whole
+   register re-measured on the new ground.
+
+   Never cyan for the MARKING, which is
    interactive sitewide and would read as "click me" on lines that
    are not clickable; the nine rail buttons are the interactive thing
    here, and they wear the site's own focus ring plus a copper hover
@@ -185,7 +202,8 @@ export function CardBreakdown({
     if (row !== null && row !== undefined) revealRow(row);
   }, []);
 
-  /* Every part is pickable. Unlike `SourcePane`, whose rows include braces and blank lines
+  /* Every part is pickable. Unlike the deleted `components/panes/SourcePane.tsx` (a four-pane
+     arrangement this product reduced to two), whose rows included braces and blank lines
      that name nothing, an annotation is a run by construction — `resolveAnnotations` drops
      a step whose keys are all absent rather than pointing it at line 1 — so there is
      nothing here for the arrow keys to skip over. */
@@ -227,7 +245,7 @@ export function CardBreakdown({
         {/* A scroll container with no focusable child cannot be reached from the keyboard
             at all (WCAG 2.1.1, Level A): there is nothing to tab to, so the characters past
             the right edge are available to a mouse and to nobody else. `role="region"` with
-            a name is what makes the stop worth having — "code-builder@1.0.0, 52 lines"
+            a name is what makes the stop worth having — "code-builder@1.0.0, 53 lines"
             rather than an unlabelled group.
 
             No height and no transform, at any width. See this file's header: the figure is

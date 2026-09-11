@@ -34,11 +34,11 @@ outputs:
     description: Matching snippets, each pinned to a repository, path, line range and commit sha.
 dependencies:
   - retrieval-planner
-cannot:
+cannot: []
+will_not:
   - check anything out of the repositories it searches
   - write to the index
 
-requires_human: false
 risk_markers: []
 notes: >-
   Read-only, and pinned: every hit names the commit it came from, so a claim grounded in code
@@ -46,4 +46,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

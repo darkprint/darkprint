@@ -2,26 +2,37 @@ import { describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
 import {
+  ATTRACTOR_EMITTED_ATTRIBUTES,
+  ATTRACTOR_UNEXPRESSED_ATTRIBUTES,
   CORE_ONTOLOGY,
+  emitAttractorDot,
   hasErrors,
   lintAttractor,
   loadBundle,
   ontologyView,
   parseDot,
+  type AttractorScope,
 } from "@/lib/core";
+/* The two halves of the third list, deep-imported for the same reason the module under test
+   deep-imports them: `@/lib/core` publishes the union, and the union is the shape whose one
+   sentence was false. Asserting against the union alone could not tell the two groups apart,
+   which is the whole thing these cells are for. */
+import {
+  ATTRACTOR_DEFAULTING_ATTRIBUTES,
+  ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
+} from "@/lib/core/attractor/emit";
 
 import {
   BUNDLE_AGENTS,
   BUNDLE_README,
   BUNDLE_VOCABULARY,
-  FACTORY_DOT,
+  README_RUNNER_SECTION,
   TOPOLOGY_DOT,
   SITE_ORIGIN,
   bundleDir,
   bundleDownloadCommand,
   bundleFilePaths,
   bundleHref,
-  bundleAgents,
   bundleReadme,
   cardDownloadCommand,
   cardFilePath,
@@ -34,7 +45,17 @@ import {
 } from "./bundle-export";
 import { parseOntologyTerms } from "./ontology-file";
 import { contentVocabulary, readContent, type LoadedBundle } from "./read";
-import { autonomyStatement } from "@/lib/format";
+
+/**
+ * The name the compiled, runnable copy of the graph carried until the owner instructed it
+ * out of every published folder (2026-08-25).
+ *
+ * A literal. This name was a constant in the module under test and was bound here; it was
+ * deleted once the two frozen suites that were its only other consumers were unfrozen, so
+ * no definition is left to track. The two negatives below are unchanged
+ * in force: no export writes this file, and no README lists it.
+ */
+const RUNNABLE_DOT = "factory.dot";
 
 /* --------------------- the real archive --------------------- */
 
@@ -70,7 +91,7 @@ const EXPORTS = loaded.map((entry) => ({
 }));
 
 describe("exportBundle over content/", () => {
-  it("covers all nine blueprints", () => {
+  it("covers all ten blueprints", () => {
     expect(EXPORTS.map((e) => e.slug)).toEqual([
       "adversarial-consensus-line",
       "checkpoint-resume-runner",
@@ -79,6 +100,7 @@ describe("exportBundle over content/", () => {
       "guarded-merge-bot",
       "incident-commander",
       "nightly-data-janitor",
+      "pipeline-observability",
       "schema-forge-etl",
       "starter-software-factory",
     ]);
@@ -93,13 +115,21 @@ describe("exportBundle over content/", () => {
       const refs = [...new Set(entry.blueprint.nodes.map((n) => n.ref))].sort();
       const expected = [
         BUNDLE_README,
-        BUNDLE_AGENTS,
         TOPOLOGY_DOT,
-        FACTORY_DOT,
         ...refs.map(cardFilePath),
         ...(localTermsUsed(input).length > 0 ? [BUNDLE_VOCABULARY] : []),
       ].sort();
       expect([slug, files.map((f) => f.path)]).toEqual([slug, expected]);
+    }
+  });
+
+  // Owner instruction, 2026-08-25: a published folder used to also carry a compiled
+  // `factory.dot` and a generated `AGENTS.md`. Both are gone, and this is the negative
+  // that would catch either coming back silently.
+  it("never writes factory.dot or AGENTS.md", () => {
+    for (const { slug, files } of EXPORTS) {
+      const paths = files.map((f) => f.path);
+      expect([slug, paths]).toEqual([slug, paths.filter((p) => p !== RUNNABLE_DOT && p !== BUNDLE_AGENTS)]);
     }
   });
 
@@ -223,32 +253,34 @@ describe("a downloaded folder, resolved against nothing but itself", () => {
   });
 });
 
-/* --------------------- the runnable half --------------------- */
+/* --------------------- the emitter, exercised against the real archive --------------------- */
 
 /**
- * Doc 2 §11 item 10's actual requirement: the artefact has to run from a command line.
- * The nearest thing to proof available without an LLM behind it is the check Attractor
- * itself performs before a run — parse, then lint at error severity — applied to the exact
- * bytes the download contains rather than to a fixture.
+ * `emitAttractorDot` itself is untouched (see the file banner): it stays a general
+ * DOT-emission capability in `lib/core`, with its own suite in `emit.test.ts`. What moved
+ * is that `exportBundle` no longer calls it, so a compiled `factory.dot` is no longer part
+ * of what a reader downloads — the coverage below is retargeted at the emitter directly,
+ * called the same way `exportBundle` used to call it, so a regression in the real archive's
+ * content (as opposed to `emit.test.ts`'s synthetic fixtures) still surfaces here.
  */
-describe("factory.dot, as Attractor will read it", () => {
+describe("emitAttractorDot, against the real archive's blueprints", () => {
   it("parses and lints clean for every blueprint", () => {
-    for (const { slug, files } of EXPORTS) {
-      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
-      const parsed = parseDot(factory, FACTORY_DOT);
+    for (const { slug, entry } of EXPORTS) {
+      const factory = emitAttractorDot(entry.blueprint);
+      const parsed = parseDot(factory, "factory.dot");
       expect([slug, hasErrors(parsed.diagnostics)]).toEqual([slug, false]);
       expect(parsed.graph).toBeDefined();
       if (parsed.graph === undefined) continue;
-      expect([slug, lintAttractor(parsed.graph, factory, FACTORY_DOT)]).toEqual([slug, []]);
+      expect([slug, lintAttractor(parsed.graph, factory, "factory.dot")]).toEqual([slug, []]);
     }
   });
 
-  // Doc 1 §0.1.2: the card's `spec` is the payload that instructs the agent, so a factory
-  // whose nodes carry no prompt is a drawing rather than a pipeline. Every node in the
+  // Doc 1 §0.1.2: the card's `spec` is the payload that instructs the agent, so an emitted
+  // graph whose nodes carry no prompt is a drawing rather than a pipeline. Every node in the
   // archive resolves to a card, so every one of them has to arrive with its spec inlined.
   it("carries one prompt per node, inlined from that node's card", () => {
-    for (const { slug, entry, files } of EXPORTS) {
-      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
+    for (const { slug, entry } of EXPORTS) {
+      const factory = emitAttractorDot(entry.blueprint);
       const prompts = factory.match(/\bprompt=/g) ?? [];
       expect([slug, prompts.length]).toEqual([slug, entry.blueprint.nodes.length]);
       for (const node of entry.blueprint.nodes) {
@@ -262,10 +294,10 @@ describe("factory.dot, as Attractor will read it", () => {
 
   // The pin is the compatibility claim of doc 1 §0.1.1 in one attribute: Attractor ignores
   // an attribute it does not reserve, so `card="id@version"` survives the round trip and
-  // the file a user runs still says which card version it was built from.
+  // the emitted file still says which card version it was built from.
   it("keeps the card pin on every node", () => {
-    for (const { slug, entry, files } of EXPORTS) {
-      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
+    for (const { slug, entry } of EXPORTS) {
+      const factory = emitAttractorDot(entry.blueprint);
       for (const node of entry.blueprint.nodes) {
         expect([slug, node.ref, factory.includes(`card="${node.ref}"`)]).toEqual([
           slug,
@@ -276,16 +308,15 @@ describe("factory.dot, as Attractor will read it", () => {
     }
   });
 
-  // The claim the `model` field exists to make good on: a card that names a model produces
-  // a factory that runs on it. Engine spec §2.6 reserves `llm_model` for exactly this, so
-  // the attribute survives into the folder a reader downloads. Asserted here as well as in
-  // `emit.test.ts` because this is the archive, where the models are real ids rather than
-  // fixtures, and a card whose model never reached the DOT would be a broken promise on
-  // every node page that shows it.
+  // The claim the `model` field exists to make good on: a card that names a model emits a
+  // graph that runs on it. Engine spec §2.6 reserves `llm_model` for exactly this. Asserted
+  // here as well as in `emit.test.ts` because this is the archive, where the models are
+  // real ids rather than fixtures, and a card whose model never reached the DOT would be a
+  // broken promise on every node page that shows it.
   it("carries the model onto every node whose card names one, and onto no other", () => {
     let named = 0;
-    for (const { slug, entry, files } of EXPORTS) {
-      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
+    for (const { slug, entry } of EXPORTS) {
+      const factory = emitAttractorDot(entry.blueprint);
       const lines = factory.split("\n");
       for (const node of entry.blueprint.nodes) {
         // The node statement, which is the only line the node's id starts.
@@ -349,7 +380,7 @@ describe("determinism", () => {
 });
 
 describe("a bundle that cannot be exported", () => {
-  it("refuses to write a folder whose factory.dot references a card it does not contain", () => {
+  it("refuses to write a folder whose topology.dot references a card it does not contain", () => {
     const { input } = EXPORTS[0];
     const missing = input.blueprint.nodes[0].ref;
     const short = { ...input, cards: input.cards.filter((c) => c.ref !== missing) };
@@ -369,8 +400,8 @@ describe("paths", () => {
   });
 
   it("percent-encodes every segment of a href and keeps the separators", () => {
-    expect(bundleHref("starter-software-factory", FACTORY_DOT)).toBe(
-      "/bundles/starter-software-factory/factory.dot",
+    expect(bundleHref("starter-software-factory", TOPOLOGY_DOT)).toBe(
+      "/bundles/starter-software-factory/topology.dot",
     );
     expect(bundleHref("starter-software-factory", cardFilePath("spec-planner@1.0.0"))).toBe(
       "/bundles/starter-software-factory/cards/spec-planner%401.0.0.yaml",
@@ -475,36 +506,64 @@ describe("the README", () => {
       ]);
       expect([slug, text.includes(entry.blueprint.digest)]).toEqual([slug, true]);
       expect([slug, text.includes(`blueprint      ${slug}`)]).toEqual([slug, true]);
-      expect([slug, text.includes(`v${entry.blueprint.manifest.ontologyVersion}`)]).toEqual([
-        slug,
-        true,
-      ]);
+      /* The README used to carry an `ontology vX.Y.Z` line. The vocabulary has no version,
+         so the line is gone and its absence is the assertion: a reader of the folder is
+         pointed at `ontology/extensions.yaml`, which travels with it, rather than at a number
+         that named nothing they could fetch. */
+      expect([slug, /^ontology\s/m.test(text)]).toEqual([slug, false]);
     }
   });
 
-  // Doc 1 §0.1.3 and the item-10 contract: where execution happens, the command, and the
-  // fact that DarkPrint runs nothing and collects nothing.
-  it("says where execution happens, how to start it, and what is collected", () => {
+  // Doc 1 §0.1.3 and the item-10 contract: where execution happens, and that the folder hands
+  // over the topology and its cards rather than a compiled command.
+  it("says where execution happens and what the folder hands over", () => {
     for (const { slug, text } of readmes) {
       expect([slug, text.includes("This runs on your machine.")]).toEqual([slug, true]);
-      expect([slug, text.includes(`attractor run ${FACTORY_DOT}`)]).toEqual([slug, true]);
-      expect([slug, text.includes(`attractor validate ${FACTORY_DOT}`)]).toEqual([slug, true]);
+      expect([slug, text.includes("carries the topology and its pinned cards")]).toEqual([
+        slug,
+        true,
+      ]);
+      // The false claim this replaced: a compiled `factory.dot` no longer ships, so the
+      // README may not tell a reader to run one.
+      expect([slug, text.includes("attractor run")]).toEqual([slug, false]);
       expect([slug, text.includes("executes nothing and holds none of your provider keys")]).toEqual(
         [slug, true],
       );
-      expect([slug, text.includes("No file in this folder calls home")]).toEqual([slug, true]);
+    }
+  });
+
+  // The owner took the two closing sections out of the generated README: the quoted scores
+  // and the telemetry paragraph. Neither heading may come back, and neither may the claim
+  // about a reporting channel that the site itself no longer makes in this file.
+  it("carries neither of the two sections the owner removed", () => {
+    for (const { slug, text } of readmes) {
+      expect([slug, text.includes("## What DarkPrint computed")]).toEqual([slug, false]);
+      expect([slug, text.includes("## What gets reported back")]).toEqual([slug, false]);
+      expect([slug, text.includes("designed and not built")]).toEqual([slug, false]);
+    }
+  });
+
+  // The README describes the folder in the fewest words: the headings are a fixed set, in a
+  // fixed order, and the section a reader is pointed at from `Run it` is among them.
+  it("carries exactly the four sections, in order", () => {
+    const expected = ["## Run it", "## What is in the folder", README_RUNNER_SECTION, "## The nodes"];
+    for (const { slug, text } of readmes) {
+      const headings = text.split("\n").filter((line) => line.startsWith("## "));
+      expect([slug, headings]).toEqual([slug, expected]);
     }
   });
 
   // The listing has to name every file in the folder: a reader who is told to recompute
-  // the digest and the scores needs to know which files are the inputs.
-  it("lists every file the folder actually contains", () => {
+  // the digest and the scores needs to know which files are the inputs. Owner instruction,
+  // 2026-08-25: `factory.dot` is no longer one of them.
+  it("lists every file the folder actually contains, and no more", () => {
     for (const { slug, files, text } of EXPORTS.map((e) => ({
       ...e,
       text: fileMap(e.files).get(BUNDLE_README) ?? "",
     }))) {
       const listing = text.split("## What is in the folder")[1]?.split("```")[1] ?? "";
-      expect([slug, listing.includes(FACTORY_DOT)]).toEqual([slug, true]);
+      expect([slug, listing.includes(RUNNABLE_DOT)]).toEqual([slug, false]);
+      expect([slug, listing.includes(BUNDLE_AGENTS)]).toEqual([slug, false]);
       expect([slug, listing.includes(TOPOLOGY_DOT)]).toEqual([slug, true]);
       const carries = fileMap(files).has(BUNDLE_VOCABULARY);
       expect([slug, listing.includes(BUNDLE_VOCABULARY)]).toEqual([slug, carries]);
@@ -525,159 +584,44 @@ describe("the README", () => {
     }
   });
 
-  // Telemetry, accounts and publishing are Fase 4. The README may describe the design and
-  // has to say it does not exist, so nobody downloads this expecting a dashboard.
-  it("says the opt-in reporting channel is designed and not built", () => {
-    for (const { slug, text } of readmes) {
-      expect([slug, text.includes("It is designed and not built")]).toEqual([slug, true]);
-    }
-  });
-
-  // Doc 1 §8.3: the numbers show their working. Quoted rather than restated — a
-  // paraphrase would be a second implementation of the analyzer inside a README.
-  //
-  // Autonomy is quoted through `autonomyStatement`, which is the whole engine sentence
-  // less the band ordinal it ends on (doc 2 §1.1). Still the engine's own wording and
-  // still its own arithmetic — the transform only drops the number, and the test below
-  // holds it to that.
-  it("quotes both analyzers verbatim", () => {
-    for (const { slug, entry, text } of readmes) {
-      expect([
-        slug,
-        text.includes(`> ${autonomyStatement(entry.analysis.autonomy.rationale)}`),
-      ]).toEqual([slug, true]);
-      expect([slug, text.includes(`> ${entry.analysis.security.rationale}`)]).toEqual([slug, true]);
-      expect([slug, text.includes(`Autonomy: ${entry.analysis.autonomy.label}.`)]).toEqual([
-        slug,
-        true,
-      ]);
-      expect([slug, text.includes(`Security level ${entry.analysis.security.level}.`)]).toEqual([
-        slug,
-        true,
-      ]);
-    }
-  });
-
   /**
    * Doc 2 §1.1, on the surface that outlives every other one.
    *
-   * The README is the file that stays behind in somebody's repository long after they
-   * have left the site, so the rule that keeps the autonomy band off a page holds here
-   * too: the only number a reader is taught to read as a rung is the organisational
-   * maturity ladder, and a second small integer beside the word "autonomy" reads as the
-   * same scale. The class carries the reading instead, and it loses nothing — it is what
-   * the band is called.
-   *
-   * The security level is a different metric on a real 0-to-4 penalty scale, and it is
-   * deliberately untouched.
+   * The README no longer prints a reading of either scale, and the negatives stay: the file
+   * is the one that stays behind in somebody's repository, so it is the last place an
+   * autonomy ordinal or the vocabulary of a shortfall may reappear. `level` belongs to the
+   * security scale and to the 1-to-5 organisational ladder, which is why the digit and the
+   * word are both checked.
    */
-  it("states the autonomy class and never the band behind it", () => {
-    for (const { slug, entry, text } of readmes) {
-      expect([slug, text.includes(`Autonomy: ${entry.analysis.autonomy.label}.`)]).toEqual([
-        slug,
-        true,
-      ]);
+  it("prints no autonomy ordinal and grades nobody", () => {
+    for (const { slug, text } of readmes) {
       // No "autonomy level 4", no "→ level 4 (Closed-loop)", however it is spelled.
       const ordinal = /autonomy[^.\n]{0,24}level\s*\d|→\s*level\s*\d/i;
       expect([slug, ordinal.test(text)]).toEqual([slug, false]);
-    }
-  });
-
-  /**
-   * The ordinal's vocabulary, not only its digits.
-   *
-   * The regex above wants a number touching the word, so the closing paragraph — "The
-   * autonomy level says what this factory automates" — walked past it in all nine
-   * READMEs, as did "the same arithmetic on your side gives the same two numbers" beside a
-   * reading that is no longer a number. `level` belongs to the security scale and to the
-   * 1-to-5 organisational ladder; the README is the file that stays behind in somebody's
-   * repository, so it is the last place the two should be spelled alike.
-   *
-   * "Security level" stays, and this checks it stays: the fix is a distinction, not a
-   * search-and-replace, and a README that stopped naming the security scale would have
-   * lost a real reading.
-   */
-  it("keeps the ordinal vocabulary for the scale that has one", () => {
-    for (const { slug, entry, text } of readmes) {
       const lower = text.toLowerCase();
-      for (const banned of ["autonomy level", "the same two numbers", "both numbers come"]) {
-        expect([slug, banned, lower.includes(banned)]).toEqual([slug, banned, false]);
-      }
-      expect([slug, text.includes("The autonomy class says what this blueprint automates")]).toEqual(
-        [slug, true],
-      );
-      expect([slug, text.includes(`Security level ${entry.analysis.security.level}.`)]).toEqual([
-        slug,
-        true,
-      ]);
-    }
-  });
-
-  /**
-   * Doc 2 §1.1. Three of the nine bundles put a person in the graph, and the README of
-   * those three has to name the node without any of the vocabulary of a shortfall. The
-   * check is deliberately two-sided: the human node is named (doc 1 §8.3 wants the
-   * working shown) and no scale, comparison or verdict is printed around the number.
-   */
-  it("names the human nodes and grades nobody", () => {
-    const withHumans = readmes.filter(
-      ({ entry }) => entry.analysis.autonomy.contributions.some((c) => c.requiresHuman),
-    );
-    expect(withHumans.map((r) => r.slug)).toEqual([
-      "frontline-triage",
-      "guarded-merge-bot",
-      "incident-commander",
-    ]);
-
-    for (const { slug, entry, text } of withHumans) {
-      expect([slug, text.includes("Where a person acts:")]).toEqual([slug, true]);
-      for (const contribution of entry.analysis.autonomy.contributions) {
-        if (!contribution.requiresHuman) continue;
-        expect([
-          slug,
-          contribution.nodeId,
-          text.includes(`- \`${contribution.nodeId}\` (${contribution.name}): ${contribution.explanation}`),
-        ]).toEqual([slug, contribution.nodeId, true]);
-      }
-    }
-
-    for (const { slug, text } of readmes) {
-      expect([slug, text.includes("Nothing here is a grade.")]).toEqual([slug, true]);
       for (const banned of [
+        "autonomy level",
+        "the same two numbers",
+        "both numbers come",
         "out of 4",
         "fully autonomous",
         "not autonomous",
         "room for improvement",
         "should automate",
       ]) {
-        expect([slug, banned, text.includes(banned)]).toEqual([slug, banned, false]);
+        expect([slug, banned, lower.includes(banned)]).toEqual([slug, banned, false]);
       }
     }
   });
 
-  it("lists every security finding, in the analyzer's words", () => {
+  // Two columns: the node and the card version it pins. The phase came off the row because
+  // the card under `cards/` states it, and the README repeats nothing a file in the folder
+  // already says.
+  it("tabulates every node with the card version it pins, and nothing the card already says", () => {
     for (const { slug, entry, text } of readmes) {
-      if (entry.analysis.security.findings.length === 0) {
-        expect([slug, text.includes("What was charged:")]).toEqual([slug, false]);
-        continue;
-      }
-      expect([slug, text.includes("What was charged:")]).toEqual([slug, true]);
-      for (const finding of entry.analysis.security.findings) {
-        expect([slug, finding.marker, text.includes(finding.explanation)]).toEqual([
-          slug,
-          finding.marker,
-          true,
-        ]);
-      }
-    }
-  });
-
-  it("tabulates every node with the card version it pins", () => {
-    for (const { slug, entry, text } of readmes) {
+      expect([slug, text.includes("| node | card |\n| --- | --- |\n")]).toEqual([slug, true]);
       for (const node of entry.blueprint.nodes) {
-        const phase =
-          node.card.phases.length === 0 ? "none declared" : node.card.phases.join(", ");
-        expect([slug, node.nodeId, text.includes(`| \`${node.nodeId}\` | \`${node.ref}\` | ${phase} |`)]).toEqual(
+        expect([slug, node.nodeId, text.includes(`| \`${node.nodeId}\` | \`${node.ref}\` |\n`)]).toEqual(
           [slug, node.nodeId, true],
         );
       }
@@ -757,110 +701,171 @@ describe("the README", () => {
   });
 });
 
-/* --------------------- AGENTS.md --------------------- */
+/* ============================================================
+   The unexpressed-attribute disclosure, in the folder
 
-/**
- * The agent-facing file, over the real archive.
- *
- * `README.md` addresses a person deciding whether to run the folder; this addresses the
- * agent being asked to fit the pattern into a codebase. The cases below are the ones
- * where a generator can be wrong in a way nobody notices: a prohibition printed as
- * checkable when nothing checks it, a claim about the codebase this file has never seen,
- * or a node whose declared input no edge feeds going unmentioned so an agent draws the
- * edge the pattern exists to leave out.
- */
-describe("bundleAgents", () => {
-  it("ships one with every bundle, and lists it in the README's own folder table", () => {
-    for (const { slug, files } of EXPORTS) {
-      const map = fileMap(files);
-      expect(map.has(BUNDLE_AGENTS), slug).toBe(true);
-      expect(map.get(BUNDLE_README), slug).toContain(BUNDLE_AGENTS);
+   `emitAttractorDot` prints it into every file it compiles, and
+   that file is written by `darkprint export`, whose npm package
+   is not published. A reader who downloads this folder from the
+   site therefore met none of it, which is what the owner ruled
+   on (2026-09-04): the disclosure goes into `README.md`, the
+   file the folder already carries.
+
+   Every cell below is anchored to the constants in `emit.ts`
+   rather than to a list written out here. That is the point of
+   the ruling: the day the emitter learns to write one more
+   attribute, a transcribed list keeps telling a reader the
+   folder drops it, and the reader has the file and no way to
+   check it. A cell holding a literal list would drift exactly
+   the same way and would go green while doing it.
+   ============================================================ */
+describe("the README's disclosure of what a runner reads and a blueprint cannot set", () => {
+  const readmes = EXPORTS.map((e) => ({
+    slug: e.slug,
+    text: fileMap(e.files).get(BUNDLE_README) ?? "",
+  }));
+
+  const SCOPES = Object.keys(ATTRACTOR_UNEXPRESSED_ATTRIBUTES) as AttractorScope[];
+
+  /** The heading without its markdown level, which is how the `Run it` paragraph cites it. */
+  const title = README_RUNNER_SECTION.replace(/^#+ /, "");
+
+  /** The section, from its heading to the next one. `""` when the README omits it. */
+  function section(text: string): string {
+    return text.split(README_RUNNER_SECTION)[1]?.split("\n## ")[0] ?? "";
+  }
+
+  /**
+   * The section's two halves, split on the structural marker rather than on either promise.
+   *
+   * Each group opens `Left out, …`. Splitting there pins the shape of the disclosure and
+   * leaves both sentences free to be rewritten, which they have to be: the second one was
+   * rewritten once already, when `emit.ts` split a single false sentence in two.
+   */
+  function groups(text: string): string[] {
+    return section(text).split("Left out,").slice(1);
+  }
+
+  it("carries the section in every published folder", () => {
+    for (const { slug, text } of readmes) {
+      expect([slug, text.includes(README_RUNNER_SECTION)]).toEqual([slug, true]);
+      // Two `Left out,` blocks, because both groups are non-empty against today's emitter.
+      // A day when one of them empties is a day this number moves and somebody re-reads the
+      // prose around it, which is the review this cell exists to force.
+      expect([slug, groups(text).length]).toEqual([slug, 2]);
     }
   });
 
-  it("is deterministic, like every other exported file", () => {
-    for (const { input, files } of EXPORTS) {
-      expect(fileMap(files).get(BUNDLE_AGENTS)).toBe(bundleAgents(input));
-    }
-  });
-
-  it("keeps enforced prohibitions apart from free text", () => {
-    const starter = EXPORTS.find((e) => e.slug === "starter-software-factory");
-    const text = fileMap(starter!.files).get(BUNDLE_AGENTS) ?? "";
-
-    // `acceptance-criteria` is a data-type, so the resolver holds the graph to it.
-    expect(text).toContain("`builder` must never receive `acceptance-criteria`.");
-    expect(flat(text)).toContain("These are enforced.");
-
-    // "read the checks the work will be run against" names no term. Nothing checks it,
-    // and a file that implied otherwise would be telling an agent it has a guardrail it
-    // does not have.
-    expect(flat(text)).toContain("Stated by the author and checked by nothing.");
-    expect(text).toContain("read the checks the work will be run against");
-  });
-
-  it("never prints a free-text prohibition under the enforced heading", () => {
-    for (const { slug, input, files } of EXPORTS) {
-      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
-      const enforcedBlock = text.slice(
-        text.indexOf("These are enforced."),
-        text.indexOf("Stated by the author"),
-      );
-      if (enforcedBlock === "") continue;
-      const view = input.blueprint.ontology;
-      for (const node of input.blueprint.nodes) {
-        for (const entry of node.card.cannot) {
-          const term = view.resolve(entry)?.term;
-          if (term?.kind === "data-type") continue;
-          expect(enforcedBlock, `${slug}: ${entry}`).not.toContain(entry);
+  // The cell the ruling asks for: a name in the unexpressed set that stops appearing in the
+  // README reds here. Driven off the constant, so it keeps biting when the set changes.
+  it("names every unexpressed attribute, in every scope", () => {
+    for (const { slug, text } of readmes) {
+      const body = section(text);
+      for (const scope of SCOPES) {
+        for (const name of ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope]) {
+          // Backticked on both sides, so `retry_target` is not satisfied by the
+          // `fallback_retry_target` two names along, and `default_max_retry` is not
+          // satisfied by `default_max_retries`.
+          expect([slug, scope, name, body.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            true,
+          ]);
         }
       }
     }
   });
 
-  /** `wrap()` lays the prose out at 94 columns, so a sentence assertion has to run over
-      the flattened text. Matching the file as written would pass or fail on where a line
-      happened to break. */
-  const flat = (text: string) => text.replace(/\s+/g, " ");
-
-  it("names the nodes whose declared inputs no edge feeds", () => {
-    // The starter's `builder` is the case: its brief arrives with the run, and the edge
-    // that is not there is the whole pattern. An agent told only "Takes: brief" is one
-    // step from drawing it.
-    const starter = EXPORTS.find((e) => e.slug === "starter-software-factory");
-    const text = fileMap(starter!.files).get(BUNDLE_AGENTS) ?? "";
-    expect(flat(text)).toContain("`builder`");
-    expect(flat(text)).toContain("no edge in this graph feeds");
-    expect(flat(text)).toContain("That is not a gap to fill.");
-  });
-
-  it("says it has not seen the codebase, on every bundle", () => {
-    // The one claim this file must never make. It knows the pattern and nothing else.
-    for (const { slug, files } of EXPORTS) {
-      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
-      expect(flat(text), slug).toContain("it has not seen the codebase you are about to change");
-      expect(text, slug).toContain("## What this file does not tell you");
-    }
-  });
-
-  it("leaves no empty heading for the notes an uploader has not written", () => {
-    // A heading with nothing under it reads as a section somebody forgot to fill in,
-    // which is a promise the folder does not keep. The file states what it does not know
-    // in prose instead.
-    for (const { slug, files } of EXPORTS) {
-      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
-      // Top-level sections only. `## The nodes` is a container whose body is its `###`
-      // subsections, so a rule that demanded prose directly under every heading would be
-      // asserting a layout rather than the thing that matters.
-      const headings = [...text.matchAll(/^## .+$/gm)].map((m) => ({
-        title: m[0],
-        at: m.index ?? 0,
-      }));
-      for (const [i, heading] of headings.entries()) {
-        const end = headings[i + 1]?.at ?? text.length;
-        const body = text.slice(heading.at, end).split("\n").slice(1).join("\n").trim();
-        expect(body, `${slug}: ${heading.title} is empty`).not.toBe("");
+  // The other direction, and the failure a one-directional cell cannot see: a name the
+  // emitter writes must never be listed here as one the folder leaves out. A section
+  // claiming `prompt` is unexpressed would be telling a reader to write in by hand the one
+  // attribute every node already carries.
+  it("lists nothing the emitter actually writes", () => {
+    for (const { slug, text } of readmes) {
+      const body = section(text);
+      for (const scope of SCOPES) {
+        for (const name of ATTRACTOR_EMITTED_ATTRIBUTES[scope]) {
+          expect([slug, scope, name, body.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            false,
+          ]);
+        }
       }
     }
   });
+
+  /* The split is the reason this section is two lists and not one. `emit.ts`'s header said
+     every unexpressed name "falls back to the runner's own default", which is false for the
+     names a handler reads bare: §4.6 returns RETRY at a human gate that times out with no
+     `human.default_choice`, and §4.11 hands whatever it read for `stack.child_dotfile` to
+     `start_child_pipeline` unchecked. A README that put those under one sentence with
+     `join_policy` and `timeout` would reintroduce the falsehood in the artefact a stranger
+     downloads, where it is least checkable. */
+  it("puts a name a handler reads bare in the second group and never the first", () => {
+    for (const { slug, text } of readmes) {
+      const [defaulting, needed] = groups(text);
+      for (const scope of SCOPES) {
+        for (const name of ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES[scope]) {
+          expect([slug, scope, name, needed?.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            true,
+          ]);
+          expect([slug, scope, name, defaulting?.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            false,
+          ]);
+        }
+        for (const name of ATTRACTOR_DEFAULTING_ATTRIBUTES[scope]) {
+          expect([slug, scope, name, defaulting?.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            true,
+          ]);
+        }
+      }
+    }
+  });
+
+  /* The word, not a phrasing of it. Both spellings of the false claim ("takes the runner's
+     own default", "falls back to a default") die on the same token, and a sentence that
+     genuinely needs the word is a sentence about the first group. This is the guard that
+     stops the two lists from being re-merged under one promise by somebody shortening the
+     section, which is how the falsehood got in the first time. */
+  it("promises no default over the group that has none", () => {
+    for (const { slug, text } of readmes) {
+      // The prose, with the names taken out: `human.default_choice` is in this group and
+      // carries the word, so a needle read over the whole block would charge the section for
+      // quoting the very attribute it is warning about.
+      const needed = (groups(text)[1] ?? "").replace(/`[^`]*`/g, "");
+      expect([slug, /default/i.test(needed)]).toEqual([slug, false]);
+      expect([slug, /falls? back/i.test(needed)]).toEqual([slug, false]);
+    }
+  });
+
+  // The paragraph that used to be the only mention of the disclosure, and carried the
+  // single-list claim while doing it. It may point at the section; it may not describe the
+  // compiled header as a list of what the runner defaults for.
+  it("no longer tells a reader the compiled header is one list of runner defaults", () => {
+    for (const { slug, text } of readmes) {
+      expect([slug, text.includes("falls back to its own defaults")]).toEqual([slug, false]);
+      // Whitespace-normalised: the paragraph is wrapped to a column, so the command straddles
+      // a line break in every one of the nine folders and a raw `includes` would be measuring
+      // where `wrap` happened to land rather than whether the command is there.
+      const flowed = text.replace(/\s+/g, " ");
+      expect([slug, flowed.includes("`darkprint export <dir> --attractor`")]).toEqual([slug, true]);
+      expect([
+        slug,
+        flowed.includes(`opens with the same two lists this README carries under *${title}*`),
+      ]).toEqual([slug, true]);
+    }
+  });
 });
+

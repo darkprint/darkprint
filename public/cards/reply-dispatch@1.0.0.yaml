@@ -35,11 +35,11 @@ outputs:
     description: The provider's acknowledgement, delivered, deferred or rejected.
 dependencies:
   - reply-qa-check
-cannot:
+cannot: []
+will_not:
   - edit a reply that has already been cleared
   - report a deferral as a success
 
-requires_human: false
 risk_markers:
   - lupo/pii-handling
   - irreversible-action
@@ -52,4 +52,3 @@ notes: >-
 
 version: 1.0.0
 author: hachi
-ontology_version: 0.1.0

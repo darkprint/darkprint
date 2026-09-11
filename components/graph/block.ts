@@ -6,10 +6,12 @@
    defect: the block was `min-w-[150px] max-w-[220px]`, so a node with a long name grew to
    220 while `layerGap` put the next column 200 away, and the two boxes overlapped by 20
    flow units. Nothing on the archive showed it, because an archive card is called
-   `Spec Planner` and stops at 150. `/build` generates its names from the reader's own
+   `Spec Planner` and stops at 150. `/build` generated its names from the reader's own
    choices — `Python Script Factory Release Gate` — so every one of its blocks sat at the
    220 ceiling, and at stage width the middle column was measured lying 24x75px across the
-   block to its left.
+   block to its left. That route and the whole of `components/build/` were deleted on
+   2026-09-06; the defect it exposed is why this number is a constant, so the measurement is
+   kept here in the past tense rather than dropped with the page that produced it.
 
    So the block has ONE width now, stated here, and three things read it:
 
@@ -60,20 +62,36 @@ export const BLOCK_TEXT_INSET = 13;
    in the source says what that comes to, and no test without a browser can find out.
 
    So it is stated as an interval, measured rather than reasoned, and every consumer is
-   written to take the WORST end of it. `components/build/stage-labels.test.ts` is the only
-   one today: it works out how much air the fit leaves above and below the drawing for an
-   edge label that has stepped outside it, and that answer needs the drawing's height. Using
-   the tall end where a taller drawing is worse and the short end where a shorter one is
-   (a short drawing fits at a larger zoom, and a larger zoom draws a longer step-off) keeps
-   the guard on the safe side of a number it cannot know.
+   written to take the WORST end of it. This sentence used to say `stage-labels.test.ts` was
+   the only one, and that file went with `/build`, so the claim named nothing for a wave.
+   Re-derived from the tree rather than from the deleted sentence, the consumers are:
 
-   Both ends measured in the browser, at 1440 on the stage and across the archive:
+   - `components/graph/schematic-boxes.ts`'s `schematicAir`, which does the job the deleted
+     guard did: it works out how much air the fit leaves above and below the drawing for an
+     edge label that has stepped outside it, and that answer needs the drawing's height. It
+     is the one place that takes BOTH ends at once, and its own docblock argues which end
+     goes where.
+   - `components/panes/archive-labels.test.ts`, `schematicAir`'s single caller, which also
+     takes the tall end directly through `drawnExtent` for the pane heights it pins.
+   - `components/panes/SynchronisedPanes.tsx` and `components/upload/ValidationReport.tsx`,
+     which take the tall end in SHIPPED code rather than in a guard: it is the height they
+     hand `drawnExtent` to size the pane a schematic is drawn in.
 
-   - 61px  `ship` on `/blueprints/checkpoint-resume-runner` — a one-line name and its kind
-           row, which is the least an `AgentNode` can be.
+   Using the tall end where a taller drawing is worse and the short end where a shorter one
+   is (a short drawing fits at a larger zoom, and a larger zoom draws a longer step-off)
+   keeps the arithmetic on the safe side of a number it cannot know.
+
+   Both ends measured in the browser, at 1440 on the stage and across the archive. Both
+   readings predate the URL move and the deletion of `/build`, and neither has been retaken:
+
+   - 61px  `ship` on `checkpoint-resume-runner` — a one-line name and its kind row, which is
+           the least an `AgentNode` can be. That blueprint is at
+           `/blueprints/darkprint/checkpoint-resume-runner` now.
    - 157px `/build`'s `Python Script Factory Release Gate` — three wrapped lines, lit, with
            the badge row under the title. `lib/content/layout.ts`'s `rowGap` of 180 exists
-           to clear exactly this one.
+           to clear exactly this one. The page that produced that name is gone and nothing
+           generates names now, but `/upload` draws whatever a reader's own bundle names, so
+           the ceiling still has something to bound and is not left over from a dead route.
 
    Rounded outward, never inward: 60 and 160. Raise the ceiling, never lower it, if a node
    ever grows another row — the same sentence `layout.ts` writes about the gap this sits in,

@@ -56,7 +56,7 @@ export function SourceBadge({ source }: { source: MetricSource }) {
 
 const KIND_META: Record<ContentKind, { label: string; color: string }> = {
   blueprint: { label: "Blueprint", color: "var(--color-cyan)" },
-  node: { label: "Node", color: "var(--color-amber)" },
+  node: { label: "Card", color: "var(--color-amber)" },
   ontology: { label: "Ontology", color: "var(--color-violet)" },
 };
 

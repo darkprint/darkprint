@@ -35,10 +35,10 @@ outputs:
     description: Field-level failures, one entry per breach, for the repair path to work from.
 dependencies:
   - normalize
-cannot:
+cannot: []
+will_not:
   - edit a record to make it conform
 
-requires_human: false
 risk_markers: []
 notes: >-
   `strict` rejects unknown fields as well as bad ones. That is what makes the gate a boundary
@@ -46,4 +46,3 @@ notes: >-
 
 version: 1.0.0
 author: lupo
-ontology_version: 0.1.0

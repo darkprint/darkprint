@@ -34,10 +34,13 @@
    page already uses, and the papers are the sheet's own surfaces.
 
    ── 3. The papers carry the real folder ──
-   `beats.test.ts` holds this panel to naming `blueprint.dot`, `cards/`, `README.md` and
-   `AGENTS.md`, because the landing may not draw a folder shape that is not the shape that
-   downloads. Three papers, four names: the two documents share the third, which is how the
-   listing this replaces already grouped them.
+   Three papers, three names, because the landing may not draw a folder shape that is not
+   the shape that downloads: `topology.dot`, `cards/*.yaml` and `README.md`, which is the
+   whole of what `exportBundle` (`lib/content/bundle-export.ts`) writes into a published
+   bundle. It used to be three papers for four names — `factory.dot` had already come off
+   this drawing, and the third paper carried `README.md · AGENTS.md` together — until the
+   owner instructed both `factory.dot` and `AGENTS.md` out of the bundle entirely
+   (2026-08-25). One paper, one file, now straight across.
    ============================================================ */
 
 import { useState } from "react";
@@ -45,7 +48,7 @@ import { useState } from "react";
 import { cx } from "@/lib/format";
 
 /** What is in the folder, in the order the registry stores it. */
-const PAPERS = ["blueprint.dot", "cards/*.yaml", "README.md · AGENTS.md"] as const;
+const PAPERS = ["topology.dot", "cards/*.yaml", "README.md"] as const;
 
 /**
  * Where each paper goes when the folder is open.
@@ -76,8 +79,8 @@ export function Folder({
    *
    * The landing does not pass one: there the folder sits inside beat 4's Download panel,
    * under a heading that already names it. `/what-a-blueprint-is` does, because there it
-   * opens a band whose whole subject is the word — "A bundle is the folder" — and a reader
-   * scanning the page meets the drawing before the heading beside it.
+   * opens a band whose whole subject is the word — "A blueprint is the folder" — and a
+   * reader scanning the page meets the drawing before the heading beside it.
    *
    * `z-40`, above the flaps at `z-30` and the papers at `z-20`, so it stays legible shut
    * and open. `pointer-events-none` so it never eats the button's own hover. It is

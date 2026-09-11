@@ -1,6 +1,5 @@
 /* ============================================================
-   The four spec pages, held against the list they are a sequence
-   in.
+   The spec pages, held against the list they are a sequence in.
 
    Redesign spec §4.1 split one long page into four and asked that
    they "carry next / previous links so the four read as a
@@ -27,7 +26,36 @@
    three children had to keep a parent, a crumb and a rail, so the
    page that already linked all three became the door. And the
    sequence has no fifth stop, because grading merged into
-   `/reading-the-radar`, which is outside this sequence on purpose.
+   `/reading-the-radar`, which was outside this sequence on purpose.
+
+   That page is gone too, on the author's 2026-09-04 instruction, and
+   its stop went with it: the practice run is the worked example and
+   the essay, and the essay is renumbered 05 rather than left at 06
+   over a hole. The three cases below that name a route by hand were
+   edited with the removal instead of being loosened, which is the
+   same discipline the paragraph above describes.
+
+   The insertion of 2026-09-05 is the first move in the other
+   direction since the split, and it is the case this file was
+   written for: `/spec/attractor` is a fourth child under `app/spec`,
+   so the walk below would have failed on it as an orphan until
+   `SPEC_CROSSWALK` was added to the list. It went in at 04, between
+   the last layer and the sandbox, and the two numbered practice
+   stops moved down a rung with it — which is why three cases here
+   name a number, and why they were edited rather than loosened.
+
+   The 2026-09-06 fold is the first move that does BOTH at once. The
+   owner accepted the finding that Attractor and the ontology read as
+   rival standards because of the order they are met in ("The
+   motivations you provided are sound. Apply them"), so
+   `/spec/attractor` moved from 04 to 01 and every stop below it
+   renumbered, and `/spec/ontology` folded into `/spec/card` and left
+   the tree. An insertion at the FRONT is the case the neighbour
+   block below was written for and had never had: reordering leaves
+   both arrays consistent and the reading order wrong, and neither
+   `position` nor the pair loop can see it, because both walk
+   whatever order the list is in. So the two stops on either side of
+   the move are named by hand there, from both directions.
 
    So this file walks `app/spec` and holds the two directions
    against each other. The walk is what stops a child reappearing
@@ -37,10 +65,13 @@
    page that renders one and a page that forgets it look identical
    from the route table.
 
-   A source scan, and deliberately not a render. The pages are
-   server components that read the archive, and the fact worth
-   guarding is which files exist and what they import, which is
-   reachable from the filesystem. No DOM: the suite is
+   The walk is a source scan. The pages are server components that
+   read the archive, and the fact worth guarding is which files exist
+   and what they import, which is reachable from the filesystem. The
+   one render here is the rail-order cell at the foot, which draws
+   `/spec/card` through `renderToStaticMarkup` because one of its
+   rail ids is declared in a component the page imports rather than
+   in the page file. No DOM either way: the suite is
    `environment: "node"` by design.
    ============================================================ */
 
@@ -51,11 +82,12 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import SpecCardPage from "@/app/spec/card/page";
 import {
   SPEC_LAYERS,
   LEARN_PRACTICE,
   RUNS,
-  SANDBOX,
+  SPEC_CROSSWALK,
   SPEC_OVERVIEW,
   SPEC_SEQUENCE,
   runPosition,
@@ -100,12 +132,20 @@ describe("the sequence and the filesystem agree", () => {
     expect(orphans).toEqual([]);
   });
 
-  it("opens at the overview and holds the three layers in resolution order", () => {
+  /* Two layer pages, and the crosswalk between them and the door.
+     ------------------------------------------------------------
+     `SPEC_LAYERS` was three until the vocabulary's page folded into `/spec/card` on
+     2026-09-06. It is named here by its whole contents rather than by a length, so the fold
+     is one edited line and a page reappearing at `/spec/ontology` without an entry is still
+     caught by the orphan walk above. The crosswalk is asserted to stand between the door and
+     the first layer, which is the half of the reordering the `run` table below cannot see:
+     that table would pass on any list whose steps happen to ascend. */
+  it("opens at the overview, then the crosswalk, then the layers in resolution order", () => {
     expect(SPEC_SEQUENCE[0]).toBe(SPEC_OVERVIEW);
+    expect(SPEC_SEQUENCE[1]).toBe(SPEC_CROSSWALK);
     expect(SPEC_LAYERS.map((layer) => layer.href)).toEqual([
       "/spec/topology",
       "/spec/card",
-      "/spec/ontology",
     ]);
   });
 
@@ -116,104 +156,115 @@ describe("the sequence and the filesystem agree", () => {
    * accounts pass and neither is a deletion of a route: the sandbox moved into the
    * specification run as an unnumbered worked example under stop 03, and the essay left the
    * sequence altogether while its page stayed exactly where it was.
+   *
+   * Written out stop by stop rather than derived, which is what makes it the statement of
+   * the 2026-09-06 reordering rather than a restatement of the list. Every `step` moved
+   * except the door's, and a table that read the steps off `SPEC_SEQUENCE` would have agreed
+   * with any renumbering at all.
    */
   it("runs the specification, then the practice, over one list", () => {
     expect(
       SPEC_SEQUENCE.map(({ step, href, run }) => ({ step, href, run })),
     ).toEqual([
       { step: "00", href: "/what-a-blueprint-is", run: "specification" },
-      { step: "01", href: "/spec/topology", run: "specification" },
-      { step: "02", href: "/spec/card", run: "specification" },
-      { step: "03", href: "/spec/ontology", run: "specification" },
-      { step: "04", href: "/build", run: "practice" },
-      { step: "05", href: "/reading-the-radar", run: "practice" },
-      { step: "06", href: "/towards-a-dark-factory", run: "practice" },
+      { step: "01", href: "/spec/attractor", run: "specification" },
+      { step: "02", href: "/spec/topology", run: "specification" },
+      { step: "03", href: "/spec/card", run: "specification" },
+      { step: "04", href: "/towards-a-dark-factory", run: "practice" },
+      { step: "05", href: "/capabilities", run: "practice" },
+      { step: "06", href: "/tutorial", run: "practice" },
     ]);
     expect(LEARN_PRACTICE.map((page) => page.href)).toEqual([
-      "/build",
-      "/reading-the-radar",
       "/towards-a-dark-factory",
+      "/capabilities",
+      "/tutorial",
     ]);
   });
 
   /**
-   * The sandbox is a stop of its own, and it keeps the word that says what kind.
+   * The sandbox is gone, and nothing in Learn points at it.
    *
-   * It spent one pass unnumbered and indented under stop 03, on the argument that an
-   * optional stop is not a stop; the author asked for it back as a row in its own right. So
-   * it has a number and no indent, and `meta` survives the change — the tag is the part of
-   * the old treatment worth keeping, because a number cannot say "worked example".
+   * `SANDBOX` at `/build` was stop 05 and opened the practice run, exported by name so the
+   * header's Learn menu and the footer's Learn column printed one label for it. The owner
+   * deleted the route and its component tree on 2026-09-06 ("it is not useful and make
+   * confusion"), so the export, the stop and both nav rows went in the same change.
    *
-   * It opens the practice run: the specification says what the three files are, and this is
-   * the first stop that does something with them.
+   * Asserted from three directions rather than by the sequence table above alone, because
+   * that table would still pass if the route came back somewhere the sequence does not
+   * reach: no stop points at it, and neither chrome writes a row for it. A Learn menu row
+   * to a deleted route is a 404 the sequence cannot see.
    */
-  it("draws the sandbox as stop 04, opening the practice run", () => {
-    expect(SANDBOX.step).toBe("04");
-    expect(SANDBOX.indent).toBeUndefined();
-    expect(SANDBOX.meta).toBe("worked example");
-    expect(SANDBOX.run).toBe("practice");
-    expect(SPEC_SEQUENCE[SPEC_SEQUENCE.indexOf(SANDBOX) - 1]).toBe(SPEC_LAYERS[2]);
-    expect(runPosition(SANDBOX.href)).toEqual({ run: "practice", position: 1, total: 3 });
+  it("carries no stop at the deleted sandbox, and neither chrome links it", () => {
+    expect(SPEC_SEQUENCE.map((page) => page.href)).not.toContain("/build");
+    expect(() => specNeighbours("/build")).toThrow();
+    for (const path of ["components/site/SiteHeader.tsx", "components/site/SiteFooter.tsx"]) {
+      expect(readFileSync(join(ROOT, path), "utf8"), path).not.toContain("SANDBOX");
+    }
   });
 
   /**
    * The essay is the last stop of the practice run.
    *
    * It left the sequence for one pass, on the hand-off's decision 3, and the author asked
-   * for it back: a reader who has been through the specification and the scorecard is
-   * exactly the reader who then asks which work belongs to an agent at all. Both halves are
-   * asserted, because the round trip broke each of them in turn — the page has to be in the
-   * list AND to draw the pager the list gives it.
+   * for it back: a reader who has been through the specification is exactly the reader who
+   * then asks which work belongs to an agent at all. Both halves are asserted, because the
+   * round trip broke each of them in turn — the page has to be in the list AND to draw the
+   * pager the list gives it.
+   *
+   * It is the whole practice run since 2026-09-06, and its PREVIOUS is the last layer page:
+   * the sandbox that stood between them went with `/build`, and the crosswalk that took the
+   * slot after that moved to the front of the sequence later the same day.
    */
-  it("closes the practice run with the essay", () => {
-    expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/towards-a-dark-factory");
-    expect(specNeighbours("/towards-a-dark-factory").next).toBeUndefined();
-    expect(specNeighbours("/towards-a-dark-factory").previous?.href).toBe(
-      "/reading-the-radar",
-    );
-    const essay = readFileSync(
-      join(ROOT, "app/towards-a-dark-factory/page.tsx"),
-      "utf8",
-    );
-    expect(essay).toMatch(/from "@\/components\/spec\/SpecPager"/);
-    expect(essay).toContain("<SpecPager href={HERE} />");
+  it("opens the practice run with the essay and closes it with the tutorial", () => {
+    expect(specNeighbours("/towards-a-dark-factory").previous?.href).toBe("/spec/card");
+    expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/tutorial");
+    expect(specNeighbours("/tutorial").next).toBeUndefined();
+    expect(specNeighbours("/tutorial").previous?.href).toBe("/capabilities");
+    for (const page of ["app/towards-a-dark-factory/page.tsx", "app/tutorial/page.tsx"]) {
+      const text = readFileSync(join(ROOT, page), "utf8");
+      expect(text, page).toMatch(/from "@\/components\/spec\/SpecPager"/);
+      expect(text, page).toContain("<SpecPager href={HERE} />");
+    }
   });
 
   /** The position a reader is shown is the position inside their own run. */
   it("counts a stop against its own run, not across both", () => {
     expect(runPosition("/spec/card")).toEqual({
       run: "specification",
-      position: 3,
+      position: 4,
       total: 4,
     });
-    expect(runPosition("/reading-the-radar")).toEqual({
+    expect(runPosition("/towards-a-dark-factory")).toEqual({
       run: "practice",
-      position: 2,
+      position: 1,
       total: 3,
     });
     expect(Object.keys(RUNS).sort()).toEqual(["practice", "specification"]);
   });
 
-  /* `nav` and `title` deliberately DIFFER on this stop, where the case used to require them
-     to match.
+  /* This case had a different subject and the subject was deleted.
 
-     They matched while "Ontology" was free. It stopped being free on 2026-08-12: the author
-     asked the browser at `/ontology` to take the word across the whole site, and `nav` is
-     what the header's Learn dropdown, the footer, the rail and the pager print — so the
-     short form would have put two "Ontology" rows in one header pointing at two routes.
-     `nav` took the word "file", which is enough to hold it apart; the format stays in
-     `SiteFooter`'s `LEARN_LABELS` beside its two siblings, on the author's instruction that
-     "(YAML)" come off the Learn dropdown and the Learn rail. `title` is the page's own
-     heading, and the thing the page specifies is still the ontology.
+     It pinned stop 03's `nav` ("Ontology file") against its `title` ("Ontology"), because
+     the two deliberately differed: `/ontology` had taken the bare word across the chrome on
+     the author's instruction, and `nav` is what the Learn dropdown, the footer, the rail and
+     the pager print. Both of those routes are gone now, so there is no pair of names left to
+     hold apart and nothing for the case to be about.
 
-     Both halves are still pinned, so the stop cannot drift to a third name in either slot,
-     and `nav.test.ts` holds the chrome end of the same rename. */
-  it("names stop 03 for the file in the chrome and the concept on the page", () => {
-    expect(SPEC_LAYERS[2]).toMatchObject({
+     What replaces it is the claim the fold actually makes. `/spec/card` documents two of a
+     blueprint's three files since 2026-09-06, and the two fields that carry that to a reader
+     are the eyebrow above its `h1` and the file line under its door on
+     `/what-a-blueprint-is`. The second is also where the deleted entry's `file` was rehomed:
+     `tests/server/t260/frozen-tests.test.ts` records that string as the last statement on the
+     site that the local overlay exists at all, so it is pinned here rather than left to be
+     tidied back to one path by somebody who reads the line as a duplicate. */
+  it("says on the card stop that it carries the vocabulary as well", () => {
+    expect(SPEC_LAYERS[1]).toMatchObject({
+      href: "/spec/card",
       step: "03",
-      nav: "Ontology file",
-      title: "Ontology",
+      eyebrow: "Layers 02 and 03 of 03",
     });
+    expect(SPEC_LAYERS[1].file).toContain("cards/id@version.yaml");
+    expect(SPEC_LAYERS[1].file).toContain("ontology/extensions.yaml");
   });
 
   it("gives every page a distinct step, route and title", () => {
@@ -243,7 +294,17 @@ describe("next and previous", () => {
     expect(specNeighbours(last?.href ?? "").next).toBeUndefined();
     // And the chain is a chain rather than two ends with a hole: every stop but the last
     // hands on to the one after it.
-    expect(specNeighbours(SPEC_LAYERS[0].href).previous).toBe(SPEC_OVERVIEW);
+    expect(specNeighbours(SPEC_LAYERS[0].href).previous).toBe(SPEC_CROSSWALK);
+    /* Both sides of the crosswalk, which is where it MOVED TO rather than where it was
+       inserted. Reordering a list is the one edit that leaves the arrays consistent and the
+       reading order wrong, and neither `position` nor the neighbour loop below would notice:
+       they walk whatever order the list is in. The pair was `SPEC_LAYERS[2]` and
+       `LEARN_PRACTICE[0]` while this page closed the specification run; it opens that run
+       now, so the door is behind it and the first layer is in front. */
+    expect(specNeighbours(SPEC_CROSSWALK.href).previous).toBe(SPEC_OVERVIEW);
+    expect(specNeighbours(SPEC_CROSSWALK.href).next).toBe(SPEC_LAYERS[0]);
+    // And the practice run still opens where the specification run ends.
+    expect(specNeighbours(LEARN_PRACTICE[0].href).previous).toBe(SPEC_LAYERS[1]);
 
     for (const [i, page] of SPEC_SEQUENCE.entries()) {
       const { position, total, previous, next } = specNeighbours(page.href);
@@ -343,6 +404,42 @@ describe("the figures each layer page opens with", () => {
      figure cases above. */
 });
 
+describe("the rail lists a page's sections in the order the page renders them", () => {
+  /**
+   * `sequence.ts` documents `sections` as "in the order they appear on it", and the rail
+   * draws whatever order the list is in. Nothing compared the two: a band moved on the page
+   * leaves the list consistent and the rail's rows out of order, which `anchors.test.ts`
+   * cannot see because every id still resolves. Rendered rather than scanned, because one
+   * of the card page's ids is declared in a component the page imports rather than in the
+   * page file. The registry band renders as its `Suspense` fallback here, which is fine:
+   * its heading, the id the rail points at, stands above the boundary.
+   */
+  it("/spec/card declares its rail ids in the rail's order", () => {
+    const html = renderToStaticMarkup(createElement(SpecCardPage as never));
+    const page = SPEC_SEQUENCE.find((stop) => stop.href === "/spec/card");
+    const sections = page?.sections ?? [];
+    // The premise: an empty list is trivially ordered.
+    expect(sections.length).toBeGreaterThan(1);
+
+    const positions = sections.map((section) => ({
+      id: section.id,
+      at: html.indexOf(`id="${section.id}"`),
+    }));
+    for (const { id, at } of positions) {
+      expect(at, `nothing on the rendered page declares id="${id}"`).toBeGreaterThan(-1);
+    }
+    for (let i = 1; i < positions.length; i += 1) {
+      const before = positions[i - 1];
+      const here = positions[i];
+      expect(
+        here.at,
+        `the rail lists #${before.id} before #${here.id}, and the page renders them the ` +
+          `other way round`,
+      ).toBeGreaterThan(before.at);
+    }
+  });
+});
+
 /**
  * The three fragments the split turned into dead links.
  *
@@ -406,10 +503,19 @@ describe("the anchors the split would otherwise have broken", () => {
      carries none, so `/spec#card` follows the 308 and then looks for `#card` here. */
   const OVERVIEW = readFileSync(pageFile(SPEC_OVERVIEW.href), "utf8");
 
-  it("keeps the three old in-page ids on the sequence", () => {
+  /* Two of the three, and the third is a recorded loss rather than a relaxed assertion.
+
+     `#ontology` was the band on `/what-a-blueprint-is` that a bookmark on the pre-split
+     `/spec#ontology` landed on. Its entry left `SPEC_LAYERS` when the vocabulary's page
+     folded into `/spec/card` on 2026-09-06, and `anchor` cannot be rehomed onto the card
+     entry: the case below holds every anchor to its own route's last segment, one entry at
+     a time, so a second id would have to be a second entry and a second entry at
+     `/spec/card` is two doors to one page. What that costs is one fragment landing at the
+     top of the door page instead of at a band, and it is `app/what-a-blueprint-is` that can
+     pay it back by declaring the id on the band that survived. */
+  it("keeps the surviving old in-page ids on the sequence", () => {
     expect(SPEC_LAYERS.map((layer) => layer.anchor).sort()).toEqual([
       "card",
-      "ontology",
       "topology",
     ]);
   });

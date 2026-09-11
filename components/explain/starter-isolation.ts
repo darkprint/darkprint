@@ -143,8 +143,10 @@ function build(): IsolationDemo | undefined {
   const dot = `${source.dot.slice(0, close)}  ${ADDED_DOT_LINE}\n${source.dot.slice(close)}`;
 
   const bundle: Bundle = { manifest: record.manifest, dot, cardFiles };
-  // The same vocabulary the archive was resolved against (doc 3 §8), so the two scores on
-  // this page are comparable with each other and with the ones on the blueprint page.
+  // The same vocabulary the archive was resolved against (doc 3 §8), so the two readings
+  // this derivation produces are comparable with each other. The clause that had them
+  // comparable with the blueprint page's too came out on 2026-09-05: that page prints no
+  // reading now, so there is nothing there left to compare against.
   const result = loadBundle(bundle, { ontology: getOntologyView() });
   if (result.blueprint === undefined || result.analysis === undefined) return undefined;
 

@@ -33,10 +33,10 @@ outputs:
     description: The commit receipt, keys written, rows affected, and the batch boundary.
 dependencies:
   - validate
-cannot:
+cannot: []
+will_not:
   - skip past a batch that failed to commit
 
-requires_human: false
 risk_markers:
   - unchecked-write
 notes: >-
@@ -48,4 +48,3 @@ notes: >-
 
 version: 1.0.0
 author: lupo
-ontology_version: 0.1.0

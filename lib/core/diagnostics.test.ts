@@ -42,11 +42,22 @@ const EMITTED_BY: Record<DiagnosticCode, string | null> = {
   "card/deprecated-term": "card/validate",
   "card/wrong-term-kind": "card/validate",
   "card/version-bump-too-small": "card/validate",
+  "bundle/version-bump-too-small": "server/versioning",
+  /* `null` as of 2026-09-05: `server/versioning` emitted this through
+     `checkDeclaredBump`'s `ontology` subject, and the owner removed vocabulary versioning
+     (§11.0 Q26), so the subject is gone and nothing constructs the code. Derived by
+     grepping the tree for the literal — the only remaining sites are this table, the union
+     member in `diagnostics.ts` and the classification in `gate.ts`, none of which emit.
+     The name stays reserved in the union rather than deleted: `gate.ts` still classifies it
+     and a code removed from under a consumer is what the `Record` above exists to catch. */
+  "ontology/version-bump-too-small": null,
+  "bundle/legacy-topology-file": "components/upload/BundleDropzone",
   "card/unknown-phase": "card/validate",
   "card/namespaced-phase": "card/validate",
   "card/duplicate-phase": "card/validate",
-  "card/human-type-inconsistent": "card/validate",
+  "card/retired-field": "card/validate",
   "card/spec-too-thin": "card/validate",
+  "card/prohibition-misfiled": "card/validate",
 
   "bundle/missing-card": "bundle/resolve",
   "bundle/orphan-card": "bundle/resolve",
@@ -72,6 +83,7 @@ const EMITTED_BY: Record<DiagnosticCode, string | null> = {
   "attractor/hash-comment": "attractor/lint",
   "attractor/unsupported-value": "attractor/lint",
   "attractor/reserved-attribute": "attractor/lint",
+  "attractor/condition-syntax": "attractor/lint",
 
   "ontology/unknown-term": null,
   "ontology/cyclic-broader": "ontology/resolve",
@@ -102,11 +114,21 @@ describe("the DiagnosticCode union", () => {
     }
   });
 
-  it("declares exactly one code that nothing emits, and says which", () => {
-    // A reserved name is a deliberate choice, not an oversight; a second one appearing
+  it("declares exactly two codes that nothing emits, and says which", () => {
+    // A reserved name is a deliberate choice, not an oversight; a third one appearing
     // here without a comment in `diagnostics.ts` next to it is the oversight.
+    //
+    // It was one until 2026-09-05. `ontology/version-bump-too-small` joined it when the
+    // owner had vocabulary versioning removed (§11.0 Q26): `server/versioning` emitted it
+    // through `checkDeclaredBump`'s `ontology` subject, that subject is gone, and nothing
+    // else ever constructed the code. The union member is deliberately NOT deleted with the
+    // emitter — `gate.ts` still classifies it and the name shipped — so this list grows by
+    // one rather than the code disappearing from under `gate.ts` and the concept model.
+    // Both entries carry their reason in `diagnostics.ts`, which is the condition this
+    // cell exists to enforce; the list is exact, so an undocumented reservation still reds.
+    // In union order, which is the order `Object.keys` returns.
     const reserved = codes.filter((code) => EMITTED_BY[code as DiagnosticCode] === null);
-    expect(reserved).toEqual(["ontology/unknown-term"]);
+    expect(reserved).toEqual(["ontology/version-bump-too-small", "ontology/unknown-term"]);
   });
 
   it("has no code that reads an absent phase as a defect", () => {

@@ -4,18 +4,19 @@ summary: >-
   The canonical five-node factory, plan, build, test, debug, release, and the one edge it
   deliberately does not have: nothing carries the acceptance criteria to the builder.
 description: |-
-  This is the blueprint the guided path is built on, and the smallest complete dark factory in the gallery: one node per phase, no human gates, no external access, five files you can read in a sitting. Plan, build, test, debug, release.
+  This is the blueprint the guided path is built on, and the smallest complete dark factory in the gallery: one node per phase, with no human gates and no external access.
 
-  The thing worth studying is an edge that isn't here. The planner writes the acceptance criteria and hands them to the tester, and to nothing else. The builder never receives them, and its spec never restates them either, because isolation is not only a missing arrow in the DOT: a card that paraphrases the criteria in its prose is isolated on the diagram and leaking in practice. Both halves of the check have something to bite on here and both stay quiet, which is what makes this bundle the reference for a clean result rather than just another clean result.
+  The thing worth studying is the edge that is missing. The planner writes the acceptance criteria and hands them to the tester alone. The builder never receives them, and its spec never restates them either, because isolation is more than a missing arrow in the DOT: a card that paraphrases the criteria in its prose is isolated on the diagram and leaking in practice. Both halves of the check have something to bite on here and both stay quiet, which is what makes this bundle the reference for a clean result.
 
   Add `planner -> builder` to the DOT and watch the security score fall from 4 to 2 with the builder named as the reason. That is the whole argument for typed graphs over prompt collections, in one edge.
+
+  This blueprint was generated automatically as an example for the registry.
 category: Software
 tags:
   - starter
   - tutorial
   - isolation
   - software
-author: orin
-ontologyVersion: "0.1.0"
+author: autogen
 createdAt: "2026-07-28"
 updatedAt: "2026-07-28"

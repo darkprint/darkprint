@@ -2,9 +2,6 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-112) (cited at line 87): n/a — becomes real query parameters against SEAM-02 / SEAM-08 / SEAM-15
-
 /* ============================================================
    DarkPrint — filter state that lives in the address bar
 

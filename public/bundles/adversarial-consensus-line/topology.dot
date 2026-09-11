@@ -1,0 +1,41 @@
+digraph adversarial_consensus_line {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  task    [card="task-intake@1.0.0"];
+  plan    [card="task-decomposer@1.0.0"];
+  solverA [card="conservative-solver@1.0.0"];
+  solverB [card="exploratory-solver@1.0.0"];
+  vote    [card="weighted-vote@1.0.0"];
+  verify  [card="acceptance-verifier@2.0.0"];
+  reopen  [card="bounded-retry@1.0.0"];
+  deliver [card="result-delivery@1.0.0"];
+
+  task  -> plan;
+  // No condition on the pair below, and that is deliberate. The whole argument of this
+  // blueprint is that both solvers answer the same brief from opposite temperatures, so a
+  // guard that made these two mutually exclusive would run one solver and leave the vote
+  // with a single candidate. Engine spec §10 cannot express "both": it has `=`, `!=` and
+  // conjunction. §4.8 does fan out to every outgoing edge, but only under the `parallel`
+  // handler, which §2.8 selects from `shape=component`, which comes from a card whose
+  // `type` is `parallel`. `task-decomposer` is an `agent`, and changing that is a card
+  // rewrite rather than a routing guard, so the gap is named here instead of hidden.
+  plan  -> solverA;
+  plan  -> solverB;
+  solverA -> vote;
+  solverB -> vote;
+  vote  -> verify   [out="chosen", in="candidate"];
+
+  // The verifier has three exits and this graph has two, so the guard has to say which of
+  // them the third folds into. `acceptance-verifier@2.0.0` accepts, or records a criterion
+  // and stops, or raises a genuine disagreement, and §10 offers one key against its own
+  // negation as the only total pair, so everything that is not an acceptance goes to
+  // `reopen`. That routes a plain defect back through a re-vote, which the card's own
+  // `will_not` refuses to call a conflict; the undertaking is about what it emits on the
+  // `conflict` port, and this is what the graph does with a run that did not pass.
+  // `reopen` is `bounded-retry`, so the extra trips are capped. Unguarded, §3.3's step 5
+  // handed `deliver` every run on the spelling of its id, defect and disagreement alike.
+  verify -> deliver [label="pass", condition="outcome=success"];
+  verify -> reopen  [label="conflict", style=dashed, condition="outcome!=success"];
+  reopen -> vote    [label="re-vote"];
+}

@@ -16,14 +16,13 @@ import type { OntologyView } from "../ontology/resolve";
    stand-ins, not usable objects.
 
    Cards are written against ontology v0.1 (doc 3): one of the five
-   phases, one of the six real node types, and a `spec` that is a
+   phases, one of the concrete node types, and a `spec` that is a
    real self-sufficient instruction (doc 1 §3.2) rather than a
    placeholder — a card the validator would accept, because a
    fixture that could not be published is not evidence of anything.
    ------------------------------------------------------------------ */
 
 /** Read off the vocabulary itself, so a fixture cannot drift from the ontology it cites. */
-const ONTOLOGY_VERSION = CORE_ONTOLOGY.version;
 
 const STUB_GRAPH: Graph = {
   ids: [],
@@ -65,10 +64,9 @@ function makeCard(id: string, version: string, over: Partial<NodeCard> = {}): No
     outputs: [{ name: "draft", type: "json" }],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version,
-    ontologyVersion: ONTOLOGY_VERSION,
     ...over,
   };
 }
@@ -100,7 +98,6 @@ function makeBlueprint(
       title: `Blueprint ${slug}`,
       summary: "A pipeline.",
       tags: [],
-      ontologyVersion: ONTOLOGY_VERSION,
       ...manifest,
     },
     dot: "digraph {}",
@@ -382,10 +379,6 @@ describe("phases and cardsByPhase", () => {
     phases: ["deployment"],
     action: "Approve the release",
     spec: "Show the artefact and the verdict to a person and wait for an explicit approval or rejection before releasing.",
-    // Doc 3 §3: a type under `human-in-the-loop` must carry the flag, or the validator
-    // raises card/human-type-inconsistent. A fixture that could not be published is
-    // not evidence about a registry that only ever holds published cards.
-    requiresHuman: true,
   });
 
   it("reports the phases in doc 3 lifecycle order, not alphabetically", () => {
@@ -790,7 +783,6 @@ inputs:
 outputs:
   - { name: draft, type: json }
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
   const resolved = resolveBundle(
@@ -800,7 +792,6 @@ ontology_version: ${ONTOLOGY_VERSION}
         title: "Twins",
         summary: "Two names for one card.",
         tags: [],
-        ontologyVersion: ONTOLOGY_VERSION,
       },
       dot: 'digraph twins { a [card="twin-a@1.0.0"]; b [card="twin-b@1.0.0"]; }',
       cardFiles: { "cards/a.yaml": twin("twin-a"), "cards/b.yaml": twin("twin-b") },

@@ -1,33 +1,20 @@
 /* ============================================================
-   The four-pane synchronised view — types, tables, selection
-   ------------------------------------------------------------
-   Doc 2 §5.1. Four representations of one bundle, and one
-   selection shared between them:
+   The synchronised panes: types, the card's block table, and selection.
 
-     1  the graph, drawn
-     2  the selected node's card skeleton, doc 1 §3's blocks
-     3  the DOT, the topology
-     4  the selected card's YAML
+   One selection shared by the drawing and the card skeleton, and the pure functions that
+   turn it into the lines each pane lights up. This is the client-safe half: it imports
+   nothing from `lib/core`, so a client component can pull a runtime value out of it without
+   dragging the engine into the browser bundle. The half that needs the engine, the DOT
+   parse that supplies every line number here, is `./build.ts`.
 
-   This module is the **client-safe half**: types, the block
-   table doc 1 §3 defines, and the pure functions that turn a
-   selection into the lines each pane lights up. It imports
-   nothing from `lib/core`, so a client component can pull a
-   runtime value out of it without dragging the engine into the
-   browser bundle. The half that *does* need the engine — the
-   DOT parse that supplies every line number here — is
-   `./build.ts`, and it runs at build time only.
-
-   Doc 2 §1.1 governs the copy in this file as much as anywhere
-   else. A slot with nothing in it is an answer, not a hole: a
-   card that declares no phase, no tools and no risk markers is
-   a complete card, and every empty-state string below states
-   what is there rather than what is missing.
+   A slot with nothing in it is an answer rather than a hole: a card that declares no phase,
+   no tools and no risk markers is a complete card, and every empty-state string below
+   states what is there rather than what is missing.
    ============================================================ */
 
-/* --------------------- doc 1 §3, as a table --------------------- */
+/* --------------------- the card's blocks, as a table --------------------- */
 
-/** Doc 1 §3's four blocks. Service fields (§3.5) sit outside them and are named as such. */
+/** The card's four blocks. Service fields sit outside them and are named as such. */
 export type CardBlockId = "identity" | "behaviour" | "interfaces" | "evaluation";
 
 export type FieldGroupId = CardBlockId | "service";
@@ -35,8 +22,8 @@ export type FieldGroupId = CardBlockId | "service";
 export interface CardBlockSpec {
   id: FieldGroupId;
   label: string;
-  /** The section of doc 1 that defines the block. */
-  ref: string;
+  /** Where the block's fields are defined for a reader: the card spec's field list. */
+  ref: { label: string; href: string };
   /** What the block is for, in one line. */
   purpose: string;
   /**
@@ -69,42 +56,72 @@ export interface CardBlockSpec {
  *   cannot  interfaces. §3.3 is "what arrives, what leaves"; a prohibition is the one
  *           thing that must not arrive, and `bundle/prohibition-violated` is raised
  *           against an edge, which is the same currency as `inputs`.
+ *
+ * ── `will_not` sits beside `cannot`, and not in evaluation ──
+ * The prohibition split put the author's own sentences in a field of their own. The
+ * temptation is to file them under evaluation, next to `notes`, because nothing in the
+ * engine reads them. That is the wrong reading of the block: evaluation holds the keys
+ * DarkPrint's static analysis reads, and this one is read by nobody at all. What it says
+ * is a statement about what may arrive on this node, which is what §3.3 is, so it belongs
+ * where the reader is already looking for a prohibition. Drawing it beside `cannot` is
+ * also the whole point of the split: a reader compares two adjacent slots and sees which
+ * of the two the engine checks.
+ *
+ * ── `ontology_version` is not here either ──
+ * Service used to hold a fourth key, the semver of the vocabulary the author wrote the
+ * card against. The engine read it to resolve the card against that vocabulary rather than
+ * the current one, and nothing ever consumed the resolution: a release stores its whole
+ * scorecard when it is published, so no score is recomputed against an older vocabulary.
+ * What the key produced on this pane was a version number a reader could do nothing with,
+ * in the block whose purpose sentence had to name it. The version a SCORE was computed
+ * under is still recorded, on the score.
+ *
+ * ── `requires_human` is not here, and it is not anywhere ──
+ * Evaluation used to hold three keys. The first was a boolean saying whether a person
+ * acts at the node, sitting one block away from the `type` that already said it, and the
+ * document could answer the question twice and differently. The field is gone from the
+ * schema and `type` is the whole answer, so the key that would have been drawn here is
+ * not a key any more. `identity` is where a reader now finds who acts at the node, which
+ * is where doc 1 §3.1 puts `type`.
  */
+/** The one public definition of every field, linked rather than cited by section number. */
+const CARD_SPEC = { label: "card spec", href: "/spec/card#fields-heading" } as const;
+
 export const CARD_BLOCKS: readonly CardBlockSpec[] = [
   {
     id: "identity",
     label: "Identity",
-    ref: "doc 1 §3.1",
+    ref: CARD_SPEC,
     purpose: "Who the node is. The id is the key the DOT pins.",
     keys: ["id", "name", "type", "phase"],
   },
   {
     id: "behaviour",
     label: "Behaviour",
-    ref: "doc 1 §3.2",
+    ref: CARD_SPEC,
     purpose: "What it does, and the prose the agent is handed when the graph runs.",
     keys: ["action", "spec", "model", "agent", "skill", "tools", "mcp", "params"],
   },
   {
     id: "interfaces",
     label: "Interfaces",
-    ref: "doc 1 §3.3",
+    ref: CARD_SPEC,
     purpose: "What arrives, what leaves, which nodes it expects to hear from, and what may not.",
-    keys: ["inputs", "outputs", "dependencies", "cannot"],
+    keys: ["inputs", "outputs", "dependencies", "cannot", "will_not"],
   },
   {
     id: "evaluation",
     label: "Evaluation metadata",
-    ref: "doc 1 §3.4",
+    ref: CARD_SPEC,
     purpose: "The keys the static analysis reads. Nothing here instructs the agent.",
-    keys: ["requires_human", "risk_markers", "notes"],
+    keys: ["risk_markers", "notes"],
   },
   {
     id: "service",
     label: "Service fields",
-    ref: "doc 1 §3.5",
-    purpose: "The version, who wrote it, and the vocabulary it was written against.",
-    keys: ["version", "author", "provenance", "ontology_version"],
+    ref: CARD_SPEC,
+    purpose: "The card's own version, and who wrote it.",
+    keys: ["version", "author", "provenance"],
   },
 ];
 
@@ -159,7 +176,7 @@ export interface PaneField {
    *
    * What the field is *for* is not here and is not per card: it is one paragraph in
    * `./field-notes.ts`, which the renderer looks up by `key`. Carrying it through this
-   * model would put the same 23 paragraphs in the page payload once per node.
+   * model would put the same 22 paragraphs in the page payload once per node.
    */
   detail?: string;
   /** 1-based inclusive line range in the card document, when the document writes the key. */
@@ -233,7 +250,7 @@ export interface PaneModel {
   title: string;
   /** The DOT source, verbatim. */
   dot: string;
-  /** Filename for the pane header, e.g. "blueprint.dot". */
+  /** Filename for the pane header, e.g. "topology.dot". */
   dotFile: string;
   nodes: PaneNode[];
   absences: PaneAbsence[];
@@ -468,7 +485,7 @@ export function announce(model: PaneModel, focus: PaneFocus): string {
       : `card ${focus.card.ref}`;
 
   if (focus.absence !== undefined) {
-    return `${focus.absence.label} is not in this bundle. ${focus.absence.detail} The drawing rings ${focus.graphNodeId}.`;
+    return `${focus.absence.label} is not in this blueprint. ${focus.absence.detail} The drawing rings ${focus.graphNodeId}.`;
   }
   if (focus.field !== undefined) {
     const lines =

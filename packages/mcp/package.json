@@ -1,0 +1,21 @@
+{
+  "name": "darkprint",
+  "version": "0.1.0",
+  "private": false,
+  "description": "The DarkPrint registry from your terminal and from an agent session: clone, validate, export and import blueprints, report runs, serve the registry over MCP on stdio, and carry the blueprint-writing skill.",
+  "license": "MIT",
+  "bin": {
+    "darkprint": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skill"
+  ],
+  "scripts": {
+    "build": "node ../cli/build.mjs && rm -rf skill && mkdir -p skill && cp -R ../../skills/darkprint skill/darkprint",
+    "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

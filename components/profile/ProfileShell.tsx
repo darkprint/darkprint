@@ -1,44 +1,18 @@
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileTabs } from "./ProfileTabs";
 import type { ProfileView } from "./load";
 import type { ProfileTabId } from "./tabs";
 
-/**
- * What the owner view is, said once, above it.
- *
- * The owner view is the one fiction on this route: there is no sign-in, so "your profile"
- * means "the handle `lib/data/account.ts` happens to name". A reader who lands on
- * `/u/mara-veil` and finds Publish buttons and a private list has every reason to think
- * they are signed in as somebody, and nothing else on the page would tell them otherwise.
- *
- * Two markers because there are two different claims: the values are seeded rows, and the
- * thing that would make them real is not built.
- */
-function OwnerNotice() {
-  return (
-    <div className="mb-5 flex flex-col gap-3 rounded-lg border border-line bg-surface-2/50 px-5 py-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="label">What is real here</span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
-          ◐ seeded
-        </span>
-        <ComingSoonBadge />
-      </div>
-      <p className="text-[13px] leading-relaxed text-muted">
-        There is no sign-in. This is the owner view because{" "}
-        <span className="font-mono text-fg">lib/data/account.ts</span> seeds this handle as
-        the signed-in account, and every profile on the site is prerendered the same way.
-        What is counted here is what the archive holds: the published blueprints, the node
-        cards and the vocabulary terms. What is seeded is everything an account would have
-        stored, and nothing on this page writes anything back.
-      </p>
-    </div>
-  );
-}
+/* The owner notice stood here: a `✓ counted` badge over a paragraph naming what was
+   real on this page. It came off on the owner's instruction (2026-08-25) — once every
+   figure IS a count, a strip saying so is chrome explaining itself. The two residual
+   absences it also carried are unchanged and stated where they belong: no notification
+   mail on /settings, no instrumented run behind a self-reported cost on
+   /reading-the-radar. If a figure on this page ever goes back to standing for nothing,
+   the disclosure comes back with it. */
 
 /**
- * The chrome every profile tab shares: the honesty strip, the header, the tab strip.
+ * The chrome every profile tab shares: the header and the tab strip.
  *
  * A component rather than a Next layout, deliberately. A layout at `app/u/[username]`
  * would also wrap `/u/[username]/[slug]`, which is a bundle page and has a header of its
@@ -53,33 +27,33 @@ export function ProfileShell({
   active: ProfileTabId;
   children: React.ReactNode;
 }) {
-  /* Summed here rather than carried on `ProfileView`: it is a fold over the same
-     `blueprints` and `cards` lists every tab already has, not a fact the loader needs to
-     know to answer any other question, and `ProfileHeader` is the one place either is
-     read. Both folds run over the PUBLIC lists only (`view.blueprints`/`view.cards`, not
-     `owned`/`ownedCards`): a private row has never been seen by anyone else, so it
-     contributes no stars by construction — `lib/data/cards.ts` seeds every private card's
-     own support at `0` for exactly this reason, so including it would add nothing anyway. */
-  const downloads = view.blueprints.reduce((n, b) => n + b.downloads, 0);
-  const stars =
-    view.blueprints.reduce((n, b) => n + b.votes, 0) +
-    view.cards.reduce((n, c) => n + c.support, 0);
-
   return (
     <div className="container-page py-10 lg:py-12">
-      {view.owner && <OwnerNotice />}
-
       <ProfileHeader
         author={view.author}
-        blueprints={view.blueprints.length}
-        cards={view.cards.length}
-        downloads={downloads}
-        stars={stars}
-        validated={view.profile.validated}
-        joinedAt={view.profile.joinedAt}
-        watchers={view.profile.watchers}
-        support={view.profile.support}
+        /* The COUNTS, not the archive-derived lists. `view.blueprints`/`view.cards` are
+           what `content/` carries for this handle, which is zero for every account that
+           did not author the seed archive — so the header read 0 while the tab strip two
+           rows below read the live registry's 10. One number, one source: `view.counts`
+           is what `ProfileTabs` renders, and it is actor-scoped (the owner's private half
+           included, a visitor's not). */
+        blueprints={view.counts.blueprints ?? 0}
+        cards={view.counts.cards ?? 0}
+        /* T280: each of these is `ProfileView`'s own field now, computed in `load.ts` off
+           `getProfile` (watchers, support) and `getSignalsMany` (stars) — no fold over a
+           seeded fixture left to run here.
+
+           `downloads` and `validated` are NOT passed any more. The owner cut them from the
+           header on 2026-09-06 ("just show the number of blueprints, cards and stars"), and
+           a prop nothing renders is a prop that goes stale silently. Both are still computed
+           and still on `ProfileView`, so nothing upstream was torn out to satisfy a layout
+           change and a later surface can read them without re-deriving anything. */
+        stars={view.stars}
+        joinedAt={view.joinedAt.toISOString()}
+        watchers={view.watchers}
+        support={view.support}
         owner={view.owner}
+        viewerSignedIn={view.viewerSignedIn}
       />
 
       <ProfileTabs

@@ -1,0 +1,33 @@
+digraph checkpoint_resume_runner {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  job        [card="job-intake@1.0.0"];
+  plan       [card="stage-planner@1.0.0"];
+  stage1     [card="ingest-stage@1.0.0"];
+  stage2     [card="transform-stage@1.0.0"];
+  stage3     [card="assemble-stage@1.0.0"];
+  checkpoint [card="episodic-memory@1.0.0"];
+  resume     [card="bounded-retry@2.0.0"];
+  verify     [card="acceptance-verifier@1.0.0"];
+  ship       [card="result-delivery@1.0.0"];
+
+  job -> plan;
+  plan -> stage1;
+
+  // Each staged node forks, and until these conditions existed §3.3 resolved both forks on
+  // the spelling of the target id, where `checkpoint` beats `stage2` and `stage3` alike. A
+  // run therefore diverted into the checkpoint after every stage and came back through
+  // `resume`, which is the recovery path, so an unbroken job was restored from a checkpoint
+  // it had no reason to read. `outcome` is the discriminator: the stage either did its work
+  // or it did not, and one key against its negation is the total pair §10's grammar allows,
+  // which puts `fail`, `retry` and `partial_success` on the recovery side together.
+  stage1 -> stage2 [out="staged", in="staged", condition="outcome=success"];
+  stage2 -> stage3 [condition="outcome=success"];
+  stage3 -> verify [in="candidate"];
+  verify -> ship;
+  stage1 -> checkpoint [style=dotted, condition="outcome!=success"];
+  stage2 -> checkpoint [style=dotted, condition="outcome!=success"];
+  checkpoint -> resume [style=dashed, label="on failure"];
+  resume -> stage2     [label="restore", out="attempt", in="restore"];
+}

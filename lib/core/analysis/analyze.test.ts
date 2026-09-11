@@ -6,7 +6,7 @@
    lexer, parser, card validator, hasher, resolver, the Attractor
    linter and both metrics all run for real.
 
-   All three fixtures were rewritten against ontology v0.1 (doc 3).
+   All three fixtures were rewritten against doc 3's vocabulary.
    The old vocabulary they used — `trigger`, `sink`, `network-
    access`, `code-execution`, `human-control`, `credential-access`
    — does not exist any more, and neither does the security repeat
@@ -24,8 +24,12 @@ import { ontologyView } from "../ontology/resolve";
 import type { OntologyTerm } from "../ontology/types";
 import { analyzeBlueprint, loadBundle } from "./analyze";
 
-/** Read off the vocabulary, so no fixture can drift from the ontology it declares. */
-const ONTOLOGY_VERSION = CORE_ONTOLOGY.version;
+/**
+ * The `since` a locally declared fixture term carries. Read off a core term rather than
+ * written out, so the one fixture below states what the shipped vocabulary states; there is
+ * no vocabulary version left to read it from.
+ */
+const TERM_SINCE = CORE_ONTOLOGY.terms[0].since;
 
 /* ============================================================
    fixture 1 — "adversarial consensus", a healthy blueprint
@@ -64,7 +68,6 @@ name: Task intake
 type: tool
 phase: planning
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Accept the incoming task and hand it to the pipeline
 spec: Take the task exactly as the requester wrote it and place it on the task port unchanged, adding nothing and dropping nothing.
 inputs: []
@@ -77,7 +80,6 @@ name: Decompose
 type: agent
 phase: planning
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Break the task into independently solvable sub-tasks
 spec: Split the incoming task into sub-tasks that can each be solved on their own, and emit them as an ordered list on the subtasks port.
 model: claude-opus-4
@@ -92,7 +94,6 @@ name: Solver A
 type: agent
 phase: implementation
 version: 1.2.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Draft a candidate solution at low temperature
 spec: Work the sub-tasks in order and return one conservative candidate solution as JSON, favouring the obvious approach over the clever one.
 model: claude-opus-4
@@ -109,7 +110,6 @@ name: Solver B
 type: agent
 phase: implementation
 version: 1.2.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Draft a candidate solution at high temperature
 spec: Work the sub-tasks in order and return one exploratory candidate solution as JSON, preferring an unusual approach where it plausibly wins.
 model: claude-opus-4
@@ -126,7 +126,6 @@ name: Consensus vote
 type: decision
 phase: testing
 version: 1.1.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Score the candidate drafts against each other and pick a winner
 spec: Score the candidate drafts against one another on correctness first and cost second, then route the stronger one onward as the winner.
 params:
@@ -143,7 +142,6 @@ name: Verify
 type: validation
 phase: testing
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Check the winning draft against the acceptance criteria
 spec: Run the checks the request implies against the winning draft and emit a verdict, quoting the failing evidence whenever the answer is no.
 inputs:
@@ -158,10 +156,8 @@ name: Escalate to a reviewer
 type: human-gate
 phase: testing
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Ask a reviewer to re-open the debate when the vote is contested
 spec: Show the reviewer both candidate drafts and the verdict, and wait for them to say whether the debate should be re-opened.
-requires_human: true
 tools: [human-review]
 inputs:
   - { name: verdict, type: status }
@@ -171,13 +167,11 @@ dependencies: [verify]
 `,
   "cards/deliver@1.0.0.yaml": `id: deliver
 name: Deliver
-type: tool
+type: human-gate
 phase: deployment
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Publish the approved report to the customer channel
 spec: Post the approved report to the customer channel named in the run configuration, and record where it landed.
-requires_human: true
 tools: [messaging]
 inputs:
   - { name: payload, type: report }
@@ -213,7 +207,6 @@ name: Intake
 type: tool
 phase: planning
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Take the target the operator typed in
 spec: Read the target the operator typed and put it on the query port with no interpretation of any kind.
 inputs: []
@@ -225,7 +218,6 @@ name: Scrape the target
 type: agent
 phase: implementation
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Fetch the page behind the query and return its body
 spec: Resolve the query to a URL, fetch that page with the stored session token, and return the body verbatim on the page port.
 tools: [http-fetch]
@@ -241,7 +233,6 @@ name: Run the extracted script
 type: tool
 phase: implementation
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Execute whatever the scraper produced and capture the result
 spec: Execute the script found in the fetched page in a shell and capture whatever it writes to standard output as the result.
 tools: [shell]
@@ -257,7 +248,6 @@ name: Refine the script
 type: agent
 phase: debugging
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Rewrite the script from the last result and try again
 spec: Read the last result, rewrite the extraction script so it gets further than the previous attempt, and send it back to be run.
 dependencies: [run-script]
@@ -271,7 +261,6 @@ name: Ship
 type: tool
 phase: deployment
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Write the final extract to the operator's inbox
 spec: Write the final extract to the operator inbox configured for this run and report the path it was written to.
 dependencies: [refine-script]
@@ -342,7 +331,6 @@ name: Planner
 type: agent
 phase: planning
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Turn the request into acceptance criteria
 spec: Read the request and write the conditions the finished work must satisfy, one per line, phrased so a machine can check each of them.
 inputs: []
@@ -355,7 +343,6 @@ name: Builder
 type: agent
 phase: implementation
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Write the code the brief asks for
 spec: Build what the brief describes, in the smallest change that does the job, and hand the result over as source without commentary.
 inputs:
@@ -369,7 +356,6 @@ name: Tester
 type: validation
 phase: testing
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Run the checks and report what failed
 spec: Execute every check against the submitted build and report a verdict, an approved bundle when it passes, and the failing evidence when it does not.
 inputs:
@@ -386,7 +372,6 @@ name: Debugger
 type: agent
 phase: debugging
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Turn failure evidence into a targeted patch
 spec: Take the stack traces and failed assertions from the last run and produce the narrowest patch that addresses them, changing nothing else.
 params:
@@ -402,7 +387,6 @@ name: Deployer
 type: tool
 phase: deployment
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 action: Release the approved build
 spec: Publish the approved build to the target named in the run configuration and report the released version back to the operator.
 inputs:
@@ -429,7 +413,6 @@ function manifest(over: Partial<BundleManifest> = {}): BundleManifest {
     title: "Adversarial consensus",
     summary: "Two solvers argue, a vote decides, a human breaks the tie.",
     tags: ["consensus", "multi-agent"],
-    ontologyVersion: ONTOLOGY_VERSION,
     ...over,
   };
 }
@@ -538,19 +521,26 @@ describe("loadBundle — the adversarial-consensus blueprint", () => {
     expect(revote?.toPort).toEqual({ name: "reopened", type: "signal", required: false });
   });
 
-  it("scores autonomy 3 (Conditional) and says where the two people are", () => {
+  it("scores autonomy 2 (Supervised) and says where the two people are", () => {
     const autonomy = result.analysis?.autonomy;
     if (autonomy === undefined) throw new Error("expected an analysis");
 
-    expect(autonomy.level).toBe(3);
-    expect(autonomy.label).toBe("Conditional");
+    expect(autonomy.label).toBe("Supervised");
     expect(autonomy.totalNodes).toBe(8);
     expect(autonomy.autonomousNodes).toBe(6);
-    expect(autonomy.fraction).toBe(0.75);
+    expect(autonomy.staffingFraction).toBe(0.75);
+    /* Six of eight nodes run alone and the band still lands on 2, because the second
+       reading is the weaker one here: both of this graph's people stand on control points.
+       That is the whole reason the reading exists — by headcount alone this blueprint reads
+       the same as one whose two people do work that decides nothing. */
+    expect(autonomy.control.totalNodes).toBe(4);
+    expect(autonomy.control.unattendedNodes).toBe(2);
+    expect(autonomy.fraction).toBe(autonomy.control.fraction);
+    expect(autonomy.level).toBe(2);
     // Doc 2 §1.1: the sentence states where the people are, not how far the graph is
     // from full autonomy.
     expect(autonomy.rationale).toBe(
-      "6 of 8 nodes run unattended, 2 have a person in the loop. 0.75 ≥ 0.70 → level 3 (Conditional).",
+      "6 of 8 nodes run unattended, 2 have a person in the loop. 2 of 4 control points run unattended. 0.50 ≥ 0.50 → level 2 (Supervised).",
     );
     expect(autonomy.diagnostics).toEqual([]);
 
@@ -560,18 +550,22 @@ describe("loadBundle — the adversarial-consensus blueprint", () => {
 
     const human = autonomy.contributions.filter((c) => c.requiresHuman);
     expect(human.map((c) => c.nodeId)).toEqual(["reopen", "deliver"]);
-    // The type wins over the flag when both fire: doc 3 §3 makes the flag mandatory on a
-    // human type, so citing it would name a consequence instead of the cause.
-    expect(human[0].reason).toBe("human-in-the-loop-type");
-    expect(human[0].term).toBe("human-gate");
+    /* Both people are here because their cards say `human-gate`, and that is the only way
+       a card can put one there. `deliver` used to be a `tool` carrying `requires_human:
+       true` — the author staffing a node whose type said nothing about people — and this
+       cell asserted the second reason the metric had for counting it. The field is gone,
+       so a node the author staffs is a node they type, and the fixture says what it means
+       in the field every other surface reads. */
+    expect(human.map((c) => c.reason)).toEqual([
+      "human-in-the-loop-type",
+      "human-in-the-loop-type",
+    ]);
+    expect(human.map((c) => c.term)).toEqual(["human-gate", "human-gate"]);
     expect(human[0].explanation).toBe(
       "Ask a reviewer to re-open the debate when the vote is contested (type: human-gate). A person acts here.",
     );
-    // `deliver` is a `tool`, which says nothing about people; the author staffed it anyway,
-    // and doc 3 §3 allows exactly that direction.
-    expect(human[1].reason).toBe("requires-human-flag");
     expect(human[1].explanation).toBe(
-      "Publish the approved report to the customer channel (requires_human: true). A person acts here.",
+      "Publish the approved report to the customer channel (type: human-gate). A person acts here.",
     );
 
     const solver = autonomy.contributions.find((c) => c.nodeId === "solver_a");
@@ -630,15 +624,6 @@ describe("loadBundle — the adversarial-consensus blueprint", () => {
     ]);
     expect(analysis.phaseCoverage.missing).toEqual(["debugging"]);
     expect(analysis.phaseCoverage).toEqual(bp(result).phaseCoverage);
-  });
-
-  it("records the vocabulary both scores were computed under (doc 3 §8)", () => {
-    const analysis = result.analysis;
-    if (analysis === undefined) throw new Error("expected an analysis");
-    expect(analysis.ontologyVersion).toBe(ONTOLOGY_VERSION);
-    // One answer, not three: the facade and both metrics read the same view.
-    expect(analysis.autonomy.ontologyVersion).toBe(analysis.ontologyVersion);
-    expect(analysis.security.ontologyVersion).toBe(analysis.ontologyVersion);
   });
 
   it("is reproducible: the same bytes in, the same digest and the same scores out", () => {
@@ -794,7 +779,15 @@ describe("loadBundle — the doc 2 §5.2 starter, clean", () => {
   it("is fully autonomous, which is a description of this graph and not a grade", () => {
     expect(result.analysis?.autonomy.level).toBe(4);
     expect(result.analysis?.autonomy.rationale).toBe(
-      "5 of 5 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → level 4 (Closed-loop).",
+      "5 of 5 nodes run unattended, none have a person in the loop. The graph declares 1 control point, which is one reading rather than a share. 1.00 > 0.90 → level 4 (Closed-loop).",
+    );
+    /* The starter has one node that decides anything — the checker — and one observation
+       is not a share, so the band is the headcount's and the sentence says why. A graph
+       where every node runs alone reads 1.00 on both halves anyway; the floor is what stops
+       a single staffed decision elsewhere from speaking for a whole graph. */
+    expect(result.analysis?.autonomy.control.counted).toBe(false);
+    expect(result.analysis?.autonomy.fraction).toBe(
+      result.analysis?.autonomy.staffingFraction,
     );
   });
 });
@@ -963,15 +956,20 @@ describe("analyzeBlueprint", () => {
     const strict: DarkprintConfig = {
       ...DARKPRINT_CONFIG,
       // 0.75 no longer clears level 3, and arbitrary code execution costs half as much.
-      autonomy: { level4: 0.95, level3: 0.8, level2: 0.6 },
+      autonomy: { ...DARKPRINT_CONFIG.autonomy, level4: 0.95, level3: 0.8, level2: 0.6 },
       security: {
         ...DARKPRINT_CONFIG.security,
         weights: { ...DARKPRINT_CONFIG.security.weights, "arbitrary-code-execution": 0.5 },
       },
     };
     const relaxed = loadBundle(consensusBundle(), { config: strict });
-    expect(relaxed.analysis?.autonomy.level).toBe(2);
-    expect(relaxed.analysis?.autonomy.rationale).toContain("0.75 ≥ 0.60 → level 2");
+    /* The bands moved and so did the reading they are applied to: this blueprint's four
+       control points run at 0.50, which is the weaker half and therefore the number the
+       tuned bands see. 0.50 is below the tuned 0.60, so level 1 rather than the level 2
+       the headcount's 0.75 would have given. */
+    expect(relaxed.analysis?.autonomy.level).toBe(1);
+    expect(relaxed.analysis?.autonomy.rationale).toContain("0.50 < 0.60 → level 1");
+    expect(relaxed.analysis?.autonomy.staffingFraction).toBe(0.75);
 
     const rogue = loadBundle(rogueBundle(), { config: strict });
     const ace = rogue.analysis?.security.penalties.find(
@@ -983,17 +981,30 @@ describe("analyzeBlueprint", () => {
 
 describe("loadBundle — inputs it must survive", () => {
   it("defaults the ontology to the shipped core vocabulary", () => {
-    const stale = loadBundle(
-      consensusBundle({ manifest: manifest({ ontologyVersion: "0.0.9" }) }),
-    );
-    const mismatch = stale.diagnostics.filter((d) => d.code === "bundle/ontology-mismatch");
-    // One for the manifest, one for each of the eight cards that now disagrees with it.
-    expect(mismatch).toHaveLength(9);
-    expect(mismatch[0].message).toContain(CORE_ONTOLOGY.version);
-    expect(mismatch.every((d) => d.severity === "warning")).toBe(true);
-    // Warnings only: the blueprint still resolves and still scores.
-    expect(summarize(stale.diagnostics).error).toBe(0);
-    expect(stale.analysis?.autonomy.level).toBe(3);
+    const plain = loadBundle(consensusBundle());
+    /* The witness that the default view is the shipped core: every card in this bundle is
+       written in core terms only, so it resolves without an error exactly when the core is
+       what it was read against. */
+    expect(summarize(plain.diagnostics).error).toBe(0);
+    expect(plain.analysis?.autonomy.level).toBe(2);
+    expect(summarize(plain.diagnostics).error).toBe(0);
+
+    /* This cell used to drive the DEFAULT through a disagreement: the manifest declared
+       `0.0.9`, `loadBundle` was left to default, and nine `bundle/ontology-mismatch` warnings
+       came back — one for the manifest and one for each of the eight cards that then
+       disagreed with it. Neither the manifest nor a card declares a vocabulary version now,
+       so nothing can disagree with anything and the two diagnostics that reported it are
+       gone. What the cell was actually about survives above: with no `ontology` option the
+       bundle is read against the shipped core. The local-extensions cell below drives the
+       other half, that a SUPPLIED view wins over the shipped one — the same card is rejected
+       without it and accepted with it. */
+    expect(
+      loadBundle(consensusBundle()).diagnostics.filter(
+        (d) => d.code === "bundle/ontology-mismatch",
+      ),
+      "the shipped core cannot shadow one of its own ids, which is the only thing left that " +
+        "raises this code",
+    ).toEqual([]);
   });
 
   it("accepts an ontology view with local extensions layered on (doc 3 §7)", () => {
@@ -1003,7 +1014,7 @@ describe("loadBundle — inputs it must survive", () => {
       label: "Patch script",
       description: "A locally defined step that rewrites a script before it is run.",
       broader: "agent",
-      since: ONTOLOGY_VERSION,
+      since: TERM_SINCE,
     };
     const bundle = rogueBundle();
     const withLocalType: Bundle = {
@@ -1030,23 +1041,13 @@ describe("loadBundle — inputs it must survive", () => {
     expect(known.analysis?.autonomy.level).toBe(4);
   });
 
-  it("reports the vocabulary it was handed, not the one it ships with (doc 3 §8)", () => {
-    const older = ontologyView({ ...CORE_ONTOLOGY, version: "0.0.9" });
-    const scored = loadBundle(consensusBundle({ manifest: manifest({ ontologyVersion: "0.0.9" }) }), {
-      ontology: older,
-    });
-    expect(scored.analysis?.ontologyVersion).toBe("0.0.9");
-    expect(scored.analysis?.security.ontologyVersion).toBe("0.0.9");
-    expect(scored.analysis?.autonomy.ontologyVersion).toBe("0.0.9");
-  });
-
   it("withholds the blueprint when the DOT does not parse, and says where", () => {
     const broken = loadBundle(consensusBundle({ dot: "digraph broken { a -> " }));
     expect(broken.blueprint).toBeUndefined();
     expect(broken.analysis).toBeUndefined();
     const parseErrors = broken.diagnostics.filter((d) => d.code === "dot/parse-error");
     expect(parseErrors.length).toBeGreaterThan(0);
-    expect(parseErrors[0].location?.file).toBe("blueprint.dot");
+    expect(parseErrors[0].location?.file).toBe("topology.dot");
     expect(parseErrors[0].location?.line).toBeGreaterThan(0);
   });
 
@@ -1089,7 +1090,15 @@ describe("loadBundle — inputs it must survive", () => {
     // read cannot be quietly excused from the count.
     expect(partial.analysis?.autonomy.totalNodes).toBe(8);
     expect(partial.analysis?.autonomy.autonomousNodes).toBe(5);
-    expect(partial.analysis?.autonomy.fraction).toBe(0.625);
+    expect(partial.analysis?.autonomy.staffingFraction).toBe(0.625);
+    /* The band reads the weaker half, which here is the second: four control points, two
+       of them staffed. The missing node is not one of them and could not be — a node with
+       no card has no type, so nothing says it decides anything, which is the one place the
+       two readings treat an unresolved node differently. The headcount keeps it in its
+       denominator (doc 3 §6's nodi totali) and this reading has nothing to put it in. */
+    expect(partial.analysis?.autonomy.control.totalNodes).toBe(4);
+    expect(partial.analysis?.autonomy.control.unattendedNodes).toBe(2);
+    expect(partial.analysis?.autonomy.fraction).toBe(0.5);
     expect(partial.analysis?.autonomy.level).toBe(2);
     expect(
       partial.analysis?.autonomy.contributions.filter((c) => c.ref === ""),
@@ -1149,6 +1158,114 @@ describe("loadBundle — inputs it must survive", () => {
     expect(noPhase.blueprint?.phaseCoverage.unphased).toEqual(["solver_b"]);
     expect(noPhase.analysis).toBeDefined();
   });
+});
+
+/* ============================================================
+   a guarded edge is a real edge
+   `ResolvedEdge.condition` carries Attractor's §10 guard, and the
+   rule written on that field is that a conditional edge counts
+   exactly as much as an unconditional one in every risk analysis.
+   A leak that can happen is a leak.
+
+   The suite below is what makes the rule fail loudly instead of
+   quietly. It takes each of the three fixtures, writes
+   `condition="false", weight=0` onto EVERY edge — the cheapest
+   thing an author could do to claim a path is never taken — and
+   holds the whole scored analysis to what the unguarded bundle
+   produced, byte for byte: the same security level, the same
+   findings, the same autonomy, the same diagnostics.
+
+   Reading a guard as "maybe not taken" would look like an
+   improvement and would lower Security across the entire archive,
+   by exactly the amount somebody gains by writing that attribute
+   on the edge that leaks. It fails here first.
+   ============================================================ */
+
+/**
+ * Written onto every edge: the guard that claims the branch never runs.
+ *
+ * `condition="false"` until 2026-09-04, and the replacement is the same claim spelled in a
+ * grammar that exists. Engine spec §10.2 is `Clause ::= Key Operator Literal` with `Key`
+ * one of `outcome`, `preferred_label` or `context.` Path, so a bare `false` is not an
+ * expression at all, and `attractor/condition-syntax` now says so. That report is correct
+ * and it was landing on the guarded half of every pair below, which is what reddened the
+ * diagnostics cell while the scoring cell stayed green.
+ *
+ * `context.never=1` is still provably never true, which is the whole point of this fixture:
+ * §10.3 says a missing key compares as an empty string and is "never equal to non-empty
+ * values". So the claim under test is unweakened — an edge that CANNOT fire still counts
+ * for everything an unconditional one counts for — and it is now made with a guard a runner
+ * would actually accept, which makes the pair differ in the one property being measured
+ * rather than in two.
+ */
+const NEVER = 'condition="context.never=1", weight=0';
+
+/**
+ * Add `NEVER` to every edge statement of a DOT source, into the existing attribute list
+ * where there is one and in a new one where there is not.
+ *
+ * Deliberately not clever: the fixtures in this file write one edge per line and no
+ * chained `a -> b -> c`, so a line-wise rewrite is total for them and obviously so. Each
+ * cell below checks the transform actually fired before checking anything else — a regex
+ * that matched nothing would make every assertion here pass against an unguarded bundle
+ * compared to itself.
+ */
+function guardEveryEdge(src: string): string {
+  return src
+    .split("\n")
+    .map((line) => {
+      if (!line.includes("->")) return line;
+      const withAttrs = /^(.*\[)([^\]]*)(\];\s*)$/.exec(line);
+      if (withAttrs !== null) return `${withAttrs[1]}${withAttrs[2]}, ${NEVER}${withAttrs[3]}`;
+      const bare = /^(\s*\S+\s*->\s*\S+?)\s*;(\s*)$/.exec(line);
+      if (bare !== null) return `${bare[1]} [${NEVER}];${bare[2]}`;
+      return line;
+    })
+    .join("\n");
+}
+
+describe("a guarded edge counts exactly as much as an unconditional one", () => {
+  const cases: { name: string; bundle: Bundle }[] = [
+    { name: "adversarial consensus", bundle: consensusBundle() },
+    { name: "rogue scraper", bundle: rogueBundle() },
+    { name: "the starter with the criteria edge added", bundle: leakingStarterBundle() },
+  ];
+
+  for (const { name, bundle } of cases) {
+    describe(name, () => {
+      const plain = loadBundle(bundle);
+      const guarded = loadBundle({ ...bundle, dot: guardEveryEdge(bundle.dot) });
+
+      it("guards every edge, so the comparison below is not a bundle against itself", () => {
+        const edges = bp(guarded).edges;
+        expect(edges.length).toBe(bp(plain).edges.length);
+        expect(edges.length).toBeGreaterThan(0);
+        for (const edge of edges) {
+          expect(edge.condition, `${edge.source} -> ${edge.target}`).toBe("context.never=1");
+          expect(edge.weight, `${edge.source} -> ${edge.target}`).toBe("0");
+        }
+        expect(bp(plain).edges.every((e) => e.condition === undefined)).toBe(true);
+      });
+
+      it("scores identically", () => {
+        expect(guarded.analysis).toEqual(plain.analysis);
+      });
+
+      it("reports the same diagnostics, in the same places", () => {
+        expect(guarded.diagnostics).toEqual(plain.diagnostics);
+      });
+
+      it("keeps the same topology, so the reachability every metric walks is unchanged", () => {
+        const g = bp(guarded).graph;
+        const p = bp(plain).graph;
+        expect(g.ids).toEqual(p.ids);
+        for (const id of p.ids) {
+          expect(g.successors(id), id).toEqual(p.successors(id));
+          expect(g.descendants(id), id).toEqual(p.descendants(id));
+        }
+      });
+    });
+  }
 });
 
 /** Narrow a result's blueprint once, for assertions that only need the graph. */

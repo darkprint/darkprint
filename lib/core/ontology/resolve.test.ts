@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { DARKPRINT_CONFIG } from "../config";
 import { CORE_ONTOLOGY, CORE_PHASE_IDS } from "./core";
-import { ontologyView, partitionTerms, splitTermId } from "./resolve";
+import {
+  controlCitation,
+  humanCitation,
+  isControlPoint,
+  ontologyView,
+  partitionTerms,
+  requiresHuman,
+  splitTermId,
+} from "./resolve";
 import type { Ontology, OntologyTerm, TermKind } from "./types";
 
 /** One view over the real vocabulary — read-only, so every test may share it. */
@@ -20,8 +28,8 @@ function term(id: string, extra: Partial<OntologyTerm> = {}): OntologyTerm {
   };
 }
 
-function synth(terms: readonly OntologyTerm[], version = "9.9.9"): Ontology {
-  return { version, title: "Synthetic vocabulary", terms };
+function synth(terms: readonly OntologyTerm[]): Ontology {
+  return { title: "Synthetic vocabulary", terms };
 }
 
 const ids = (terms: readonly OntologyTerm[]): string[] => terms.map((t) => t.id);
@@ -88,8 +96,7 @@ describe("get", () => {
     expect(CORE.get("Agent")).toBeUndefined();
   });
 
-  it("exposes the base version and title unchanged", () => {
-    expect(CORE.ontology.version).toBe(CORE_ONTOLOGY.version);
+  it("exposes the base title unchanged", () => {
     expect(CORE.ontology.title).toBe(CORE_ONTOLOGY.title);
     expect(ids(CORE.ontology.terms)).toEqual(ids(CORE_ONTOLOGY.terms));
   });
@@ -111,6 +118,24 @@ describe("isA over the shipped vocabulary", () => {
     ["human-input", "human-in-the-loop", true],
     ["validation", "evaluative", true],
     ["decision", "evaluative", true],
+    // The three control-flow edges the `orchestration` branch draws, and the one it does
+    // not: a fan-in is the counterpart of a fan-out, never a kind of one.
+    ["parallel", "orchestration", true],
+    ["parallel.fan-in", "orchestration", true],
+    ["manager-loop", "orchestration", true],
+    ["parallel.fan-in", "parallel", false],
+    ["parallel", "parallel.fan-in", false],
+    ["parallel", "evaluative", false],
+    ["manager-loop", "human-in-the-loop", false],
+    // The one node-type edge doc 3 does not draw. A shell command is a deterministic
+    // operation, so every rule that asks `isA(type, "tool")` has to keep catching the node
+    // that runs one after `attractor/emit.ts` stops giving `tool` the `parallelogram` row.
+    ["shell-tool", "tool", true],
+    ["tool", "shell-tool", false],
+    ["shell-tool", "agent", false],
+    ["shell-tool", "human-in-the-loop", false],
+    ["shell-tool", "evaluative", false],
+    ["shell-tool", "orchestration", false],
     // …and the nodes that are emphatically not human. The metric must answer `false` here
     // or every agent in every blueprint would count as a human intervention.
     ["agent", "human-in-the-loop", false],
@@ -149,6 +174,13 @@ describe("isA over the shipped vocabulary", () => {
     ["tool", "tool-capability", false],
     ["shell", "tool", false],
     ["shell", "tool-capability", true],
+    // `shell-tool` and `shell` are the closest two names in the whole vocabulary and they
+    // are of different kinds, so neither subsumes the other in either direction. A card's
+    // `type: shell-tool` says what the node is; `tools: [shell]` says what its host must
+    // let it do, and a node can carry either without the other.
+    ["shell-tool", "shell", false],
+    ["shell", "shell-tool", false],
+    ["shell-tool", "tool-capability", false],
     ["arbitrary-code-execution", "agent", false],
     ["implementation", "agent", false],
     // The data lattice doc 1 §2 rule 3 needs, `acceptance-criteria` included.
@@ -176,7 +208,7 @@ describe("isA over the shipped vocabulary", () => {
     // the invariant is "reaches a root of its own kind", not "reaches *the* root".
     const rootsOf: Record<TermKind, readonly string[]> = {
       phase: ["planning", "implementation", "testing", "debugging", "deployment"],
-      "node-type": ["agent", "tool", "human-in-the-loop", "evaluative"],
+      "node-type": ["agent", "tool", "human-in-the-loop", "evaluative", "orchestration"],
       "risk-marker": [
         "execution-risk",
         "isolation-breach",
@@ -698,9 +730,13 @@ describe("ontologyView with extensions", () => {
     expect(ds.map((d) => d.code)).toEqual(["ontology/local-term-unrooted"]);
   });
 
-  it("keeps the base version even when local terms are layered on", () => {
+  /* An overlay used to be checked for not minting a vocabulary version of its own. There
+     is no version to mint; what has to stay true is that the merged view is still the base
+     vocabulary with terms added, so the title is the surviving witness of that. */
+  it("keeps the base title even when local terms are layered on", () => {
     const view = ontologyView(CORE_ONTOLOGY, [term("berti/local", { broader: "agent" })]);
-    expect(view.ontology.version).toBe(CORE_ONTOLOGY.version);
+    expect(view.ontology.title).toBe(CORE_ONTOLOGY.title);
+    expect(Object.hasOwn(view.ontology, "version")).toBe(false);
   });
 
   it("resolves a deprecation that points from a local term into the core", () => {
@@ -1080,5 +1116,232 @@ describe("pathological vocabularies", () => {
       "ontology/local-term-unrooted",
       "ontology/local-term-unrooted",
     ]);
+  });
+});
+
+/* ============================================================
+   requiresHuman / humanCitation — who acts at a node
+   ------------------------------------------------------------
+   The single source of truth for the question a card used to
+   answer twice. `card/validate.ts` used to own a cross-field rule
+   about it and `analysis/autonomy.ts` used to own its own copy of
+   the traversal; the coverage that lived in those two files for
+   the local subtype, the deprecation redirect and the category
+   question is here, because this is where the answer is computed
+   now and both of them call in.
+   ============================================================ */
+
+describe("requiresHuman", () => {
+  it.each(["human-gate", "human-input"])("is true for the concrete human type `%s`", (id) => {
+    expect(requiresHuman(CORE, id)).toBe(true);
+  });
+
+  it.each(["agent", "tool", "shell-tool", "decision", "validation", "evaluative"])(
+    "is false for `%s`, which says nothing about people",
+    (id) => {
+      expect(requiresHuman(CORE, id)).toBe(false);
+    },
+  );
+
+  it("is true for the category itself, because subsumption is reflexive", () => {
+    expect(requiresHuman(CORE, "human-in-the-loop")).toBe(true);
+    expect(humanCitation(CORE, "human-in-the-loop")).toEqual({
+      term: "human-in-the-loop",
+      via: "self",
+    });
+  });
+
+  it("is false for a term the vocabulary has never heard of", () => {
+    // A card naming a term nobody defined is `card/unknown-term`'s business. Here it is
+    // simply not in the category, which is the answer that keeps a broken card off the
+    // schematic as a person who is not there.
+    expect(requiresHuman(CORE, "wizard")).toBe(false);
+    expect(humanCitation(CORE, "wizard")).toBeUndefined();
+  });
+
+  it("is false for a term of the wrong kind", () => {
+    // `plan` is a `data-type`. It resolves to nothing in the node-type dimension.
+    expect(requiresHuman(CORE, "plan")).toBe(false);
+  });
+
+  it("asks the category, never a list of ids: a local subtype counts", () => {
+    /* The property doc 3 §3 exists for, and the reason this is one function rather than a
+       list repeated per caller: a human type added to the vocabulary after this file was
+       written changes the answer without this file being touched. */
+    const view = ontologyView(CORE_ONTOLOGY, [
+      term("berti/design-review", { broader: "human-in-the-loop" }),
+    ]);
+    expect(requiresHuman(view, "berti/design-review")).toBe(true);
+    // The category is cited, not the type: no term in the chain carries `impliesHuman`.
+    expect(humanCitation(view, "berti/design-review")).toEqual({
+      term: "human-in-the-loop",
+      via: "broader",
+    });
+  });
+
+  it("cites the nearest term carrying `impliesHuman` inside a chain that qualifies", () => {
+    const view = ontologyView(CORE_ONTOLOGY, [term("berti/desk", { broader: "human-gate" })]);
+    expect(humanCitation(view, "berti/desk")).toEqual({ term: "human-gate", via: "broader" });
+  });
+
+  it("does not let `impliesHuman` outside the category act as a second membership rule", () => {
+    /* `impliesHuman` picks which term to cite inside a chain that already qualifies. It is
+       not a way in. Two independent ways to be human would put this file back where the
+       card was, with two answers and nothing holding them together. */
+    const view = ontologyView(CORE_ONTOLOGY, [
+      term("berti/rogue-desk", { broader: "agent", impliesHuman: true }),
+    ]);
+    expect(view.isA("berti/rogue-desk", "human-in-the-loop")).toBe(false);
+    expect(requiresHuman(view, "berti/rogue-desk")).toBe(false);
+  });
+
+  it("follows a deprecation pointer once before concluding otherwise", () => {
+    // §6.2 keeps a deprecated id valid, and it may predate the category its successor
+    // sits under, so an old spelling of a human type is still a human type.
+    const view = ontologyView(CORE_ONTOLOGY, [
+      term("berti/manual-check", { deprecated: { since: "0.2.0", replacedBy: "human-gate" } }),
+    ]);
+    expect(requiresHuman(view, "berti/manual-check")).toBe(true);
+    // The successor is cited: "superseded by human-gate" is true, "superseded by
+    // human-in-the-loop" would not be.
+    expect(humanCitation(view, "berti/manual-check")).toEqual({
+      term: "human-gate",
+      via: "deprecation",
+    });
+  });
+
+  it("does not follow a deprecation pointer to a type that is not human", () => {
+    const view = ontologyView(CORE_ONTOLOGY, [
+      term("berti/old-worker", { deprecated: { since: "0.2.0", replacedBy: "agent" } }),
+    ]);
+    expect(requiresHuman(view, "berti/old-worker")).toBe(false);
+  });
+
+  it("agrees with `humanCitation` on every shipped node type", () => {
+    /* The two are one function and a boolean over it, and this is the cell that says so:
+       a caller that only needs the answer and a caller that needs the reason cannot come
+       apart, which is what "one source of truth" has to mean at the code level. */
+    for (const t of CORE.byKind("node-type")) {
+      expect([t.id, requiresHuman(CORE, t.id)]).toEqual([
+        t.id,
+        humanCitation(CORE, t.id) !== undefined,
+      ]);
+    }
+  });
+});
+
+/* ============================================================
+   isControlPoint / controlCitation — what a node decides
+   ------------------------------------------------------------
+   The mirror of the section above, and it is asked separately for
+   a reason: `human-gate` answers true to both, because who acts
+   at a node and what the node decides are different facts and one
+   field cannot carry both.
+
+   Membership here is the inherited `governsFlow` flag rather than
+   an `isA` test, because the set spans `evaluative`,
+   `orchestration` and `human-gate` and no term subsumes all
+   three. These cells are what stop that flag from quietly
+   becoming a list somebody maintains by hand.
+   ============================================================ */
+
+describe("isControlPoint", () => {
+  it.each(["decision", "validation", "parallel", "parallel.fan-in", "manager-loop"])(
+    "is true for `%s`, which inherits the flag from its category",
+    (id) => {
+      expect(isControlPoint(CORE, id)).toBe(true);
+    },
+  );
+
+  it("is true for `human-gate`, the one concrete type carrying the flag itself", () => {
+    // Approve or reject is a routing decision. It cannot inherit the fact: `broader`
+    // holds one parent and this term's is spent on `human-in-the-loop`.
+    expect(isControlPoint(CORE, "human-gate")).toBe(true);
+    expect(controlCitation(CORE, "human-gate")).toEqual({ term: "human-gate", via: "self" });
+  });
+
+  it.each(["agent", "tool", "shell-tool", "human-input", "human-in-the-loop"])(
+    "is false for `%s`, which does work or hosts a person but decides nothing",
+    (id) => {
+      expect(isControlPoint(CORE, id)).toBe(false);
+    },
+  );
+
+  it("cites the category for a type that inherits the flag", () => {
+    expect(controlCitation(CORE, "validation")).toEqual({ term: "evaluative", via: "broader" });
+    expect(controlCitation(CORE, "manager-loop")).toEqual({
+      term: "orchestration",
+      via: "broader",
+    });
+  });
+
+  it("cites the category itself when the category is what was asked", () => {
+    expect(controlCitation(CORE, "orchestration")).toEqual({
+      term: "orchestration",
+      via: "self",
+    });
+  });
+
+  it("is false for a type the vocabulary has never heard of", () => {
+    // Not a throw and not a true: an unknown type is `card/unknown-term`'s business, and
+    // guessing that it decides something would put a decision in the reading that no card
+    // declares.
+    expect(isControlPoint(CORE, "wizard")).toBe(false);
+    expect(controlCitation(CORE, "wizard")).toBeUndefined();
+  });
+
+  it("carries the flag down a local subtype (doc 3 §7)", () => {
+    const view = ontologyView(CORE_ONTOLOGY, [term("berti/spread", { broader: "parallel" })]);
+    expect(isControlPoint(view, "berti/spread")).toBe(true);
+    // Nearest first: the flag is on `orchestration` and that is what is cited, because
+    // `parallel` does not carry one of its own.
+    expect(controlCitation(view, "berti/spread")).toEqual({
+      term: "orchestration",
+      via: "broader",
+    });
+  });
+
+  it("does not reach a local type rooted outside the flagged branches", () => {
+    const view = ontologyView(CORE_ONTOLOGY, [term("berti/worker", { broader: "agent" })]);
+    expect(isControlPoint(view, "berti/worker")).toBe(false);
+  });
+
+  it("follows a deprecation pointer once, the way `humanCitation` does", () => {
+    const view = ontologyView(CORE_ONTOLOGY, [
+      term("berti/old-router", { deprecated: { since: "0.2.0", replacedBy: "decision" } }),
+    ]);
+    expect(isControlPoint(view, "berti/old-router")).toBe(true);
+    expect(controlCitation(view, "berti/old-router")).toEqual({
+      term: "decision",
+      via: "deprecation",
+    });
+  });
+
+  it("does not follow a deprecation pointer to a type that decides nothing", () => {
+    const view = ontologyView(CORE_ONTOLOGY, [
+      term("berti/old-gate", { deprecated: { since: "0.2.0", replacedBy: "tool" } }),
+    ]);
+    expect(isControlPoint(view, "berti/old-gate")).toBe(false);
+  });
+
+  it("agrees with `controlCitation` on every shipped node type", () => {
+    for (const t of CORE.byKind("node-type")) {
+      expect([t.id, isControlPoint(CORE, t.id)]).toEqual([
+        t.id,
+        controlCitation(CORE, t.id) !== undefined,
+      ]);
+    }
+  });
+
+  it("is a different question from `requiresHuman`, and human-gate is where they meet", () => {
+    /* Four answers, all four reachable, which is what makes the two readings in
+       `analysis/autonomy.ts` independent rather than one wearing two names. */
+    const pairs = CORE.byKind("node-type").map(
+      (t) => `${t.id}:${requiresHuman(CORE, t.id) ? "H" : "-"}${isControlPoint(CORE, t.id) ? "C" : "-"}`,
+    );
+    expect(pairs).toContain("human-gate:HC");
+    expect(pairs).toContain("human-input:H-");
+    expect(pairs).toContain("validation:-C");
+    expect(pairs).toContain("agent:--");
   });
 });

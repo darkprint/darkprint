@@ -1,0 +1,12 @@
+{
+  "_comment": "Node-side resolution for the content snapshot. Same directory pins as tsconfig.sync.json, but no next/* shims and no @/lib/content override: this one has to reach the REAL server loader, filesystem and all.",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@/components/viz": ["./components/viz/index.ts"],
+      "@/lib/content": ["./lib/content/index.ts"],
+      "@/lib/core": ["./lib/core/index.ts"],
+      "@/*": ["./*"]
+    }
+  }
+}

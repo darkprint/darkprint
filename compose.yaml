@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: darkprint
+      POSTGRES_PASSWORD: darkprint
+      POSTGRES_DB: darkprint
+    ports:
+      - "5432:5432"
+    volumes:
+      - darkprint-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U darkprint -d darkprint"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: darkprint
+      MINIO_ROOT_PASSWORD: darkprint123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - darkprint-minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Bytes are keyed by digest under one bucket (B-01); the bucket has to exist before
+  # lib/db/storage.ts's client can PUT into it, and MinIO does not create one on its own.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 darkprint darkprint123 &&
+      mc mb --ignore-existing local/darkprint
+      "
+
+volumes:
+  darkprint-postgres:
+  darkprint-minio:

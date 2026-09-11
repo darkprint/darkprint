@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    /* The vendored modules resolve their OWN imports through this alias — `lib/server/engine`
+       imports `@/lib/core` — so the mapping is needed to typecheck them even though this
+       package's own imports are relative. It is a TYPE-resolution feature only, which is the
+       whole of the finding reported against D-270-06. */
+    "baseUrl": "../..",
+    "paths": { "@/*": ["./*"] }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}

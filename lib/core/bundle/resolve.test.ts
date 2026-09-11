@@ -5,8 +5,8 @@
    broken variant is derived from it, so each diagnostic is provably
    caused by the one thing that was changed.
 
-   The card library was rewritten against ontology v0.1 (doc 3): one
-   of the five phases and one of the six node types on every card, a
+   The card library was rewritten against doc 3's vocabulary: one
+   of the five phases and one of the vocabulary node types on every card, a
    `spec` that is a real instruction rather than a placeholder, and
    the vocabulary version the engine actually ships. The old
    `trigger` / `sink` / `memory` types and the `image` port type no
@@ -29,9 +29,6 @@ import type { Bundle, BundleManifest, ResolvedBlueprint, ResolveResult } from ".
 
 const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
 
-/** Read off the vocabulary, so a fixture cannot drift from the ontology it is read against. */
-const ONTOLOGY_VERSION = CORE_ONTOLOGY.version;
-
 /* ------------------------------------------------------------------ */
 /* the card library                                                     */
 /* ------------------------------------------------------------------ */
@@ -47,7 +44,6 @@ inputs: []
 outputs:
   - { name: request, type: text }
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 const PLANNER = `
@@ -63,7 +59,6 @@ outputs:
   - { name: plan, type: plan }
 dependencies: [intake]
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 const WRITER = `
@@ -79,7 +74,6 @@ outputs:
   - { name: draft, type: markdown }
 dependencies: [planner]
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 const REVIEW = `
@@ -96,7 +90,6 @@ outputs:
   - { name: approved, type: markdown }
 dependencies: [writer]
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 const DELIVER = `
@@ -111,7 +104,6 @@ inputs:
 outputs: []
 dependencies: [review]
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 /** Two ports of the same family — anything that accepts `any` pairs with both. */
@@ -126,7 +118,6 @@ inputs:
   - { name: item, type: any }
 outputs: []
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 /** Accepts a broader type than the planner produces — exercises subsumption. */
@@ -142,7 +133,6 @@ inputs:
 outputs:
   - { name: result, type: any }
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 /** Wants an artifact; nothing upstream produces one. */
@@ -157,7 +147,6 @@ inputs:
   - { name: photo, type: artifact }
 outputs: []
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 /** Produces a type that subsumes `artifact` — the wrong way round for `picky`. */
@@ -172,7 +161,6 @@ inputs: []
 outputs:
   - { name: bytes, type: binary }
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 /** Declares no interface at all. */
@@ -186,7 +174,6 @@ spec: Carry out the step the run configuration names, using only what the config
 inputs: []
 outputs: []
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 /** Instantiated twice in the cycle fixtures. */
@@ -202,7 +189,6 @@ inputs:
 outputs:
   - { name: output, type: any }
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 const CARD_FILES: Readonly<Record<string, string>> = {
@@ -238,7 +224,6 @@ const MANIFEST: BundleManifest = {
   title: "Editorial pipeline",
   summary: "Intake, plan, write, review, deliver.",
   tags: ["writing"],
-  ontologyVersion: ONTOLOGY_VERSION,
 };
 
 function makeBundle(
@@ -476,7 +461,7 @@ describe("the Attractor linter, merged in", () => {
     const bad = withCode(diagnostics, "attractor/bad-node-id");
     expect(bad).toHaveLength(1);
     expect(bad[0].severity).toBe("warning");
-    expect(bad[0].location).toMatchObject({ file: "blueprint.dot", nodeId: "kebab-case" });
+    expect(bad[0].location).toMatchObject({ file: "topology.dot", nodeId: "kebab-case" });
     // The two layers stay apart: DarkPrint read the file, Attractor would not run it.
     expect(withCode(diagnostics, "dot/parse-error")).toEqual([]);
     expect(blueprint).toBeDefined();
@@ -530,7 +515,7 @@ describe("the card pointer", () => {
     const { diagnostics } = resolve(src);
     const d = one(diagnostics, "bundle/unpinned-card");
     expect(d.severity).toBe("error");
-    expect(d.location).toMatchObject({ file: "blueprint.dot", nodeId: "planner" });
+    expect(d.location).toMatchObject({ file: "topology.dot", nodeId: "planner" });
   });
 
   it("reports an unpinned node that names a card the bundle carries, and lists the versions", () => {
@@ -564,9 +549,11 @@ describe("the card pointer", () => {
   it("refuses a bundle whose second version of a card under-declares its bump", () => {
     const files = {
       ...CARD_FILES,
+      /* Anchored on `dependencies:`, which is the last key before the version line. It used
+         to insert before `ontology_version:`, and that key is gone from the card schema. */
       "cards/planner@1.1.0.yaml": PLANNER.replace("version: 1.0.0", "version: 1.1.0").replace(
-        "ontology_version:",
-        "cannot:\n  - read the acceptance criteria\nontology_version:",
+        "dependencies: [intake]",
+        "dependencies: [intake]\ncannot:\n  - acceptance-criteria",
       ),
     };
     const src = BASE_DOT.replace('planner [card="planner@1.0.0"]', 'planner [card="planner@1.1.0"]');
@@ -583,8 +570,8 @@ describe("the card pointer", () => {
     const files = {
       ...CARD_FILES,
       "cards/planner@2.0.0.yaml": PLANNER.replace("version: 1.0.0", "version: 2.0.0").replace(
-        "ontology_version:",
-        "cannot:\n  - read the acceptance criteria\nontology_version:",
+        "dependencies: [intake]",
+        "dependencies: [intake]\ncannot:\n  - acceptance-criteria",
       ),
     };
     const src = BASE_DOT.replace('planner [card="planner@1.0.0"]', 'planner [card="planner@2.0.0"]');
@@ -963,7 +950,6 @@ outputs:
   - { name: plan, type: plan }
   - { name: criteria, type: acceptance-criteria }
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 const GUARDED_BUILDER = `
@@ -979,7 +965,6 @@ outputs:
   - { name: build, type: code }
 cannot: [acceptance-criteria]
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
 
 const JUDGE = `
@@ -996,8 +981,78 @@ outputs:
   - { name: verdict, type: status }
 dependencies: [criteria-planner, guarded-builder]
 version: 1.0.0
-ontology_version: ${ONTOLOGY_VERSION}
 `;
+
+describe("edge guards and weights", () => {
+  const FILES: Readonly<Record<string, string>> = {
+    "cards/review@1.0.0.yaml": REVIEW,
+    "cards/archive@1.0.0.yaml": ARCHIVE,
+  };
+
+  const NODES = `
+      review  [card="review@1.0.0"];
+      archive [card="archive@1.0.0"];`;
+
+  /** An expression Attractor's §10 grammar reads and DarkPrint deliberately does not. */
+  const GUARD = "attempts > 3 && !approved";
+
+  const GUARDED = dot(`${NODES}
+      review -> archive [label="verdict", condition="${GUARD}", weight=0];
+    `);
+
+  const PLAIN = dot(`${NODES}
+      review -> archive [label="verdict"];
+    `);
+
+  const edgeOf = (src: string) => mustResolve(resolve(src, FILES)).edges[0];
+
+  it("carries the guard and the weight verbatim onto the edge", () => {
+    const edge = edgeOf(GUARDED);
+    expect(edge.condition).toBe(GUARD);
+    // A string, and the string the source spells: `0` and `0.0` are different bytes in a
+    // file somebody else's runner reads, and coercing either to a number loses that.
+    expect(edge.weight).toBe("0");
+  });
+
+  it("leaves the raw attribute bag intact, so nothing is moved out from under a reader", () => {
+    const edge = edgeOf(GUARDED);
+    expect(edge.attrs.condition).toBe(GUARD);
+    expect(edge.attrs.weight).toBe("0");
+  });
+
+  it("leaves both absent on an edge that declares neither", () => {
+    const edge = edgeOf(PLAIN);
+    expect(edge.condition).toBeUndefined();
+    expect(edge.weight).toBeUndefined();
+    // Absent, not empty: `condition: ""` would be an edge guarded by the empty expression.
+    expect(Object.prototype.hasOwnProperty.call(edge, "condition")).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(edge, "weight")).toBe(false);
+  });
+
+  /**
+   * THE RULE, at the structural level: a guarded edge is an edge.
+   *
+   * `buildGraph` is handed every edge statement, and every reachability-based reading in
+   * `lib/core/analysis` walks the graph it returns. A filter there on `condition` — or a
+   * ranking on `weight` — is the single edit that would make a guarded edge count for
+   * less than an unconditional one everywhere at once. This is the cell that fails when
+   * somebody makes it.
+   */
+  it("puts a guarded edge in the graph exactly as it puts an unguarded one", () => {
+    const guarded = mustResolve(resolve(GUARDED, FILES)).graph;
+    const plain = mustResolve(resolve(PLAIN, FILES)).graph;
+    expect(guarded.successors("review")).toEqual(plain.successors("review"));
+    expect(guarded.descendants("review")).toEqual(plain.descendants("review"));
+    expect(guarded.sinks()).toEqual(plain.sinks());
+  });
+
+  it("still resolves the ports on a guarded edge", () => {
+    // The guard is a passenger and nothing about it is allowed to change what the edge
+    // carries: a reader who adds a condition must not lose the port pairing under it.
+    expect(edgeOf(GUARDED).fromPort).toEqual(edgeOf(PLAIN).fromPort);
+    expect(edgeOf(GUARDED).toPort).toEqual(edgeOf(PLAIN).toPort);
+  });
+});
 
 describe("declared prohibitions", () => {
   const ISOLATION_FILES: Readonly<Record<string, string>> = {
@@ -1046,11 +1101,35 @@ describe("declared prohibitions", () => {
     expect(d.message).toContain("`acceptance-criteria`");
     expect(d.message).toContain("`planner -> builder`");
     expect(d.location).toMatchObject({
-      file: "blueprint.dot",
+      file: "topology.dot",
       nodeId: "builder",
       cardRef: "guarded-builder@1.0.0",
       edge: { source: "planner", target: "builder" },
     });
+  });
+
+  /**
+   * THE RULE, on the check that costs the most to lose: a guard does not buy an exemption.
+   *
+   * `condition="false"` is the cheapest thing an author could write to make a leaking edge
+   * look like an edge that is never taken, and if the resolver read it the whole isolation
+   * argument of doc 2 §3 would be enforceable only against authors who did not know the
+   * trick. The condition is evaluated at run time, on somebody else's machine, against
+   * data DarkPrint never sees. A leak that can happen is a leak, and this cell holds the
+   * guarded edge to the same diagnostic as the bare one, field for field.
+   */
+  it("refuses the leak just as loudly when the leaking edge carries a guard", () => {
+    const GUARDED_LEAK = dot(`${NODES}
+      planner -> judge;
+      builder -> judge;
+      planner -> builder [condition="false"];
+    `);
+    const guarded = one(
+      resolve(GUARDED_LEAK, ISOLATION_FILES).diagnostics,
+      "bundle/prohibition-violated",
+    );
+    const bare = one(resolve(LEAKED, ISOLATION_FILES).diagnostics, "bundle/prohibition-violated");
+    expect(guarded).toEqual(bare);
   });
 
   it("names the output port that carries it, so the author knows which one to cut", () => {
@@ -1126,26 +1205,69 @@ describe("declared prohibitions", () => {
     expect(withCode(resolve(LEAKED, files).diagnostics, "bundle/prohibition-violated")).toEqual([]);
   });
 
-  it("never fires on a free-text entry", () => {
-    // The half of the field the engine cannot check. It has to stay silent, or the field
-    // is unusable for the prohibitions only a person can read.
+  it("never reads `will_not`, whatever the sentence in it says", () => {
+    /* The half of the prohibition pair the engine cannot check, moved out of `cannot` at the
+       split. This cell used to put the same sentences INSIDE `cannot` and assert that the
+       resolver stayed quiet about them; the card would not load at all now, and the silence
+       it was asking for is the resolver simply not looking at the other field. The first
+       sentence names the prohibited type in words on purpose: a resolver that had started
+       matching text would fire on it. */
     const files = patched(
       "cards/guarded-builder@1.0.0.yaml",
       "cannot: [acceptance-criteria]",
-      'cannot: ["never sees the acceptance criteria", "does not open a shell"]',
+      'cannot: []\nwill_not: ["never sees the acceptance criteria", "does not open a shell"]',
     );
     const result = resolve(LEAKED, files);
     expect(withCode(result.diagnostics, "bundle/prohibition-violated")).toEqual([]);
     expect(withCode(result.diagnostics, "card/unknown-term")).toEqual([]);
+    expect(withCode(result.diagnostics, "card/prohibition-misfiled")).toEqual([]);
   });
 
-  it("only enforces `data-type` terms, since only a data-type travels down an edge", () => {
+  it("stays silent even when `will_not` holds the very term the edge carries", () => {
+    /* The cell above cannot see the mutation this one exists for. Its `will_not` holds
+       sentences, so a resolver that concatenated the two fields and looked up every entry
+       would resolve none of them and report nothing, and the cell would pass against the
+       broken engine. Measured: adding `...to.card.willNot` to `checkProhibitions` reddened
+       0 of 113 before this cell existed.
+
+       Here `will_not` holds `acceptance-criteria` itself, on the graph where the planner
+       really does edge into the builder. So the ONLY thing standing between this fixture and
+       a `bundle/prohibition-violated` is the resolver reading one field rather than two.
+       The card is `card/prohibition-misfiled` at the same time, which is the point: the
+       author wrote a rule the engine could have enforced into the field where it never will
+       be, and the validator says so at the card while the resolver refuses to act on it. */
+    const files = patched(
+      "cards/guarded-builder@1.0.0.yaml",
+      "cannot: [acceptance-criteria]",
+      "cannot: []\nwill_not: [acceptance-criteria]",
+    );
+    const result = resolve(LEAKED, files);
+    expect(
+      withCode(result.diagnostics, "bundle/prohibition-violated"),
+      "the stated half is not enforced, however enforceable its entry happens to be",
+    ).toEqual([]);
+    expect(
+      withCode(result.diagnostics, "card/prohibition-misfiled").length,
+      "and the author is told at the card, which is where they can move it",
+    ).toBe(1);
+  });
+
+  it("stays silent about an entry the card was already told off for", () => {
+    /* `cannot` takes `data-type` ids only, so `planning` and `human-gate` are
+       `card/wrong-term-kind` at the card and the card never loads. The resolver's own
+       silence is still worth pinning: a second complaint from the edges would name a graph
+       that has nothing wrong with it. */
     const files = patched(
       "cards/guarded-builder@1.0.0.yaml",
       "cannot: [acceptance-criteria]",
       "cannot: [planning, human-gate, shell]",
     );
-    expect(withCode(resolve(LEAKED, files).diagnostics, "bundle/prohibition-violated")).toEqual([]);
+    const result = resolve(LEAKED, files);
+    expect(withCode(result.diagnostics, "bundle/prohibition-violated")).toEqual([]);
+    expect(
+      withCode(result.diagnostics, "card/wrong-term-kind").length,
+      "the card is what refuses these, and it refuses all three",
+    ).toBe(3);
   });
 
   it("reports one diagnostic per prohibited type, not per repetition of it", () => {
@@ -1384,33 +1506,28 @@ describe("structural checks", () => {
 /* the declared vocabulary (§6.2)                                       */
 /* ------------------------------------------------------------------ */
 
-describe("ontology version", () => {
-  it("warns when the manifest is written against another vocabulary", () => {
-    const { diagnostics } = resolve(BASE_DOT, CARD_FILES, { ontologyVersion: "0.9.0" });
-    const mismatches = withCode(diagnostics, "bundle/ontology-mismatch");
-    // One for the manifest, and one for each card that now disagrees with it.
-    expect(mismatches[0].severity).toBe("warning");
-    expect(mismatches[0].message).toContain("`0.9.0`");
-    expect(mismatches).toHaveLength(6);
-  });
-
-  it("warns for a single card that disagrees with the manifest", () => {
-    const files = {
-      ...CARD_FILES,
-      "cards/review@1.0.0.yaml": REVIEW.replace(
-        `ontology_version: ${ONTOLOGY_VERSION}`,
-        "ontology_version: 0.9.0",
-      ),
-    };
-    const { diagnostics } = resolve(BASE_DOT, files);
-    const d = one(diagnostics, "bundle/ontology-mismatch");
-    expect(d.message).toContain("Card `review@1.0.0`");
-    expect(d.location).toMatchObject({ file: "cards/review@1.0.0.yaml" });
-  });
-
-  it("still resolves — a vocabulary mismatch is never fatal", () => {
-    const result = resolve(BASE_DOT, CARD_FILES, { ontologyVersion: "0.9.0" });
-    expect(result.blueprint).toBeDefined();
+describe("the vocabulary a bundle is read against", () => {
+  /*
+   * Three cells stood here and all three are gone with what they measured. A manifest
+   * declared an `ontologyVersion` and every card declared one too, and `resolveBundle`
+   * reported `bundle/ontology-mismatch` when the manifest disagreed with the vocabulary it
+   * was being read against, and once more for every card that disagreed with the manifest.
+   * Three hand-maintained copies of one number, and a diagnostic whose content was that they
+   * had drifted apart.
+   *
+   * The code SURVIVES and is raised by `lib/core/ontology/resolve.ts` for the case that is
+   * about the vocabulary rather than about a version string: a local overlay term shadowing a
+   * curated core id. So a cell here asserts what this resolver does with a bundle nobody can
+   * write a version into, which is nothing.
+   */
+  it("raises no vocabulary diagnostic, because nothing in a bundle declares a version", () => {
+    const { blueprint, diagnostics } = resolve(BASE_DOT, CARD_FILES);
+    expect(withCode(diagnostics, "bundle/ontology-mismatch")).toEqual([]);
+    expect(blueprint).toBeDefined();
+    /* The view the caller handed in is the one the blueprint carries. It used to be checked
+       by its version string; the vocabulary has none, so the check is by identity, which is
+       the stronger statement the version was standing in for. */
+    expect(blueprint?.ontology).toBe(ONTOLOGY);
   });
 });
 

@@ -1,23 +1,25 @@
 import Link from "next/link";
 import type { AnyContent } from "@/lib/types";
 import { cx, prettyDate } from "@/lib/format";
-import { contentHref } from "@/lib/href";
+import { blueprintRecordHref } from "@/lib/href";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
 import { KindBadge } from "./Badge";
-import { AutonomyMeter } from "./AutonomyMeter";
 import { FavoriteStar } from "./FavoriteStar";
 import { TagPill } from "./TagPill";
 
 /**
- * The two index figures, marked as seeded at the point of display.
+ * What this tile draws numbers from, and what it does not.
  *
- * Doc 2 §0.4: nothing may be described as working that is not built, and there is no
- * ballot and no download counter. These are rows in `lib/data/community.ts`, and the tile
- * used to print them bare while `/how-to-build-a-dark-factory` said one click away that
- * the site has "no accounts, no votes and no telemetry". `◐` is the marker `/u/` and the
- * blueprint scorecard already use for exactly this class of number, and the glyph carries
- * a word beside it for a reader who cannot separate amber from dim.
+ * There used to be two seeded index figures here — downloads and votes, printed bare with
+ * a `◐` beside them, under a docblock citing doc 2 §0.4 for why they were marked. Both came
+ * off the tile before this pass, not in it: the footer below carries `forks` (a fact the
+ * CALLER counts, over the only population that can hold a public one) and `updatedAt`
+ * instead, and neither is a vote or a download count. T280 makes a real ballot and a real
+ * download counter exist elsewhere on the site (the blueprint detail page, `/u/<owner>`);
+ * this shelf still draws neither one, which is why the docblock that used to sit here — the
+ * one describing them — is gone rather than reworded to describe code this file no longer
+ * has.
  */
 /* ============================================================
    The tile, and where identity sits on it.
@@ -31,8 +33,10 @@ import { TagPill } from "./TagPill";
    `pr-8` on the line for the same reason the heading has it: the bookmark is `absolute
    right-2 top-2` and now sits on this row.
 
-   The footer keeps `✓ resolved · N tools` and takes what the author chip left: when the
-   bundle was last touched, and how many published forks it has. Neither is a version —
+   The footer keeps `N tools` and takes what the author chip left: when the bundle was last
+   touched, and how many published forks it has. No resolution tick: every blueprint on this
+   shelf resolves, or it would not be on it, so a tick per tile would state a fact about the
+   shelf. Neither figure is a version —
    there is no version field on a blueprint and the archive holds one snapshot per bundle,
    so a `v1.3.0` here would be a number nothing produced.
    ============================================================ */
@@ -96,7 +100,7 @@ export function ContentCard({
           plain-flow content below for hit-testing (so clicking anywhere on the card
           navigates), and below the star (`z-20`), which is the one thing on the card
           that has to stay independently clickable. */}
-      <Link href={contentHref(item)} className="absolute inset-0 z-10">
+      <Link href={blueprintRecordHref(item)} className="absolute inset-0 z-10">
         <span className="sr-only">{item.title}</span>
       </Link>
 
@@ -200,22 +204,15 @@ export function ContentCard({
 
       {/* body */}
       <div className="flex flex-1 flex-col gap-3 p-4">
-        {/* The class is named and no number is drawn (doc 2 §1.1), and it comes with the
-            engine's own per-node reading so the tile can say how many nodes hand control
-            back to a person rather than how far the graph is from running unattended.
-            `showDarkFactory={false}` (2026-07-29, author's call): the grid is a shelf of
-            designs and a tile carrying the dark-factory token read as one more badge than
-            the grid needed; the blueprint header and upload preview still show it. The
-            grid it sits in offers autonomy as a filter and never as a sort, so nothing
-            here gathers those tiles at the top either way. */}
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+        {/* `AutonomyMeter` sat opposite the kind badge here, naming the class and the
+            per-node reading behind it. It came off with the whole scoring reading on the
+            owner's instruction: the detail page no longer draws that reading, and a shelf
+            that classifies what the page it links to will not is a shelf making a claim
+            nobody can follow up. `GalleryBrowser` still filters on autonomy, which is a way
+            into the shelf rather than a statement printed on a tile.
+            `justify-between` goes with it: one badge has nothing to be pushed away from. */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
           <KindBadge kind={item.kind} />
-          <AutonomyMeter
-            autonomy={item.autonomy}
-            contributions={item.analysis.autonomy.contributions}
-            size="sm"
-            showDarkFactory={false}
-          />
         </div>
 
         {/* `flex-1` stays on whatever sits between the badges and the tag row, so tiles
@@ -242,7 +239,7 @@ export function ContentCard({
             )}
           </span>
           <span className="text-emerald">
-            ✓ resolved · {item.requiredTools.length} tool{item.requiredTools.length === 1 ? "" : "s"}
+            {item.requiredTools.length} tool{item.requiredTools.length === 1 ? "" : "s"}
           </span>
         </div>
       </div>

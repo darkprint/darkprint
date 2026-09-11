@@ -41,10 +41,10 @@ dependencies:
   - conservative-solver
   - exploratory-solver
   - bounded-retry
-cannot:
+cannot: []
+will_not:
   - report the winner without the tally
 
-requires_human: false
 risk_markers: []
 notes: >-
   The tally is the point. A vote that only emits the winner is a black box, and the whole reason
@@ -52,4 +52,3 @@ notes: >-
 
 version: 1.0.0
 author: mara-veil
-ontology_version: 0.1.0

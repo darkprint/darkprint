@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import { Wordmark } from "@/components/hero/Wordmark";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
-import { SectionLifecycle } from "@/components/home/SectionLifecycle";
+import { SectionFirstBlueprint } from "@/components/home/SectionFirstBlueprint";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionSameRun } from "@/components/home/SectionSameRun";
+import { NAV } from "@/components/site/SiteHeader";
 import { plainText } from "@/components/ui/visible-text";
 
 import { LANDING_NARROW, LANDING_WIDE } from "./graph";
@@ -16,16 +17,33 @@ const render = (component: React.ComponentType) =>
   renderToStaticMarkup(createElement(component));
 
 describe("the blueprint-first landing", () => {
-  it("opens with the product and the two user loops", () => {
+  it("opens with the product, and the fold's action is the account", () => {
     const html = render(Wordmark);
     const text = plainText(html);
     expect(text).toContain("Reusable blueprints for agent workflows.");
-    expect(text).toContain("Find a blueprint");
-    expect(text).toContain("Create a blueprint");
-    expect(html).toContain('href="/blueprints"');
-    // The two loops are find and create, and create is the authoring skill at `/skill`
-    // since the `/build` split. The sandbox that kept the old path is a Learn stop.
-    expect(html).toContain('href="/skill"');
+
+    /* The fold used to carry "Find a blueprint" / "Create a blueprint". The owner replaced
+       that pair with the sign-in choice (signed out) or the reader's own name (signed in),
+       so those two labels are no longer this component's to make — see `HeroAction`.
+
+       What is asserted instead is that the slot renders SOMETHING a reader can act on
+       rather than collapsing: `HeroAction`'s server-rendered frame is its `loading`
+       placeholder, deliberately claimless, so the markup carries the placeholder and not a
+       sentence about who the reader is. A component that rendered "Sign in" here would be
+       telling a signed-in reader something false for a frame, which is the failure
+       `components/upload/session.ts` documents at length. */
+    expect(html).toContain("animate-pulse");
+    expect(text).not.toContain("Welcome,");
+    expect(text).not.toContain("Sign in with");
+  });
+
+  it("keeps both loops reachable from the landing, through the header", () => {
+    /* The ending is one door, on the owner's instruction, so the two ways in it used to
+       carry, search the registry and make one with the skill, are held where every page
+       has them: the header's own table. */
+    const hrefs = NAV.map((row) => row.href);
+    expect(hrefs).toContain("/blueprints");
+    expect(hrefs).toContain("/skill");
   });
 
   /* Beat 2, and the only beat on the landing that argues rather than shows. Both claims
@@ -98,8 +116,11 @@ describe("the blueprint-first landing", () => {
   /* The honesty position, held as a test rather than as a comment.
 
      `components/site/honesty.test.ts` pins, in the open, that nothing on this site measures
-     a run, and `/reading-the-radar` says there is no runner and no endpoint. This beat comes
-     nearer that line than anything else on the landing, and it stays on the right side of it
+     a run. The page that carried that sentence for a reader was `/reading-the-radar`, and it
+     came off the site on 2026-09-04, so the row is now pinned over a component no route
+     mounts. This beat comes nearer that line than anything else on the landing, and with the
+     page gone it is the nearest thing to it that a reader actually sees. It stays on the
+     right side of it
      by three specific choices recorded in the spec: the running is the reader's, the verb is
      `attribute`, and the word `eval` never appears. A rewrite that promises a measurement
      fails here, which is the point at which it also needs a limit statement and a ledger row. */
@@ -156,12 +177,21 @@ describe("the blueprint-first landing", () => {
     expect(html).toContain(`0 0 ${LANDING_NARROW.width} ${LANDING_NARROW.height}`);
   });
 
-  it("closes beat 2 on what a blueprint pins, and a way into one", () => {
+  /* The beat draws the blueprint and no listing, so it may not claim a line count or that
+     the archive's file is shown; that claim belongs to `/spec/topology`. */
+  it("shows the drawing without claiming to show the file", () => {
+    const text = plainText(render(SectionBlueprint));
+    expect(text).not.toMatch(/\d+ lines/);
+    expect(text).not.toContain("as the archive stores them");
+  });
+
+  it("closes beat 2 on what a blueprint pins, and the page that explains one", () => {
     const html = render(SectionBlueprint);
     expect(plainText(html)).toContain(
       "A blueprint pins the handoffs, loops, checkpoints, and deliberate absences that make a workflow reusable.",
     );
-    expect(html).toContain('href="/blueprints/starter-software-factory"');
+    expect(plainText(html)).toContain("What a blueprint is");
+    expect(html).toContain('href="/what-a-blueprint-is"');
   });
 
   it("shows a card as a contract with inputs, outputs, and prohibitions", () => {
@@ -196,29 +226,18 @@ describe("the blueprint-first landing", () => {
    * doors safe. Losing one silently would leave the landing with no way out of the beat it
    * ends on.
    */
-  it("ends the landing with a way into each of the five", () => {
-    const html = render(SectionLifecycle);
+  it("ends the landing on the tutorial, with the path it walks spelled out", () => {
+    const html = render(SectionFirstBlueprint);
     const text = plainText(html);
-    for (const step of ["Learn", "Find", "Create", "Use", "Publish"]) {
+    expect(text).toContain("Write your first blueprint");
+    for (const step of ["01", "02", "03", "04"]) {
       expect(text).toContain(step);
     }
-    expect(text).toContain("00");
-    expect(html).not.toMatch(/<h3[^>]*>Validate<\/h3>/);
 
-    // One link per panel, and every one of them a route this site has.
-    for (const href of [
-      "/what-a-blueprint-is",
-      "/blueprints",
-      "/skill",
-      "/blueprints/starter-software-factory#use-this-blueprint",
-      "/upload",
-    ]) {
-      expect(html, `the ${href} panel lost its link`).toContain(`href="${href}"`);
-    }
-    expect([...html.matchAll(/<a\b/g)]).toHaveLength(5);
-
-    expect(text).toContain("Human interface");
-    expect(text).toContain("Agent interface");
+    // One door and nothing else links out of the ending, so the one instruction stays one
+    // instruction and the reader has one thing to click.
+    expect(html, "the ending lost its door").toContain('href="/tutorial"');
+    expect([...html.matchAll(/<a\b/g)]).toHaveLength(1);
   });
 
   /* `SectionDoors` had a case here — "closes on the same two loops without placeholder

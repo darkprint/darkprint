@@ -16,7 +16,14 @@
 
 import { describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY, loadBundle, ontologyView, type Bundle } from "@/lib/core";
+import {
+  CORE_ONTOLOGY,
+  isReleasable,
+  isStorable,
+  loadBundle,
+  ontologyView,
+  type Bundle,
+} from "@/lib/core";
 import { readContent } from "@/lib/content/read";
 
 import { bundleProgress } from "./progress";
@@ -103,11 +110,17 @@ describe("a bundle with something actually wrong in it", () => {
     expect(progress.total).toBe(0);
   });
 
-  it("is rejected when one error is a contradiction rather than an absence", () => {
-    // One defect among the absences is enough to leave the unfinished reading. The edge
-    // is `builder -> tester`, whose two cards are both in the truncated folder — the
-    // resolver skips port checks on an edge with an unresolved end, so pinning a port on
-    // any other edge here would produce no diagnostic at all.
+  it("stays unfinished when a contradiction joins the absences (D-109)", () => {
+    /* This cell asserted `rejected` until the owner's 2026-08-30 ruling split the gate by
+       lifecycle stage. A port that does not fit is DarkPrint comparing two things the author
+       wrote, `gate.ts`'s rule 4 forbids an inference from refusing anybody's work, and the
+       reading is now printed beside the bundle instead of used to withhold it. The bundle is
+       still `unfinished`, because three of its five nodes have no card — which is what makes
+       this cell discriminating rather than merely updated: it fails if the port mismatch
+       drags the state DOWN to rejected, and it fails equally if the missing cards stop
+       holding it BELOW resolves. The edge is `builder -> tester`, whose two cards are both in
+       the truncated folder: the resolver skips port checks on an edge with an unresolved end,
+       so pinning a port on any other edge here would produce no diagnostic at all. */
     const whole = bundleFor(SLUG);
     const edge = /builder\s*->\s*tester\s*\[/;
     expect(edge.test(whole.dot), "the starter no longer wires builder into tester").toBe(true);
@@ -117,7 +130,12 @@ describe("a bundle with something actually wrong in it", () => {
       result.diagnostics.some((d) => d.code === "bundle/port-mismatch"),
       "the pinned port was accepted, so this case never happened",
     ).toBe(true);
-    expect(bundleProgress(result).state).toBe("rejected");
+    const progress = bundleProgress(result);
+    expect(progress.state).toBe("unfinished");
+    // Both halves of the reading, so neither can drift silently: storable despite the
+    // contradiction, and not releasable while the cards are missing.
+    expect(isStorable(result.diagnostics)).toBe(true);
+    expect(isReleasable(result.diagnostics)).toBe(false);
   });
 });
 
@@ -136,18 +154,24 @@ describe("the errors an unwritten card drags behind it", () => {
     expect(bundleProgress(result).state).toBe("unfinished");
   });
 
-  it("keeps it an error once every node has its card", () => {
-    // The same code, with nothing absent to explain it: the whole folder, and one edge
-    // removed so a declared dependency genuinely has no path into the node.
+  it("keeps it an error, and publishes it, once every node has its card (D-109)", () => {
+    /* The same code, with nothing absent to explain it: the whole folder, and one edge
+       removed so a declared dependency genuinely has no path into the node.
+
+       This asserted `rejected` before the 2026-08-30 ruling. The diagnostic has not moved
+       and is asserted below at error severity exactly as before — what changed is that a
+       genuine unmet dependency is a finding on a complete blueprint rather than a refusal to
+       hold or publish it. The severity assertion is what keeps this cell honest: if the
+       engine ever stopped reporting the defect, this would fail rather than quietly agree. */
     const whole = bundleFor(SLUG);
     const dot = whole.dot.replace(/^\s*planner\s*->\s*tester.*$/m, "");
     const result = loadBundle({ ...whole, dot }, { ontology: ONTOLOGY });
-    expect(
-      result.diagnostics.some((d) => d.code === "bundle/missing-dependency"),
-      "removing the edge did not leave a dependency unmet",
-    ).toBe(true);
+    const unmet = result.diagnostics.filter((d) => d.code === "bundle/missing-dependency");
+    expect(unmet.length, "removing the edge did not leave a dependency unmet").toBeGreaterThan(0);
+    expect(unmet.every((d) => d.severity === "error")).toBe(true);
     const progress = bundleProgress(result);
     expect(progress.waiting).toBe(0);
-    expect(progress.state).toBe("rejected");
+    expect(progress.state).toBe("resolves");
+    expect(isReleasable(result.diagnostics)).toBe(true);
   });
 });

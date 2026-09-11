@@ -2,15 +2,11 @@ import Link from "next/link";
 
 import type { Blueprint } from "@/lib/types";
 import type { CardVersionRecord } from "@/lib/core";
-import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
 import { Badge } from "@/components/ui/Badge";
 import { MetaPill } from "@/components/ui/MetaPill";
 import { TagPill } from "@/components/ui/TagPill";
 import { nodeHref } from "@/lib/href";
 import { SupportPill } from "./parts";
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-55) (cited at line 64): PUT /api/authors/{handle}/pinned
 
 /* ============================================================
    What a builder chose to put at the top of their page.
@@ -88,15 +84,13 @@ function PinnedBlueprint({ blueprint }: { blueprint: Blueprint }) {
           <TagPill key={tag} label={tag} href={`/blueprints?tag=${encodeURIComponent(tag)}`} />
         ))}
       </div>
+      {/* `AutonomyMeter` opened this footer row, on the left of the star. It came off with
+          the scoring reading the owner removed from the blueprint page: a pinned card that
+          classifies a bundle the bundle's own page no longer classifies would be the only
+          place on the site still making that claim. */}
       <div className="mt-auto flex flex-wrap items-center gap-3 border-t border-line pt-3">
-        <AutonomyMeter
-          autonomy={blueprint.autonomy}
-          contributions={blueprint.analysis.autonomy.contributions}
-          size="sm"
-          showDarkFactory={false}
-        />
         <span className="ml-auto">
-          <SupportPill count={blueprint.votes} />
+          <SupportPill count={blueprint.votes} seeded />
         </span>
       </div>
     </article>
@@ -172,13 +166,13 @@ export function Pinned({ items }: { items: readonly PinnedItem[] }) {
           ),
         )}
       </div>
-      {/* The section head says `✓ counted`, and that is true of the class, the tags, the
-          summary and the usage figure — all of it read off the bundle. The star is the one
-          number on these cards that is not, so the qualifier sits under them rather than
-          being left to a glyph. */}
+      {/* The section head says `✓ counted`, and that is true of the tags, the summary, the
+          usage figure and a card's star count. A blueprint's star is the one number here
+          that is not counted, so the qualifier sits under them rather than being left to a
+          glyph. */}
       <p className="font-mono text-[11px] text-dim">
-        Read off the archive at build time. The star figure beside each one is seeded
-        community support: there is no ballot, and no scorecard reads it.
+        A card&apos;s star count is live; a blueprint&apos;s star is a seeded figure. Neither
+        feeds a score.
       </p>
     </div>
   );

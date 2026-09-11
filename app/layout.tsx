@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, JetBrains_Mono, Space_Grotesk } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import { SiteAnalytics } from "@/components/site/SiteAnalytics";
 import "./globals.css";
 import "@xyflow/react/dist/style.css";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { LearnShell } from "@/components/learn/LearnShell";
+import { SITE_ORIGIN } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,13 +35,14 @@ const spaceGrotesk = Space_Grotesk({
  * a pause, and no verb list padding out the description.
  */
 export const metadata: Metadata = {
-  metadataBase: new URL("https://darkprint.io"),
+  metadataBase: new URL(SITE_ORIGIN),
+  alternates: { canonical: "./" },
   title: {
     default: "DarkPrint · reusable blueprints for agent workflows",
     template: "%s · DarkPrint",
   },
   description:
-    "Find, inspect, and publish reusable agent-workflow blueprints. DarkPrint stores and statically checks version-pinned files; your own harness adapts and runs them locally.",
+    "Find, inspect and publish reusable blueprints for agent workflows. DarkPrint stores and statically checks version-pinned files; your own agent runs them on your machine.",
   keywords: [
     "AI agents",
     "agent orchestration",
@@ -51,7 +53,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DarkPrint",
     description:
-      "Reusable blueprints for agent workflows. Inspect the graph, take the files, and adapt them on your machine.",
+      "Reusable blueprints for agent workflows. Inspect the graph, download the files and adapt them on your machine.",
     type: "website",
   },
 };
@@ -88,12 +90,9 @@ export default function RootLayout({
           <LearnShell>{children}</LearnShell>
         </main>
         <SiteFooter />
-        {/*
-          Page-view counting only, and only once deployed on Vercel — it no-ops
-          locally. Distinct from the blueprint telemetry of doc 1 §8, which runs
-          on the user's own machine (§0.1.3) and is not built.
-        */}
-        <Analytics />
+        {/* Page-view counting only, and only once deployed on Vercel; it no-ops locally.
+            The wrapper keeps live tutorial tokens out of the recorded paths. */}
+        <SiteAnalytics />
       </body>
     </html>
   );

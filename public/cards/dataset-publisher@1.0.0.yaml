@@ -30,14 +30,13 @@ inputs:
 outputs: []
 dependencies:
   - record-store
-cannot:
+cannot: []
+will_not:
   - announce a version it has not cut
   - announce the same version twice
 
-requires_human: false
 risk_markers:
   - irreversible-action
 
 version: 1.0.0
 author: lupo
-ontology_version: 0.1.0

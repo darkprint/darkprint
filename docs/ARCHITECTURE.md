@@ -1,622 +1,693 @@
-# DarkPrint — architecture
+# DarkPrint architecture
 
-## 0 · Header
+This document describes the repository as it is. `tests/architecture-current.test.ts` checks
+that every server subsystem and every API route heads a table row here; everything else is
+re-verified by hand when a section is edited. When a sentence here and the code disagree, the
+code is right.
 
-**Purpose.** This is the canonical description of DarkPrint (darkprint.io) as it exists in
-this repository today: a frontend-only Next.js application whose UI is itself the
-specification of a backend that has not been built. It exists so that whoever implements
-that backend can read the UI's own promises — every disabled control, every seeded number,
-every `◐ seeded` marker — as a contract, rather than reverse-engineering one from the
-components.
+## 1. What DarkPrint is
 
-**Who updates it and when.** Whoever changes a route, an entity shape, or a UI element that
-implies a server interaction updates the corresponding section (and, for [8 · Backend
-contract seams](architecture/seams.md), the matching `TODO(SEAM-xx)` comment in the code) in
-the same change. This document does not get updated speculatively or on a schedule — see
-[12 · Maintenance protocol](#12-maintenance-protocol-and-revision-log).
+DarkPrint is a registry of blueprints. A blueprint is an agent pipeline written as a typed
+graph: `topology.dot` says which nodes exist and what flows between them, one YAML card per
+node says what that node does, accepts, emits and must never receive, and a `README.md` says
+the rest to a person. The registry stores blueprints and their cards, scores each release
+statically (autonomy class, security level, phase coverage), serves the files at addresses that
+do not move, and answers "what fits this task" over MCP and HTTP. A coding agent fetches a
+blueprint and instantiates it on the reader's machine. Nothing here runs a blueprint.
 
-**Last verified against commit `f8ff1f742fc36eefa46290b5a619b054ca1e99ac` on 2026-08-13.**
+## 2. Stack
 
-**Stack summary.** Next.js 16.2.11 (App Router, Turbopack, no Pages Router code), React
-19.2.4, TypeScript 5 (`tsc --noEmit` as the type gate), Tailwind CSS v4 (CSS-first
-`@theme` config in `app/globals.css`, no `tailwind.config.*` file), Vitest 4 for tests,
-ESLint 9 (`eslint-config-next`). `@xyflow/react` renders the interactive graph canvas,
-`animejs` 4.5 drives the hero and luminous-flow animation, `yaml` parses card/manifest
-files, `opentype.js` generates the wordmark's SVG paths at build time, `@vercel/analytics`
-is the only telemetry. Node >=22.18.0. No backend, no database, no auth provider — every
-data source is either the `content/` archive (read at build time) or a seeded fixture in
-`lib/data/**`.
+Next.js 16.2.11 (App Router, Turbopack), React 19.2.4, TypeScript 5, Tailwind CSS 4
+(`@tailwindcss/postcss`), `@xyflow/react` 12 for the graph canvas, `animejs` 4.5 for the hero
+and flow animation, `yaml` 2.9, `drizzle-orm` 0.45 over `pg` 8.23 with pgvector,
+`@aws-sdk/client-s3` 3 for object storage, `@huggingface/transformers` 4.2 with a vendored
+`all-MiniLM-L6-v2` quantised ONNX model under `models/` (23 MB), `@vercel/analytics` 2,
+Vitest 4.1, ESLint 9 with `eslint-config-next`, `esbuild` 0.28 for the CLI bundle,
+`opentype.js` 1.3 for the wordmark paths. Node: `.nvmrc` pins 22.18.0 and `engines` requires
+at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 
-**How to run locally.**
+## 3. Repository map
+
+| Path | What it holds |
+| --- | --- |
+| `app/` | 26 pages, 76 API route files, `layout.tsx`, `error.tsx`, `global-error.tsx`, `not-found.tsx`, `sitemap.ts`, `robots.ts`, `manifest.ts`, `opengraph-image.tsx`, `icon.svg`, `globals.css` |
+| `components/` | 24 folders: `auth`, `blueprint`, `bundle`, `capabilities`, `explain`, `gallery`, `graph`, `hero`, `home`, `learn`, `mcp`, `nodes`, `ontology`, `panes`, `profile`, `settings`, `site`, `skill`, `spec`, `tutorial`, `ui`, `upload`, `viz`, `welcome` |
+| `lib/core/` | the engine, 33 isomorphic modules: `dot/`, `card/`, `ontology/`, `bundle/`, `analysis/`, `hash/`, `version/`, `attractor/`, `archive/`, `config.ts`, `diagnostics.ts`, `gate.ts` |
+| `lib/content/` | reads `content/` at build time, exports a bundle as files (`bundle-export.ts`), the graph layout, the view models |
+| `lib/data/` | seeded fixtures (authors, community numbers, profiles) still imported by about thirty non-test files |
+| `lib/db/` | drizzle schema (`schema.ts`), pool (`client.ts`), object storage (`storage.ts`), migration runner (`migrate.ts`) and CLI (`cli.ts`), `migrations/` |
+| `lib/server/` | 28 subsystems, one barrel each, in the table below; `types.ts` re-exports the engine's domain types |
+| `lib/` (top) | `site.ts` (origin, name, tagline), `skill.ts` (install commands), `mcp.ts` (connect command), `href.ts`, `format.ts`, `types.ts`, `graph-seed.ts`, `criteria-state.ts` |
+| `packages/cli/`, `packages/mcp/` | the `darkprint` verbs (no bin of their own); the `darkprint` package: bin, stdio MCP server, tool table, in-process executor |
+| `skills/darkprint/` | the blueprint-writing skill: `SKILL.md`, `references/`, `templates/` |
+| `content/` | 10 blueprints under `blueprints/<slug>/` (`blueprint.yaml`, `topology.dot`), 61 card versions under `cards/`, `ontology/extensions.yaml` |
+| `models/` | `all-MiniLM-L6-v2`: `config.json`, `tokenizer.json`, `tokenizer_config.json`, `onnx/model_quantized.onnx` |
+| `public/` | generated by `prebuild`: `bundles/<slug>/`, `cards/`, `skill/` (tree, `darkprint.tgz`, `manifest.json`); `home/` assets |
+| `scripts/` | `generate-bundles.ts` (prebuild), `import-seed.ts`, `retire-account.ts`, `delete-bundle.ts`, `reembed.ts`, `rag-eval.ts`, `prod-preflight.ts`, `migrate-stored-cards.ts`, `generate-skill-refs.ts`, `skill-package.ts`, `measure-prose.ts`, `generate-wordmark-paths.ts`, `check-attractor-drift.mjs`, `module-hook.ts` |
+| `tests/` | the backend suites (`tests/server/**`), tree-wide guards, `tests/support/` (scratch databases, env), `tests/attractor-corpus/` |
+| `compose.yaml`, `.env.example`, `.agents/skills/`, `skills-lock.json`, `.design-sync/` | local Postgres and MinIO with matching variables; vendored third-party skills and their lock; the claude.ai/design import (owner-managed) |
+
+| Subsystem | Owns |
+| --- | --- |
+| `lib/server/accounts` | account rows, handles, profile fields, the session actor |
+| `lib/server/archive` | bundle and release rows, the stored local vocabulary |
+| `lib/server/auth` | GitHub and Google OAuth, the session cookie, the request guards |
+| `lib/server/cards` | card versions, immutable once written |
+| `lib/server/counters` | stars and download counts on `target` |
+| `lib/server/engine` | the four validate entry points over `lib/core`, with input limits |
+| `lib/server/export` | a release as files, frozen artefacts, file serving, the release as one `.tgz`, download recording |
+| `lib/server/http` | `ok` and RFC 9457 problem responses |
+| `lib/server/lifecycle` | account and bundle deletion, tombstones |
+| `lib/server/limits` | API keys, rate-limit buckets, the 429 renderer |
+| `lib/server/lineage` | forks of bundles and cards, drift against the upstream |
+| `lib/server/mcp` | the six MCP reads and the bearer-key caller |
+| `lib/server/naming` | handle and slug grammar, reservations, availability |
+| `lib/server/notes` | notes and note votes |
+| `lib/server/notifications` | queue, preferences, unsubscribe tokens, the drain |
+| `lib/server/observability` | the audit log |
+| `lib/server/ontology` | the merged vocabulary view (core plus a release's overlay) |
+| `lib/server/policy` | `Actor`, `can`, `visibleTo` |
+| `lib/server/profiles` | follows, pins, support, the profile read |
+| `lib/server/publish` | the one publish verb |
+| `lib/server/registry` | the read side: blueprints, cards, terms, per actor |
+| `lib/server/runs` | run reports and their aggregate |
+| `lib/server/saves` | private bookmarks |
+| `lib/server/search` | lexical plus vector search, the encoder, re-embedding |
+| `lib/server/seed` | the `content/` import, published under the `autogen` account at one ruled version |
+| `lib/server/terms` | term usage and promotion candidates |
+| `lib/server/tutorial` | the live tutorial channel: open a page, store the last draft the blueprint-writing skill posted for its token, read it back; rows expire 24 hours after the last write and no account is involved |
+| `lib/server/versioning` | semver, digests, bump inference |
+
+## 4. Routes
+
+### Pages
+
+| Path | Rendering | Shows |
+| --- | --- | --- |
+| `/` | static | the landing page: wordmark hero, the two doors to the DarkPrint skill and MCP, archive counts |
+| `/blueprints` | dynamic | the registry index with search, category and tag filters, sorting |
+| `/blueprints/[owner]` | dynamic | a redirect only: a handle goes to its profile, a legacy slug to the owner that holds it |
+| `/blueprints/[owner]/[slug]` | dynamic | one blueprint: graph, files, releases, notes, downloads; the owner's controls when signed in |
+| `/capabilities` | static | every operation, from the CLI, MCP and the skill, with its status |
+| `/mcp` | static | how to connect an MCP client, per client |
+| `/new` | dynamic | create a draft bundle: slug and visibility |
+| `/nodes` | dynamic | the node card library |
+| `/nodes/[...id]` | dynamic | one card: every field, versions, blueprints that pin it, notes, YAML download |
+| `/ontology/[...term]` | dynamic | one vocabulary term: its place in the lattice and its usage |
+| `/settings` | dynamic | handle, email, profile, default visibility, notifications, API keys, account deletion |
+| `/skill` | static | install the blueprint-writing skill for Claude Code or Codex |
+| `/spec/attractor`, `/spec/topology` | static | the Attractor crosswalk; the DOT dialect |
+| `/spec/card` | dynamic | the node card format, with the vocabulary browser |
+| `/towards-a-dark-factory`, `/tutorial` | static | the essay on the phases of automation; the five-step walkthrough that has the reader write a blueprint in their own agent with the blueprint-writing skill, opens the live page the draft is posted to, and points at MCP and `/upload` |
+| `/tutorial/live/[token]` | per request, client-polled | one reader's live page: the draft the blueprint-writing skill posts, drawn as the graph takes shape, the registry hits, and the next step per phase; 404 on a malformed token, and an expired or unknown one renders the expired notice with a link back to `/tutorial` |
+| `/u/[username]` | dynamic | a profile |
+| `/u/[username]/[slug]` | dynamic | a permanent redirect to `/blueprints/[username]/[slug]` |
+| `/u/[username]/blueprints`, `/u/[username]/cards`, `/u/[username]/saved` | dynamic | the three shelves |
+| `/upload` | dynamic | the wizard: drop a folder or a single card, validate it (a folder in the browser, a card over `/api/validate/card`), publish |
+| `/welcome` | dynamic | sign in and choose a handle |
+| `/what-a-blueprint-is` | static | the entry page of the Learn section |
+
+`sitemap.xml` is dynamic; `robots.txt`, `manifest.webmanifest`, `opengraph-image` and
+`icon.svg` are static. Every response carries the security headers set in `next.config.ts`
+(no Content-Security-Policy).
+
+### Redirects (`next.config.ts`, all permanent)
+
+| From | To |
+| --- | --- |
+| `/gallery` | `/blueprints` |
+| `/parts`, `/parts/:slug` | `/nodes` |
+| `/ontology`, `/ontologies`, `/ontologies/:slug`, `/spec/ontology` | `/spec/card` |
+| `/how-to-build-a-dark-factory`, `/towards-a-dark-factory/the-climb`, `/which-tasks`, `/towards-a-dark-factory/which-tasks` | `/towards-a-dark-factory` |
+| `/spec`, `/spec/scoring`, `/reading-the-radar`, `/concepts` | `/what-a-blueprint-is` |
+| `/install` | `/skill` |
+
+### API routes
+
+Auth: `session` is the signed cookie (`withSession`, 401 otherwise); `session or write key`
+also accepts `Authorization: Bearer <write-scoped key>`; `key optional` reads a bearer key if
+one resolves; `cookie optional` reads the cookie when present and serves anonymous readers the
+public view; `cookie, refuses anonymous` lets the module answer 401; `anonymous` reads nothing.
+
+| Route | Methods | Auth |
+| --- | --- | --- |
+| `/api/account`, `/api/account/delete/plan` | GET | session |
+| `/api/account/default-visibility`, `/api/account/email`, `/api/account/handle`, `/api/account/profile` | PATCH | session |
+| `/api/account/delete`, `/api/account/saves/migrate` | POST | session |
+| `/api/account/keys` | GET, POST | session |
+| `/api/account/keys/[keyId]` | DELETE | session |
+| `/api/account/notifications` | GET, PATCH | session |
+| `/api/account/notifications/unsubscribe` | GET | anonymous (stored token) |
+| `/api/account/saves` | GET, POST, DELETE | session |
+| `/api/auth/github/login`, `/api/auth/github/callback`, `/api/auth/google/login`, `/api/auth/google/callback` | GET | anonymous |
+| `/api/auth/logout` | POST | anonymous (303 to `/`, cookie cleared) |
+| `/api/auth/session` | GET | session |
+| `/api/authors/[handle]` | GET | cookie optional |
+| `/api/authors/[handle]/pinned` | PUT | session |
+| `/api/authors/[handle]/support`, `/api/authors/[handle]/watch` | POST, DELETE | session |
+| `/api/blueprints`, `/api/blueprints/[owner]/[slug]` | GET | cookie optional |
+| `/api/blueprints/[owner]/[slug]/notes`, `/api/cards/[id]/notes` | GET, POST | GET cookie optional; POST session |
+| `/api/blueprints/[owner]/[slug]/notes/[noteId]`, `/api/cards/[id]/notes/[noteId]` | PATCH, DELETE | cookie, refuses anonymous |
+| `/api/blueprints/[owner]/[slug]/notes/[noteId]/vote`, `/api/cards/[id]/notes/[noteId]/vote` | POST | cookie, refuses anonymous |
+| `/api/blueprints/[owner]/[slug]/runs` | POST | session or write key |
+| `/api/blueprints/[owner]/[slug]/star`, `/api/cards/[id]/star` | POST | session |
+| `/api/bundles` | POST (GET answers 405, OPTIONS 204) | session or write key |
+| `/api/bundles/draft`, `/api/bundles/[owner]/[slug]/fork` | POST (GET answers 405, OPTIONS 204) | session |
+| `/api/bundles/[owner]/[slug]` | DELETE (GET answers 405, OPTIONS 204) | session |
+| `/api/bundles/[owner]/[slug]/visibility` | PATCH (GET answers 405, OPTIONS 204) | session |
+| `/api/bundles/[owner]/[slug]/archive` | GET | cookie optional; the release's files as one `.tgz` under a `<slug>/` folder, named `<slug>-<version>.tgz`; the latest release unless `?version=` or `?digest=` names one, 400 for both together, 404 for a bundle the caller may not read or a release it does not have; counted in the `read` bucket and as one download of the bundle |
+| `/api/bundles/[owner]/[slug]/drift`, `/api/bundles/[owner]/[slug]/forks` | GET | cookie optional |
+| `/api/cards` | GET, POST | GET cookie optional; POST session or write key, publishes one card under the caller's handle |
+| `/api/cards/duplicates`, `/api/cards/[id]/users`, `/api/cards/[id]/versions` | GET | cookie optional |
+| `/api/cards/[...ref]` | GET, POST | GET cookie optional (`<id>`, `<id>/versions`, `<id>/users`); POST `<id>/fork` session |
+| `/api/files/blueprints/[owner]/[slug]/d/[digest]/[...path]`, `/api/files/blueprints/[owner]/[slug]/v/[version]/[...path]`, `/api/files/cards/[...ref]` | GET | cookie optional; each counts a download |
+| `/api/health` | GET | anonymous |
+| `/api/mcp` | POST (GET and DELETE answer 405, OPTIONS 204) | key optional |
+| `/api/mcp/blueprints/find`, `/api/mcp/cards/find`, `/api/mcp/blueprints/[owner]/[slug]/bundle`, `/api/mcp/blueprints/[owner]/[slug]/provenance`, `/api/mcp/cards/[...ref]`, `/api/mcp/releases/[owner]/[slug]/d/[digest]` | GET | key optional |
+| `/api/names/handles/[handle]`, `/api/names/slugs/[owner]/[slug]` | GET | anonymous |
+| `/api/ontology/categories`, `/api/ontology/phases`, `/api/ontology/phases/[phase]/cards`, `/api/ontology/tags`, `/api/ontology-usage`, `/api/ontology-usage/candidates` | GET | cookie optional |
+| `/api/search/blueprints`, `/api/search/cards`, `/api/search/terms` | GET | cookie optional |
+| `/api/transfer` (POST), `/api/transfer/plan` (GET) | POST; GET | session |
+| `/api/tutorial/live` | POST (GET answers 405, OPTIONS 204) | anonymous; opens a live tutorial page and answers `LiveOpened` with a 24-hour token, counted in the `live` bucket by address |
+| `/api/tutorial/live/[token]` | GET, PUT | anonymous; GET answers `LiveRecord` with `ETag: "<revision>"`, `Cache-Control: no-store` and 304 on a matching `If-None-Match`; PUT takes a `LiveDraft`, answers `{ revision, updatedAt, expiresAt }` and refreshes the expiry, 400 naming the field, 413 over `LIVE_DRAFT_MAX_BYTES`; both answer 404 for an unknown or expired token and 400 for a malformed one |
+| `/api/validate/bundle`, `/api/validate/card`, `/api/validate/dot`, `/api/validate/ontology` | POST | anonymous; nothing persisted |
+
+Refusals are `application/problem+json` with `type` under `https://darkprint.io/problems/`. A
+private resource the caller may not see answers 404, never 403.
+
+## 5. Data model
+
+`lib/db/schema.ts` declares 23 tables and 8 enums. Bytes live in object storage keyed by digest;
+Postgres holds the index and the current projection.
+
+| Table | Holds |
+| --- | --- |
+| `account` | handle, display name, email, bio, avatar hue, default visibility, notification preferences |
+| `account_identity` | one row per (`provider`, `provider_id`): `github` or `google`, joined to an account |
+| `handle_reservation` | every handle ever claimed; a released handle stays unclaimable |
+| `bundle` | one row per (owner, slug): visibility, lineage as three plain columns, draft fields for a bundle created before its first release |
+| `release` | append-only per bundle: version, digest, `dot`, manifest, card refs and digests, local vocabulary, `autonomy`, `security`, `phase_coverage` as jsonb |
+| `card_version` | one row per (card id, version): parsed `body`, `source` YAML verbatim, digest, owner, visibility; never updated by a product write path |
+| `target`, `target_actor` | public counters per (kind, ref id): stars, downloads, notes; and which account starred what |
+| `audit` | every state change, permanent: actor, action, target, decision, detail |
+| `save` | private bookmarks per account |
+| `ballot` | per-account metric votes; still declared, written by nothing except the deletion paths (the community ballot left the product) |
+| `note`, `note_vote` | notes on blueprints and cards, one vote per account per note, tombstoned on delete |
+| `run_report` | a run reported against a release digest: model, provider, hardware, input size, harness version, cost units, duration |
+| `api_key` | `token_hash`, label, `scope` (`read` or `write`, default `read`), `revoked_at` |
+| `release_embedding`, `card_version_embedding` | `vector(384)` plus `embedded_input_sha256`, cascade-deleted with their subject |
+| `follow`, `profile_pin`, `account_support` | watching an author, the two pinned items, support for an author; every count is derived |
+| `notification_queue`, `unsubscribe_token` | queued notifications keyed (kind, account, subject digest) and their unsubscribe links |
+| `tutorial_draft` | one row per live tutorial page: the token, the last `LiveDraft` the blueprint-writing skill posted and its `phase`, a `revision` that increments per accepted PUT, `expires_at` 24 hours after the last write; no account, the token is the authority |
+
+Enums: `visibility`, `target_kind`, `target_actor_kind`, `actor_kind`, `audit_decision`,
+`api_key_scope`, `pin_kind`, `notification_kind`.
+
+Migrations are hand-written SQL pairs under `lib/db/migrations/`: `0001_init` (the `vector`
+extension, the base tables and enums), `0002_community` (save, ballot, note, note_vote,
+run_report, api_key), `0003_search` (the two vector tables, `vector_cosine_ops` indexes),
+`0004_social`, `0005_notifications`, `0006_identities`, `0007_drafts`, `0008_embedding_input`,
+`0009_drop_ontology_versioning` (destructive: drops the two vocabulary-version tables and
+`release.scored_ontology_version_id`), `0010_key_scope`, `0011_tutorial_live`. The runner (`lib/db/migrate.ts`)
+tracks ids in `"_migrations"`, wraps each migration in a transaction and holds the session
+lock `pg_advisory_lock(847362951)` on one pinned connection, which a transaction pooler cannot
+serve: `npm run db:migrate` reads `MIGRATE_DATABASE_URL` first, falls back to `DATABASE_URL`,
+and refuses a URL containing `pooler.supabase.com:6543` or `pgbouncer=true`. `-- --to <id>`
+stops after `<id>`, `-- --only <id>` applies that one alone, `npm run db:rollback [-- <steps>]`
+reverts. A card digest is `sha256:` over the canonical JSON of the card minus `author` and
+`provenance`; a bundle digest is `sha256:` over `{ cardDigests (sorted, not deduplicated), dot }`,
+manifest excluded. At publish the release's exported file set is written to object storage as
+one deterministic JSON object under `sha256/<hex>` (`keyForDigest`), so a `/d/<digest>/`
+address keeps answering the same bytes forever.
+
+## 6. The engine pipeline
+
+`lib/core` is isomorphic (no `node:*`, `Buffer`, `Date.now()` or `Math.random()`) because
+`/upload` runs `loadBundle` in the browser. The pass, in order:
+
+1. `lex` and `parseDot` read the DOT dialect (one `digraph`; nodes carry `card="id@version"`,
+   edges carry `label` and optionally `condition`); `buildGraph` builds the model;
+   `lintAttractor` reports a `strict` or undirected graph, reserved attributes and identifier
+   problems as `attractor/*`.
+2. `loadCard` parses YAML or JSON into a `NodeCard`; `validateCard` checks the known keys
+   (`CARD_KNOWN_KEYS`), required fields, semver, term kinds, `spec` substance and the filing of
+   `cannot` against `will_not`; the retired `requires_human` and `ontology_version` keys load
+   with a `card/retired-field` warning.
+3. Terms resolve against `CORE_ONTOLOGY`: 54 terms (5 phases, 13 node types, 9 risk markers,
+   15 data types in a lattice under `any`, 12 tool capabilities), plus a bundle's namespaced
+   local terms (`owner/term`, each with a `broader` parent) from `ontology/extensions.yaml`.
+4. `resolveBundle` matches each edge to a port on both ends, checks port types against the
+   lattice (`isA`, reflexive and one-directional), enforces `cannot` entries that name a data
+   type (`bundle/prohibition-violated`, an error), checks dependencies, reachability, entry,
+   exit and the version chain, and computes the digest. Any error means the bundle does not
+   resolve; `gate.ts` says which codes block storage and which block a release.
+5. Analysis: autonomy is the share of nodes that run unattended, banded by
+   `DARKPRINT_CONFIG.autonomy` (above 0.9 `closed-loop`, at least 0.7 `conditional`, at least
+   0.5 `supervised`, else `assisted`; control points lower the band once at least two exist).
+   Security starts at 4, subtracts the weights of the risk markers found (2.0 for
+   `arbitrary-code-execution` and `criteria-leak`, 1.5 for `unbounded-loop` and
+   `irreversible-action`, 1.0 for the other three, 0 for an unknown marker), rounds and clamps
+   to 1..4. The criteria-leak check is topological (does `acceptance-criteria` reach a producing
+   node) plus textual (3-gram Jaccard between specs above 0.35 warns and does not score). Phase
+   coverage reports which of the five phases the graph touches and never scores.
+6. `emitAttractorDot` writes a resolved blueprint as a DOT that Attractor runs: graph `goal`,
+   `label`; node `label`, `shape`, `prompt`, `llm_model`, `max_retries`, `tool_command`,
+   `class`; edge `label`, `condition`, `weight`; plus DarkPrint's own `card` and `dp_node`,
+   which the runner ignores. `importAttractorDot` reads a pipeline back into a draft bundle
+   whose cards carry `provenance: derived:attractor`.
+
+`DARKPRINT_CONFIG` (`lib/core/config.ts`, deep-frozen) holds every tunable: the bands, the
+weights, the leak threshold, `promotion` (3 authors across 5 blueprints, read by the term
+candidates route) and `telemetry` (5 runs, z-score 3, read by the run aggregate).
+`lib/server/engine` wraps the same pass with input limits behind `POST /api/validate/bundle`
+(`{ dot, cardFiles, manifest, vocabulary? }` to a `LoadBundleResult`), `/api/validate/card`,
+`/api/validate/dot` and `/api/validate/ontology`. Nothing is stored.
+
+## 7. Publishing
+
+Two doors for a release and a third for a single card, one verb. `/upload` reads the dropped files in the tab, runs `loadBundle` in the
+browser, draws the graph and the scores, and publishes through `POST /api/bundles` for a
+signed-in account. A terminal or an agent posts the same body with `Authorization: Bearer
+$DARKPRINT_API_KEY` (a write-scoped key; the `curl` is printed under `/settings` and in the
+skill). The body is `{ ownerHandle, slug, version, manifest, dot, cardFiles: { "cards/<name>.yaml":
+"<text>" }, vocabulary?, visibility?, lineage? }`; the answer is `200 { bundleId, releaseId,
+digest, created }`. Refusals: 400 malformed body, 401 no session and no write key, 404 the
+key's account does not hold `ownerHandle` (existence does not leak), 409 conflict, 422
+unfinished, in error or a version that is not higher.
+
+`publish()` (`lib/server/publish`) resolves the owner from the handle, takes the visibility
+from the existing bundle, then the body, then the account default, asks `can(actor, "publish")`,
+refuses a tombstoned owner, validates the bundle against the core vocabulary plus the submitted
+overlay, and then in one transaction: stores every pinned card version (a byte-identical
+re-publish stores nothing; different bytes at an existing version are a conflict), enqueues
+repin notifications, adds the release with its digest and its three analysis blobs, exports the
+release to files and freezes them in object storage under the digest, and embeds the release
+and its cards. A refusal anywhere rolls all of it back. No rate limit is wired on this path.
+
+A single card publishes through `POST /api/cards` with `{ source, name?, visibility? }`, the
+same callers as `POST /api/bundles` and the `upload` rate bucket. `publishCard()`
+(`lib/server/cards`) reads the handle off the account row, validates the document the way
+`POST /api/validate/card` does, stores it as `<handle>/<name>` at the version it declares
+(`name` defaults to the card's own, and the document's `id` is rewritten to match), and
+answers `201 { card, path }`. Refusals: 400 malformed body or an illegal name, 401 no session
+and no write key, 403 an account with no handle, 409 an id another account holds or a version
+already stored, 422 a card that does not validate (with its diagnostics) or a bump the store
+prices as too small. The `/upload` wizard's Card kind ends on this door. The card's page at
+`/nodes/<id>`, `GET /api/cards/<id>@<version>` and `GET /api/cards/<id>/versions` resolve
+through `storedVersionsOf`, the registry reader outside the pin index, and the owner's
+`/u/<handle>/cards` shelf lists it. Until a release pins it the card is not searchable at
+all: `searchCards` draws its candidates from the pin index and the search index's card writer
+runs at release time only, so `/api/search/cards`, the MCP search tools, `GET /api/cards` and
+the `/nodes` shelf do not carry it.
+
+Downloads: `/api/files/blueprints/<owner>/<slug>/d/<digest>/<path>` serves the frozen bytes,
+`/v/<version>/<path>` the version's files, `/api/files/cards/<id>@<version>.yaml` one card;
+each counts a download. A published folder holds `topology.dot`, `cards/*.yaml`, `README.md`
+and `ontology/extensions.yaml` when the bundle declares local terms. `POST
+/api/bundles/<owner>/<slug>/fork` copies a release into the caller's namespace and records
+`{ owner, slug, version }` as plain columns on the new bundle; `/forks` lists them, `/drift`
+compares a fork with its upstream, `POST /api/cards/<id>/fork` forks one card version.
+Visibility is `public` or `private` per bundle and per card version. `POST /api/bundles/draft`
+(the `/new` page) creates a bundle with no release; `POST /api/transfer` hands a bundle to
+another handle; `DELETE /api/bundles/<owner>/<slug>` removes one; a deleted account leaves a
+tombstone.
+
+## 8. Search and retrieval
+
+Every release and every card version has a document and a vector. The blueprint document is
+`v2`, `Blueprint: <title>`, `Purpose: <summary>`, up to two description sentences, `Category ...
+Tags ...`, then the node list in graph order, one step line per node with its action, routing,
+loops, human gates, tools, MCP servers and models, the autonomy and security reading, phases
+covered and missing; over 1800 characters it drops description sentences, then the routing
+line, then the actions. The card document is `v2`, `Card: <name> (<type>)`, `Does:`,
+`Instructions: <spec>`, phases, tools, MCP servers and skill, inputs and outputs with their
+types, `Will not:`, risk markers, dependencies.
+
+The encoder is `all-MiniLM-L6-v2` (quantised ONNX, `q8`, 384 dimensions, mean-pooled and
+L2-normalised, loaded from `models/` with remote models disabled). `score = similarity + 0.15 *
+coverage`: similarity is `1 - cosine distance` between the task vector and the stored vector,
+coverage the share of the task's content words found in the item's lexical fields; a hit needs
+similarity at or above 0.15 or coverage above zero; the sort is score, similarity, evidence,
+identity; at most 20 hits. Every hit carries `evidence` (`field:token` entries and
+`similarity:0.43`) and `score`. `Results.encoder` reads `present` or `absent`; with no encoder in
+the process the order is lexical coverage alone.
+
+Vectors are written at publish, inside the transaction, stamped with `embedded_input_sha256 =
+sha256(model sha256 + "\n" + document)`, and rewritten only when the stamp disagrees. `npm run
+db:reembed [-- --dry-run] [-- --allow-absent]` sweeps the archive and exits 1 without the
+encoder unless `--allow-absent`. `npm run eval:rag -- <file.json>` runs a query file through the
+same searchers. Measured on a held-out set against a database seeded from `content/` only (18
+blueprint queries, 4 negatives, 12 card queries): blueprints top-1 12/18, top-3 18/18; cards
+top-1 9/12, top-3 12/12; negatives 3/4 below the floor. A card-fusion variant was measured and
+reverted for no gain in the full ranking. Routes: `GET /api/search/blueprints`,
+`/api/search/cards`, `/api/search/terms` (`q` plus the filters `searchParams` accepts).
+
+## 9. MCP
+
+Seven tools (`packages/mcp/src/definitions.ts`), the same table on both transports:
+
+| Tool | Answers |
+| --- | --- |
+| `find_blueprints` | ranked hits for a task in prose: `ref` (`owner/slug`), author, current digest, score, similarity, evidence, node count, human-gate ids, autonomy class, security level, phases; `encoder` on the response; `include_forks` off by default |
+| `find_cards` | ranked cards, one per id: `ref` (`id@version`), digest, name, type, action, phases, tools, risk markers, `usedIn`, score, similarity, evidence |
+| `get_blueprint` | every file of one release, its manifest, scorecard, provenance and numbered instantiation notes for `claude-code`, `codex` or `generic`; the current release without `digest` |
+| `read_card` | one card version as published, verbatim YAML |
+| `inspect_provenance` | who published a blueprint, what it was forked from, every release with version and digest |
+| `fetch_release` | the file names of one exact release by digest |
+| `export_pipeline` | one release compiled to Attractor DOT, with a header naming every attribute a blueprint cannot set |
+
+`POST /api/mcp` is Streamable HTTP in its stateless form: one JSON-RPC message or a batch per
+POST (`initialize`, `notifications/initialized`, `tools/list`, `tools/call`), answered as JSON;
+notifications alone answer 202; `GET` and `DELETE` answer 405 with `Allow: POST`; the
+`mcp-protocol-version` header is echoed. Claude Code connects with `claude mcp add --transport
+http darkprint https://www.darkprint.io/api/mcp`, Codex with `codex mcp add darkprint --url
+https://www.darkprint.io/api/mcp`; Cursor, VS Code, Gemini CLI and the Claude Desktop custom
+connector take the same URL in their own JSON (`components/mcp/clients.ts`). The six GET routes
+under `/api/mcp/` are the tools as plain HTTP; the stdio server assembles `export_pipeline` from
+the release listing and the files routes.
+
+Keyed reads: `Authorization: Bearer <key>` with any live key (read scope is enough) counts
+against the key tier and reads as the key's account, so the owner's private blueprints answer;
+a key that does not resolve is treated as no key, never refused. Limits (`lib/server/limits`):
+`read` allows 600 requests an hour for anonymous and signed-in callers and 6000 for a key;
+`write` is 120 an hour and `upload` 30, both refused to anonymous callers; `live` is 60 an hour
+for an anonymous caller and 120 for the two signed-in tiers. The MCP routes spend `read`; the
+live tutorial routes spend `live` on POST and PUT, `poll` (3 600 an hour for every tier) on every GET, and `read` on a GET that answers a body or a miss; `POST /api/cards` spends `upload`; nothing else spends a
+bucket today. A refused request answers 429 problem+json carrying `limit`, `remaining`,
+`resetAt` and `keysAvailable`, and a tool call renders the same facts as a result.
+
+The stdio server is `darkprint mcp` in `packages/mcp` (newline-delimited JSON-RPC 2.0 over
+stdin and stdout); it calls the GET routes at `DARKPRINT_URL` (default `https://www.darkprint.io`)
+with `DARKPRINT_API_KEY` as a bearer when set. The package is named `darkprint`, bin
+`dist/cli.js`, built with `npm run build` inside `packages/mcp` (esbuild through
+`packages/cli/build.mjs`, then a copy of `skills/darkprint`). It is not published to npm yet; `npm publish` from `packages/mcp` is what puts a build there, and it is step 16 of the deploy runbook.
+
+## 10. CLI
+
+`packages/cli/src/run.ts` holds the verb table; `/capabilities` renders the same rows.
+
+| Verb | Does |
+| --- | --- |
+| `clone (<owner>/<slug> [--version <v> \| --digest <d>] \| <id>@<version>) [--out <dir>]` | fetches a release into a directory, byte for byte; given a card reference, writes that one card as `cards/<id>@<version>.yaml` under `--out` (the cwd by default) through `/api/files/cards/` |
+| `validate [<dir>]` | runs the bundle checks offline; exit 1 only on an error finding |
+| `export [<dir>] --attractor` | writes Attractor DOT on stdout, findings on stderr |
+| `import <pipeline.dot> --as <handle> --out <dir>` | reads an Attractor pipeline into a draft bundle on disk |
+| `bump [<dir>] --declare <version> --target <owner>/<slug>` | checks a declared version against what changed since the last release; writes nothing |
+| `report <run-dir> --target <owner>/<slug> --cost <units>` | posts a finished Attractor run to `/api/blueprints/<owner>/<slug>/runs` |
+| `skill install [--codex] [--dir <parent>]` | copies the DarkPrint skill the package carries into `~/.claude/skills/darkprint` (Claude Code), `~/.agents/skills/darkprint` (`--codex`) or `<parent>/skills/darkprint`, replacing an earlier copy; prints the destination and `metadata.version` from the frontmatter; the packaged tree is found beside `dist/`, never from the cwd |
+| `mcp` | serves the registry over MCP on stdio |
+
+Environment: `DARKPRINT_URL` (registry base, default `https://www.darkprint.io`),
+`DARKPRINT_API_KEY` (raises the read ceiling), `DARKPRINT_SESSION` (a signed session cookie;
+`report` is the only verb that writes and it sends this cookie). Exit codes are 0 and 1.
+
+## 11. The skill
+
+`skills/darkprint/` is the blueprint-writing skill: `SKILL.md`, six references (`ontology.md`
+and `card-schema.md` are generated from the engine by `npm run generate:skill-refs`, and
+`scripts/generate-skill-refs.test.ts` fails when they are stale) and three annotated templates.
+It writes `topology.dot`, `cards/<id>@<version>.yaml`, `blueprint.yaml`, `README.md` and
+`ontology/extensions.yaml` only when the author asked for a local term. It runs no graph and
+publishes nothing by itself.
+
+The interview: Phase 0 asks for the need, one question per turn, and stops if no command exits
+non-zero when the work is wrong; Phase 1 searches the registry for a blueprint or cards to reuse
+before drawing anything; Phase 2 settles the nodes and Phase 3 the ports and the edge ledger;
+Phase 4 decides isolation and the guard on every fork; Phase 5 covers risk and identity; the
+edge list, the prohibitions and the judged nodes' specs are shown back before any file is
+written; the result is validated with `darkprint validate`, else `POST /api/validate/bundle`,
+else `/upload`, and handed to the author to publish.
+
+The live preview and the enrich mode: when the author opts in, or arrives from `/tutorial`
+with a live URL, the blueprint-writing skill opens a page with `POST /api/tutorial/live` (or
+takes the token off the URL), keeps the token, and `PUT`s a `LiveDraft` from
+`lib/core/tutorial/live.ts` to `/api/tutorial/live/<token>` at every phase boundary and once
+more after writing, so `/tutorial/live/<token>` draws the graph as it takes shape. The bundle
+in a draft may be partial. A failed PUT is one line to the author and never blocks the
+interview, and the draft is all that leaves the machine. The enrich mode takes a folder
+that exists and an addition in prose, searches with `find_blueprints`, fetches the chosen
+blueprint with `get_blueprint`, copies its cards verbatim, adds its nodes and edges wired to
+the existing node's outputs by data type, re-asks Q4.2 over the new edges, validates as
+after a first write, names the lineage in `README.md`, and sends phase `enriched` with the
+hits when a page is open. `references/live-preview.md` holds the draft field by field and
+the curl lines.
+
+Install: the `darkprint` npm package carries the tree as `skill/darkprint` beside `dist/`
+(`npm run build` in `packages/mcp` copies it there, and `prepack` runs that build), and
+`npx -y darkprint skill install` copies it into `~/.claude/skills/darkprint`; `--codex` lands
+it in `~/.agents/skills/darkprint` and `--dir <parent>` under `<parent>/skills/darkprint`. The
+first run fetches the package from npm and npx keeps it in its cache; nothing else is
+installed. `SKILL.md`'s frontmatter carries `metadata.version`, which the verb prints. The
+strings the site prints are `SKILL_INSTALL_COMMAND` and `SKILL_INSTALL_COMMAND_CODEX` in
+`lib/skill.ts`, held equal to the CLI's `NPX_INVOCATION` by `lib/skill.test.ts`. `prebuild`
+still copies the tree to `public/skill/darkprint/**` and packs it into
+`public/skill/darkprint.tgz` with a deterministic tar and a `manifest.json` of per-file hashes,
+so a reader can read every file before running anything and check the installed copy.
+
+## 12. Auth and policy
+
+Sign-in is OAuth with GitHub or Google (`/api/auth/<provider>/login` sets a CSRF state cookie
+and redirects; `/callback` upserts the identity in `account_identity` and the account). A
+session is the cookie `darkprint_session`: `{ accountId, handle, exp }` signed HMAC-SHA256 with
+`SESSION_SECRET`, 30 days, `HttpOnly`, `SameSite=Lax`, `Secure` in production; a production
+process refuses the all-zero example secret. `withSession` verifies the signature and reads no
+table; `withSessionOrWriteKey` also accepts a bearer key with `write` scope and answers one
+sentence for an unknown, read-scoped or revoked key. A handle is chosen at `/welcome` after the
+first sign-in and reserved forever in `handle_reservation`. API keys are minted under
+`/settings` with a label and a scope; the secret is shown once and only its SHA-256 is stored;
+revocation is read on the next request (no cache). A `read` key raises the MCP read ceiling and
+reads as its account; a `write` key is accepted by `POST /api/bundles` and
+`POST /api/blueprints/<owner>/<slug>/runs`.
+
+Policy (`lib/server/policy`): an `Actor` is `anonymous`, `account` or `operator`; `can(actor,
+action, resource)` decides read, write, delete, publish and transfer; `visibleTo(actor, ownerId)`
+answers `all` for the owner and an operator and `public` for everyone else. Every reader takes
+an actor, so a private bundle, card, save or note answers 404 to a stranger and the counts a
+visitor sees exclude the private half.
+
+## 13. Environment
+
+| Variable | Read by | Required | Production |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | `lib/db/client.ts`, scripts, tests | yes | the transaction pooler (port 6543) |
+| `MIGRATE_DATABASE_URL` | `lib/db/cli.ts`, `scripts/prod-preflight.ts` | for migrations | the direct connection on 5432 |
+| `PG_POOL_MAX` | `lib/db/client.ts` | no (3 in production, 10 elsewhere) | leave the default |
+| `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | `lib/db/storage.ts`, `/api/health` | yes | the production bucket |
+| `SESSION_SECRET` | `lib/server/auth/session.ts`, `components/profile/session.ts` | yes | `openssl rand -hex 32`; the example value is refused |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `lib/server/auth/github.ts` | for GitHub sign-in (the routes answer 400 without them) | absent; `/api/auth/github/login` answers 400 |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `lib/server/auth/google.ts` | for Google sign-in | absent; `/api/auth/google/login` answers 400 |
+| `NEXT_PUBLIC_SITE_ORIGIN` | `lib/site.ts` | no (default `https://www.darkprint.io`) | set on a preview |
+| `NODE_ENV`, `VERCEL_GIT_COMMIT_SHA` | pool size, cookie `Secure`, the example-secret refusal; `/api/health` (`commit`) | set by Next; no | `production`; null on CLI-driven deploys |
+| `WORDMARK_FONT_PATH` | `scripts/generate-wordmark-paths.ts` | only for `npm run generate:wordmark` | none |
+| `DARKPRINT_URL`, `DARKPRINT_API_KEY`, `DARKPRINT_SESSION` | `packages/cli`, `packages/mcp` | client side | none |
+
+Production holds six variables and no OAuth pair, so nobody can sign in there: `vercel env
+ls production` lists `DATABASE_URL`, the four `S3_*` and `SESSION_SECRET`, all of type Secret
+and therefore unreadable by `vercel env pull`, which writes `[SENSITIVE]` for each. A migration
+run needs the direct connection supplied by hand.
+
+`.env.example` matches `compose.yaml` and is the file `.env.local` is copied from. The skill's
+publish example names the key `$DARKPRINT_KEY` in the author's shell; the CLI reads
+`DARKPRINT_API_KEY`.
+
+## 14. Local development and gates
+
+`docker compose up -d` starts `pgvector/pgvector:pg16` on 5432 (user, password and database
+`darkprint`) and MinIO on 9000 (console 9001) with the bucket `darkprint`. Then `cp .env.example
+.env.local`, `npm run db:migrate`, `npm run seed:import` (publishes the ten `content/`
+blueprints under the handle `autogen` at version 1.1.0 through the same `publish()` the site
+uses, creating that account on the `github_id` sentinel `0`; a database already holding a slug
+under `autogen` at 1.1.0 with a different digest refuses the import, and one still holding an
+earlier import's card versions under another account stops at the first card whose bytes
+differ, naming it), `npm run dev`. Three operator scripts act as an account through the
+accounts and lifecycle barrels: `npm run account:rename -- --from <handle> --to <handle>
+--yes` prints the bundles whose URLs move and calls `changeHandle`, `npm run account:retire --
+--handle <handle> [--take-private] --yes` prints `planDeletion` and calls `deleteAccount`, and
+`npm run bundle:delete -- --owner <handle> --slug <slug> [--take-private] --yes` prints a bundle's
+rows and calls `deleteBundle`; all three print and stop without `--yes`, and `--take-private` is the
+step that lets published rows be destroyed, since both deletion doors keep everything public.
+Moving the archive to a new registry handle is a rename, not a retire and re-import: renaming
+keeps every bundle, release, star, fork and note, where retiring destroys them. Gates: `npm run typecheck`
+(`tsc --noEmit`; needs a build or `npx next typegen` first for the route types), `npm run
+lint`, `npm test` (`vitest run` over `packages/**`, `lib/**`, `components/**`, `scripts/**`,
+`app/**`, `tests/**`; `maxWorkers` 3 because every worker shares one Postgres; 20 s test
+timeout, 30 s hook timeout), `npm run build` (`prebuild` regenerates `public/bundles`,
+`public/cards`, `public/skill`, then `next build`). Tests need
+`DATABASE_URL` and the four `S3_*` variables in the shell; database suites create
+`darkprint_test_<uuid>` databases through `tests/support/db.ts` and drop them afterwards, so a
+killed run leaves some behind. `.github/workflows/ci.yml` runs build, typecheck, lint and test on
+Node 24 against the same services; `attractor-drift.yml` checks the Attractor spec pin weekly
+and never blocks.
+
+## 15. Deploy
+
+The Vercel project is `darkprint` on the Hobby plan and deploys are CLI-driven: no git source
+is attached, so a push deploys nothing. The globally installed Vercel CLI 59.7 answers "Not
+authorized"; `npx vercel@latest` works with the same login. Previews are protected: probe them
+with `npx vercel@latest curl <preview-url>/api/health`.
+
+The Hobby plan caps a deployment at 12 functions. Vercel groups Next routes into two functions
+normally, and a build made on Vercel's machines splits the app past the cap whenever a route's
+trace carries the encoder's native library, whatever route keys or excludes are used. The same
+tree built locally with Vercel's builder packs into four functions and is accepted, so the
+release path is prebuilt:
 
 ```
-npm run dev          # dev server
-npm run build         # prebuild regenerates public/bundles + public/cards from content/, then next build
-npm run typecheck      # tsc --noEmit
-npm run lint            # eslint
-npm test                 # vitest run
+npm install --no-save --os=linux --cpu=arm64 --libc=glibc sharp@$(node -p "require('./node_modules/sharp/package.json').version")
+npx vercel@latest pull --environment=production --yes
+npx vercel@latest build --prod --yes
+npx vercel@latest deploy --prebuilt --prod --yes
+npm ci    # restores the macOS sharp packages the first line replaced
 ```
 
-`npm run build`'s `prebuild` step (`scripts/generate-bundles.ts`) rewrites `public/bundles/**`
-and `public/cards/**`. Expect that diff and commit it, or run `rm -rf .next public/bundles`
-first for a clean rebuild.
-
----
-
-## Index
-
-This document is split where a section's carried-over source material made it too long to
-inline. Sections 2, 3, 4, 5 and 8 live in `docs/architecture/`; everything else is below.
-
-0. [Header](#0-header) — this section
-1. [The product in one page](#1-the-product-in-one-page)
-2. [Domain glossary](architecture/glossary.md)
-3. [Concept model](architecture/concept-model.md)
-4. [Sitemap and routing](architecture/routes.md)
-5. [User journeys](architecture/journeys.md)
-6. [Frontend architecture](#6-frontend-architecture)
-7. [State and data flow](#7-state-and-data-flow)
-8. [Backend contract seams](architecture/seams.md)
-9. [Design system](#9-design-system)
-10. [Cross-cutting](#10-cross-cutting)
-11. [Known gaps and decisions](#11-known-gaps-and-decisions)
-12. [Maintenance protocol and revision log](#12-maintenance-protocol-and-revision-log)
-
----
-
-## 1 · The product in one page
-
-DarkPrint's own claim, verbatim and load-bearing (`components/hero/Wordmark.tsx:105`,
-mirrored in the default page title, `app/layout.tsx:39`):
-
-> **Reusable blueprints for agent workflows.**
-
-**What it offers.** A public registry of *blueprints* — graphs of automations described as
-a DOT topology plus versioned *node cards* — that a reader can browse, inspect down to the
-YAML and DOT bytes, statically score (autonomy, static risk exposure, phase coverage), and
-download. A companion vocabulary (*ontology*) gives every card's type, tools and risk
-markers a shared, versioned meaning. Nothing on the site runs a blueprint: DarkPrint
-distributes files and reads them back; composing and running both happen on the reader's
-own machine, with their own harness (D-03, `OWNER-STATED`, `CONFIRMED` — no runner exists
-anywhere in `lib/`).
-
-**To whom.** The landing's "two ways in" band and the six client configs on `/mcp` and
-`/skill` (Claude Code, Codex, Claude Desktop, Cursor, VS Code, Gemini CLI,
-`components/mcp/clients.ts:16`) name the audience directly: people who already run a coding
-agent or harness and want a reproducible, inspectable unit of work to hand it, rather than
-a one-off prompt.
-
-**The core value loop**, read off the landing's own five beats (`app/page.tsx:113-131`,
-docblock at `:1-111`) and the lifecycle panel that closes the page
-(`components/home/SectionLifecycle.tsx`):
-
-1. **Claim** (Hero) — reusable blueprints, not prompts, are the artefact.
-2. **Reproducibility argument** (`SectionSameRun`) — a blueprint pins the steps a harness
-   takes, so a rerun is the same run and a change is attributable; a prompt lets the harness
-   invent its own route, so nothing about it can be held constant
-   (`docs/DECISIONS.md` D-04, `OWNER-STATED`, `CONFIRMED`).
-3. **The blueprint itself** (`SectionBlueprint`) — a DOT graph of nodes, each a pointer at a
-   card, drawn off a real archived bundle.
-4. **The node card** (`SectionNodeIsCard`) — one reusable, versioned unit of work, drawn off
-   a real archived card.
-5. **What a reader does with it** (`SectionLifecycle`) — download it, compose it into
-   something bigger, or upload it for the analyzer to read; the panel links each action to
-   its page (`/blueprints`, `/build`, `/upload`).
-
-The page ends there — on the lifecycle panel's own links — rather than on a separate
-"find one / build one" doors section, which the author had cut as a redundant second
-statement of the same two-way choice (`app/page.tsx:56-68`).
-
-**Where the landing and the rest of the site agree, and where they used to disagree.** They
-agree today. D-01 (`OWNER-STATED`, `CONFIRMED`, `docs/superpowers/specs/2026-08-04-ia-redesign.md:12-15`)
-settles that blueprints, not "the dark factory," are the headline, and D-02 (same
-provenance) settles "dark factory" as a *computed property* of one graph shape — every node
-unattended and all five phases covered — never the site's category or its goal. The current
-build matches both: `/towards-a-dark-factory` is one explainer page reached from the Learn
-menu, not a nav-level category, and `isDarkFactory` never appears as a headline number
-anywhere (`lib/core/analysis/autonomy.ts:317`). This *was* a real, recorded disagreement:
-D-09 records the site's headline once being "Autonomy you can read as a graph"
-(`commit feaa9bc`), later retired from every on-site surface in favour of the current claim
-(D-09 is marked `CONTRADICTED` — i.e., superseded — in the decision ledger, and the phrase
-survives only in the repository's root `README.md:4`, which is project documentation, not
-UI copy a visitor reads). No other landing-vs-site claim conflict was found: the six landing
-beats, the Learn sequence, and every route's own `generateMetadata` describe the same three
-primitives (blueprint, node card, ontology) throughout.
-
----
-
-## 6 · Frontend architecture
-
-### 6.1 · Layer model
-
-Eight layers, lowest to highest. Import directions were verified by grep, not assumed from
-naming.
-
-| Layer | What it is | May import from |
-|---|---|---|
-| `lib/core/**` | The isomorphic domain engine: DOT parsing, card/ontology validation, autonomy and security analysis, hashing, version-bump checking. Verified clean — zero occurrences of `node:*`, `Buffer`, `Date.now()` or `Math.random()` outside test files, confirming `CLAUDE.md`'s isomorphism rule against the actual code rather than trusting the doc | nothing else in the app |
-| `lib/data/**` | Seeded/mock fixtures — authors, accounts, community signals, owned bundles. Each file's own header states it exists because there is no backend yet (`lib/data/community.ts:1-9`: "this module *is* the database... until there is a real one") | sibling `lib/data/*` files, `lib/types.ts` only |
-| `content/**` | The archive on disk: `blueprints/<slug>/blueprint.dot` + `blueprint.yaml`, `cards/<id>@<version>.yaml`, `ontology/extensions.yaml`. Not code; read by `lib/content/read.ts` via `readFileSync`/`readdirSync` | — |
-| `lib/content/**` | The server-only archive reader/aggregator. `read.ts` is the one file in the repo touching the filesystem and self-guards with a runtime throw if `typeof window !== "undefined"` (`lib/content/read.ts:49-52`). Two sibling files, `ontology-file.ts` and `bundle-export.ts`, are isomorphic (no `node:fs`) and are the only parts of `lib/content` imported by client components | `lib/core`, `lib/data`, top-level `lib/*.ts` |
-| `lib/*.ts` (top-level) | Mixed utility layer: `types.ts`, `format.ts`, `href.ts`, `mcp.ts`, `skill.ts`, `criteria-state.ts`, `graph-seed.ts`. Not strictly isomorphic as a group — `graph-seed.ts` imports `layeredLayout` from `lib/content/layout` | `lib/core`, `lib/content` (the isomorphic parts) |
-| `components/**` | UI, organised as one `ui/` primitives folder plus 22 feature folders (below) | `lib/core`, `lib/content` (server components only), `lib/data`, top-level `lib/*` |
-| `app/**` | Routes. All spot-checked pages are server components (no `"use client"`) | `components/**`, `lib/**` |
-| `public/bundles/**`, `public/cards/**` | Generated static mirror of `content/`, written by `scripts/generate-bundles.ts` at the `prebuild` step | — |
-
-**One documented layering violation.** `lib/mcp.ts:24` imports `MCP_CLIENTS` from
-`@/components/mcp/clients` — a top-level `lib/*.ts` file importing from `components/`,
-inverting the `lib → components` direction the rest of the layer table holds. The file's
-own comment (`lib/mcp.ts:12-21`) states this is deliberate: deriving the landing's one-line
-command from the same array `/mcp`'s tab strip renders keeps "exactly one place to change
-it," and `mcp.test.ts` pins `MCP_CLIENTS[0]` being Claude Code so a silent reorder is
-caught. No cycle results (`components/mcp/clients.ts` does not import back), so it is a
-one-way, tested inversion rather than a defect — flagged here because a clean-layering rule
-should note its one exception rather than imply there are none.
-
-No other violations were found: no `components/` → `app/` import in shipped code (only in
-test files that mount a page component for integration testing, e.g.
-`components/site/honesty.test.ts:38-41`), no `lib/core` import of anything outside
-`lib/core`, and no `lib/data` import of `lib/core` or `lib/content`.
-
-Legend: green = `LIVE` (real data/behaviour), amber = `MOCK` (fixture-backed), grey/dashed =
-`PLANNED` (shape declared, nothing behind it) — the same three tags used throughout this
-document (see [4 · Sitemap and routing](architecture/routes.md#status-tags)). The dashed
-edge is the layering violation noted above, not a status.
-
-```mermaid
-flowchart LR
-  classDef live fill:#0f5132,stroke:#0f5132,color:#fff
-  classDef mock fill:#664d03,stroke:#664d03,color:#fff
-  classDef planned fill:#41464b,stroke:#41464b,color:#fff,stroke-dasharray: 4 3
-
-  app["app/**\n(routes)"]:::live
-  components["components/**\n(UI)"]:::live
-  libTop["lib/*.ts\n(types, format, href, mcp, skill, graph-seed)"]:::live
-  libContent["lib/content/**\n(server-only archive reader)"]:::live
-  libData["lib/data/**\n(mock account+community fixtures)"]:::mock
-  libCore["lib/core/**\n(isomorphic engine)"]:::live
-  content[("content/**\n(the archive on disk)")]:::live
-  public[("public/bundles, public/cards\n(generated mirror)")]:::live
-  scripts["scripts/**\n(build-time generation)"]:::live
-
-  app --> components
-  app --> libTop
-  app --> libContent
-  components --> libCore
-  components --> libContent
-  components --> libData
-  components --> libTop
-  libTop --> libContent
-  libTop -.->|"violation: lib -> components,\nlib/mcp.ts:24"| components
-  libContent --> libCore
-  libContent --> libData
-  libContent --> content
-  scripts --> content
-  scripts --> public
-  scripts --> libCore
-```
-
-### 6.2 · Directory tree
-
-**`app/`** — routes (App Router; every spot-checked page is a server component):
-
-| Path | Purpose |
-|---|---|
-| `page.tsx`, `layout.tsx`, `globals.css`, `icon.svg` | Home page, root layout (fonts, header/footer chrome, skip link, `Analytics`), design tokens, favicon |
-| `blueprints/`, `blueprints/[slug]/` | Blueprint gallery and detail page |
-| `build/` | The `/build` interactive workspace (starter template + three controls) |
-| `mcp/` | MCP client install/registry design-proposal page |
-| `nodes/`, `nodes/[...id]/` | Node/card browser and detail |
-| `ontology/`, `ontology/[...term]/` | Ontology term browser and detail |
-| `reading-the-radar/` | Scorecard explainer |
-| `settings/` | Account settings page (mostly disabled controls) |
-| `skill/` | Claude Code skill install page |
-| `spec/topology/`, `spec/card/`, `spec/ontology/` | The three format layer pages |
-| `towards-a-dark-factory/` | Long-form explainer / the 1-5 maturity ladder |
-| `u/[username]/`, `.../blueprints/`, `.../cards/`, `.../saved/`, `.../terms/` | Public profile and its four tabs |
-| `upload/` | Bundle upload/validation wizard |
-| `what-a-blueprint-is/` | Learn stop 00, the door to the three layer pages |
-
-**`components/`** — UI, one primitives folder plus 22 feature folders:
-
-| Folder | Purpose |
-|---|---|
-| `ui/` | Generic design-system primitives — 34 files (buttons, badges, meters, pills, cards, rails, diagnostics list, etc.); the largest and most reused folder |
-| `blueprint/` | Blueprint detail-page UI: canvas, requirements, evidence layers, comments, fork/clone/download actions |
-| `bundle/` | Bundle file tree, header, version history, the `load.ts` view-model builder |
-| `build/` | The `/build` workspace: state machine, score panel, choice graph pane, vocabulary pane, download step |
-| `explain/` | Concept-explainer figures and run-layer diagrams used on explainer pages |
-| `gallery/` | The blueprint gallery browser (single file) |
-| `graph/` | DOT/flow graph rendering primitives shared by every canvas |
-| `hero/` | The landing hero: wordmark animation, setup chips, grid spotlight |
-| `home/` | Landing-page sections (lifecycle, blueprint, node-card beats) and their supporting geometry/data |
-| `learn/` | The Learn-shell rail and figures shared across the Learn sequence |
-| `mcp/` | MCP client config data and install-tabs UI |
-| `nodes/` | Node/card browser, summary, interfaces, version history |
-| `ontology/` | Ontology term table/tree/catalog/vocabulary browser |
-| `panes/` | The multi-pane layout system (graph pane, source pane, DOT breakdown, synchronized panes) used by `/build` and blueprint detail |
-| `profile/` | Profile shell, tabs, owned bundles/cards, pinned/saved lists, `load.ts` |
-| `settings/` | Settings form fields and controls |
-| `site/` | Global chrome: header, footer, logo |
-| `skill/` | Skill-install setup UI |
-| `spec/` | Spec-page tables, rows, scoring-model figure |
-| `upload/` | Upload flow, dropzone, validation report |
-| `viz/` | The shared SVG "luminous flow" drawing system: scenes, tokens, easing, reveal/scroll hooks |
-| `mcp/`, `skill/` | (listed above) |
-
-**`lib/`**:
-
-| Folder / file | Purpose |
-|---|---|
-| `core/` | The isomorphic engine — `analysis/` (autonomy, security, phase-coverage), `archive/` (registry, store), `attractor/` (emit, lint), `bundle/` (resolve, types), `card/` (parse, schema, validate), `dot/` (lexer, parser, graph), `hash/`, `ontology/`, `version/`, plus `config.ts`, `diagnostics.ts`, `index.ts` (the barrel — an explicit inventory of the engine's public surface) |
-| `content/` | Server-only archive reader/aggregator — `read.ts` (fs reader, guarded), `index.ts` (build-time cache), `view.ts` (blueprint view model), plus the two isomorphic files `bundle-export.ts` and `ontology-file.ts` |
-| `data/` | Mock/seed fixtures — `account.ts`, `bundles.ts`, `community.ts`, `node-community.ts`, `profiles.ts`, `users.ts` |
-| `starter/` | The `/build` variant engine — `variants.ts` (pure, deterministic: three choices in, one `Bundle` out) and `cards.ts` |
-| `types.ts`, `format.ts`, `href.ts`, `mcp.ts`, `skill.ts`, `criteria-state.ts`, `graph-seed.ts` | Shared domain types and small utilities |
-
-**Top level:**
-
-| Path | Purpose |
-|---|---|
-| `content/` | The archive: `blueprints/` (9 dirs), `cards/` (57 versioned YAML files, 53 distinct ids), `ontology/extensions.yaml` |
-| `public/` | Generated static mirror (`bundles/`, `cards/`, plus static assets) — rewritten by `scripts/generate-bundles.ts` at every `prebuild` |
-| `scripts/` | Build-time generation: `generate-bundles.ts` (content → public), `generate-skill-refs.ts`, `generate-wordmark-paths.ts`, `measure-prose.ts` |
-| `skills/darkprint/` | The vendored Claude Code authoring skill (SKILL.md, references, templates) |
-| `docs/` | `ARCHITECTURE.md` (this file) and `architecture/` (its split sections), `DECISIONS.md`, `audit/` |
-
----
-
-## 7 · State and data flow
-
-**No React context providers exist anywhere in the codebase** (zero `createContext` calls).
-Every state slice below is module-scope (build time), `useSyncExternalStore` against a
-browser API, or a plain component-local `useState` — no `useReducer` usage was found
-either.
-
-| State slice | Owner | Lifetime | Persisted? | Replaced by what once the backend exists |
-|---|---|---|---|---|
-| Registry filters/sort/search (`/nodes`, `/blueprints`, `/ontology`) | `components/ui/useQueryState.ts` (`useSyncExternalStore` over `window.location.search`) | Per browser tab; survives Back/Forward | URL query string, via `history.replaceState` | No change needed — URL-as-state stays; a backend adds server-side filtering behind the same params |
-| Search-box draft (typed, not yet committed) | `NodeBrowser.tsx:303`, `GalleryBrowser.tsx:102` | Per render tree, 250ms debounce into the URL | none | N/A, UX debounce artifact |
-| Scroll-spy "which type group is visible" | `NodeBrowser.tsx:541` | Per render tree | none | N/A, cosmetic |
-| Favorites/bookmarks | `components/ui/FavoriteStar.tsx` (`useSyncExternalStore` over `localStorage`) | Per browser, survives reloads, never syncs across devices | `localStorage["darkprint:favorites"]` | An account-scoped `save` row keyed on `(account, target)` — see the "two disjoint save sets" note below |
-| "Saved" list (5-row fixture) | `lib/data/bundles.ts:554` `SAVES`, via `components/profile/load.ts:116,126` | Build time only, identical for every visitor | none — not real per-user data | An account-scoped API read of a real bookmarks table |
-| `/upload` wizard step, kind, files, manifest form, "submitted" flag | `components/upload/UploadFlow.tsx:544-548`, plain `useState` | Per mount of `UploadFlow` | none — files never leave the tab (`UploadFlow.tsx:1001-1006`) | A server-persisted upload/draft session, if resumability across reloads is ever wanted |
-| `/upload` derived validation, autonomy/risk scores, ontology view | `UploadFlow.tsx:552-569`, `useMemo` over the above | Recomputed per render | none | The client-side re-validation stays even with a backend; the server adds its own authoritative pass at publish time |
-| `/build` workspace controls (output, approval, iteration cap) | `components/build/BuildWorkspace.tsx:171`, `useState<StarterChoices>` | Per mount | none | Only relevant if "save my starter config" ever becomes a feature — a small per-account preference row |
-| `/build` "which tab changed" badge marks, derived bundle/download files | `BuildWorkspace.tsx:172,174` | Per mount, recomputed from choices | none — files generated as `data:` URLs in-tab | A real `bundle_release` write only if "download" becomes "publish a starter" |
-| Graph/pane node selection (`/build`, blueprint detail, `/upload` step 3) | `WorkspaceStage.tsx:193,201`, `SynchronisedPanes.tsx:82`, `ValidationReport.tsx:144` | Per mount | none | N/A — view state, no backend equivalent needed |
-| Settings page live preview (display name, bio, avatar hue) | `components/settings/ProfileFields.tsx:52-54` | Per mount, resets on reload by design | none by design (`ProfileFields.tsx:18-19`) | An account profile `PATCH` endpoint; every other `/settings` field stays `disabled` until then |
-| "Signed-in account" | `lib/data/account.ts:77` `ACCOUNT`, a single module-scope constant | Build time, identical for every request | none — a fixture, not a session | A real server session/auth cookie. The "owner" view today is a plain string comparison (`components/profile/load.ts:78`), not a stored session |
-| Owned bundles/drafts/lineage/drift | `lib/data/bundles.ts:177` `OWNED_BUNDLES` | Build time | none | A real per-account bundles table (drafts, publish history, fork lineage) |
-| Community notes/comments, node/community star counts | `lib/data/community.ts`, `lib/data/node-community.ts` | Build time | none | A comments/votes table with real authorship and POST endpoints |
-| Comments "load more" reveal | `Comments.tsx:87` | Per mount | none | N/A, pagination-disclosure UI over static seed data |
-| Build-time archive read and derived index (blueprints, cards, digests, registry, shared `OntologyView`) | `lib/content/read.ts:135,137`, `lib/content/index.ts:54` (lazy module-scope caches) | Build time only, one Node process | filesystem, under `content/` | A real database read behind the same `readContent()`-shaped API — the module already documents itself as "SERVER ONLY, BUILD TIME ONLY" and throws if bundled for the browser (`read.ts:8-13,49-53`) |
-| Assorted disclosure/tab/copy-flash UI state (`ForkAction.tsx:52`, `DotBreakdown.tsx:333`, `CopyButton.tsx:51`, `SiteHeader.tsx:192-193`, `InstallTabs.tsx:10`, `BundleDropzone.tsx:424-427`, etc.) | Various, per component | Per mount/render | none | N/A, purely cosmetic — no backend implication |
-
-**Two things worth flagging.**
-
-1. **Two disjoint "save" stores exist for one concept, and the code says so three times**
-   (`lib/data/bundles.ts:551-552`, `components/bundle/BundleHeader.tsx:25`,
-   `components/profile/SavedList.tsx:15-20`). `FavoriteStar` writes to
-   `localStorage["darkprint:favorites"]`; the profile's Saved tab renders the unrelated
-   5-row `SAVES` fixture. A favorite starred on a card page never appears in the same
-   reader's own Saved tab. A real backend needs to unify these into one bookmarks table
-   before that tab can honestly reflect what a reader starred elsewhere — see also TBD-4 in
-   [8 · Backend contract seams](architecture/seams.md).
-2. **`/settings`' `ProfileFields.tsx` states its own state-management rule in its docblock**:
-   a control is live `useState` only if its effect is local and immediate (the
-   avatar/bio/name preview); anything whose only effect would be persistence is rendered
-   `readOnly`/`disabled` instead of wired to fake state. Worth preserving as a principle
-   when the backend lands, rather than wiring every field to `useState` reflexively.
-
----
-
-## 9 · Design system
-
-### 9.1 · Tokens
-
-Source of truth: `app/globals.css` (Tailwind v4, CSS-first — no `tailwind.config.*` file;
-`postcss.config.mjs` only wires `@tailwindcss/postcss`). Tokens live in three `@theme`
-blocks: a tree-shaken `@theme { }` (colors/spacing/type, `:45-160`), a `@theme static { }`
-that Tailwind must never tree-shake because it's consumed from inline styles and anime.js
-rather than utility scanning (durations, `--color-key`, `--color-warn`, `:171-201`), and a
-`@theme inline { }` wiring the three `next/font` variables (`:203-207`).
-
-**Color semantics**, stated verbatim in the CSS comments and confirmed independently in
-`components/viz/tokens.ts:44-71`: **cyan is interactive, violet is where a person acts,
-emerald is a figure read off the engine, signal is a defect.** `amber` is reserved for
-exactly two jobs sitewide — `ComingSoonBadge` ("not built yet") and `.route-box`/
-`.route-label` ("this box leaves the page") — and nothing else may use it
-(`components/ui/ComingSoonBadge.tsx:1`, `app/globals.css:378-411`). A separate, deliberately
-duller `--color-warn` exists precisely so a real warning can't be confused with the amber
-"not built" signal. Three color "poles": dark/factory (`--color-void`, `--color-surface*`),
-blueprint/cyanotype (`--color-blueprint*`), and copper (`--color-copper*`, reserved
-exclusively for the node-card figure, never conflated with amber despite both reading as
-"orange").
-
-**Spacing** is a documented seven-tier vertical scale (`globals.css:9-24`): `inline` 8px,
-`tight` 12px, `element` 16px, `card` 20px, `block` 40px, `section` 64px, `band` 80-112px —
-with four banned values stated explicitly (48, 56, 32, 96). Verified against actual usage:
-broadly followed, but **not fully enforced** — live counter-examples include
-`components/home/SectionLevels.tsx:703,717` (`mt-8`, `gap-14`),
-`components/home/SectionLifecycle.tsx:221` (`mt-8`, with its own comment acknowledging
-it's "the mock's 32px"), `components/hero/Wordmark.tsx:541`, `components/profile/ProfileShell.tsx:57`,
-`components/site/SiteFooter.tsx:99` (both `py-12`).
-
-**Horizontal width has exactly one narrowing token**: `--measure: 36rem` via `.prose-lane`
-(`globals.css:139,531-533`), governing **body prose only** — not figures, tables, code
-panes, or a `SectionHeading` lead, per two explicit author rulings quoted in
-`components/ui/SectionHeading.tsx:84-86`. `.container-page` (1200px, 38 files) caps overall
-page width. Plain `max-w-*` utilities still appear at 45+ call sites for narrow one-off
-elements outside the prose/heading system (e.g. `Wordmark.tsx:515`'s `max-w-2xl` on the
-claim line).
-
-**Radii**: a four-step ladder (`sm` 5px chips/code, `md` 8px buttons/inputs, `lg` 12px
-panels/cards, `xl` 18px full-bleed sheets); bare `rounded` is pinned to `sm` rather than
-Tailwind's default, and `2xl`+ are disabled outright (`globals.css:116-134`).
-
-**Typography**: three fonts (Geist Sans, JetBrains Mono, Space Grotesk) plus three
-code-enforced "mono tiers" — `.eyebrow` (11px), `.label-lead` (14px), `.label` (11px,
-`globals.css:446-487`) — with an explicit floor: "11px is the absolute floor and there are
-no exceptions."
-
-**Motion tokens** (`@theme static`): `--ease-out` ("THE default curve, everywhere"),
-`--ease-in-out`, durations from `--dur-press` 120ms to `--dur-reveal` 520ms, mirrored for
-anime.js as `MOTION` in `components/viz/tokens.ts:219-236`.
-
-**Z-index** is a fixed five-rung ladder (header 50 → card hit target 10), documented rather
-than tokenized (`globals.css:32-42`): "nothing inside a card may exceed 20."
-
-### 9.2 · Component inventory
-
-**Primitives** — `components/ui/**`, 34 files: buttons/links (`Button.tsx`), badges/pills
-(`Badge.tsx`, `TagPill.tsx`, `MetaPill.tsx`, `ComingSoonBadge.tsx`), cards/rows
-(`ContentCard.tsx`, `ContentRow.tsx`), the diagnostics/severity system
-(`DiagnosticList.tsx`, `severity.ts`), meters/scoring (`AutonomyMeter.tsx`,
-`MetricBars.tsx`, `ScoreRadar.tsx`, `PhaseCoverage.tsx`), the shared filter bar
-(`RegistryFilterBar.tsx`), textures (`GridBand.tsx`, `GridPaper.tsx`), the copy-to-clipboard
-control (`CopyButton.tsx`), the favorite toggle (`FavoriteStar.tsx`), the display-type
-scale (`SectionHeading.tsx`), and supporting non-component modules (`useQueryState.ts`,
-`visible-text.ts`, `severity.ts`, `menu-group.ts`).
-
-**Composed** — 22 feature folders, each built from the primitives above for one part of the
-product: `blueprint/` (9 files), `bundle/` (6), `build/` (12), `gallery/` (1), `graph/` (7),
-`hero/` (5), `home/` (20, the largest composed folder), `nodes/` (4), `ontology/` (4),
-`panes/` (11), `profile/` (10), `settings/` (2), `site/` (3), `spec/` (6), `upload/` (4),
-`viz/` (11 — infrastructure other folders draw scenes with, not primitives in the `ui/`
-sense), `explain/` (5), `learn/` (2), `mcp/` (2), `skill/` (1).
-
-### 9.3 · Animation conventions
-
-`animejs` is imported directly in exactly three files: `components/hero/Wordmark.tsx`,
-`components/viz/useLuminousFlow.ts`, `components/viz/easing.ts`. Everything else animated
-goes through the two hooks below or plain CSS.
-
-- **`components/viz/easing.ts:35-48`** documents a real gotcha: anime.js 4.5.0 removed its
-  string-form `cubicBezier(...)` parser, so handing the CSS token `MOTION.easeOut` directly
-  to anime.js silently becomes linear. `easing.ts` re-derives an actual `cubicBezier()`
-  function from the same control points, kept separate from `viz/tokens.ts` so that file
-  stays import-free of the anime.js engine (a render-safe barrel for server components).
-- **The hero wordmark** (`components/hero/Wordmark.tsx`) draws in over four timed beats: each
-  letter outlines via `svg.createDrawable` then cross-fades into real DOM text, a `FlowEdge`
-  rule draws under the name, the mark "settles" with an anime.js `spring()` overshoot, and a
-  single brightness sweep passes across the letters. Gated by `useReveal`'s `static` phase,
-  which always renders the finished heading under SSR/no-JS/reduced-motion.
-- **`useLuminousFlow`** is the one hook driving every "luminous flow" SVG scene sitewide
-  (graphs, node figures) — nodes fade in, edges draw via `svg.createDrawable`, a looping
-  travelling pulse runs on a `strokeDashoffset` normalized so duration is length-independent,
-  using a seeded PRNG (not `Math.random()`) to avoid SSR/hydration mismatches. A second
-  `IntersectionObserver` pauses off-screen loops purely to save main-thread repaint cost.
-
-**The scroll-driven mechanism, concretely.** `components/viz/useReveal.ts` is, in its own
-words, "the single place this site decides whether anything moves" — a three-phase state
-machine (`static` / `armed` / `shown`) driven by one `matchMedia("(prefers-reduced-motion:
-reduce)")` listener and one non-repeating `IntersectionObserver` (default `threshold:
-0.25`, `rootMargin: "0px 0px -12% 0px"`). `components/viz/useScrollProgress.ts` is the
-second primitive — a 0..1 pin-travel fraction for sticky-scrubbed sections (e.g. the
-node-card walk), computed via `requestAnimationFrame`-throttled `getBoundingClientRect()`
-reads, deliberately reusing `useReveal`'s single motion-preference check rather than adding
-a second `matchMedia`. When motion is gated off it returns `progress: 1` (the finished
-state), so a reduced-motion reader sees every annotation attached at once rather than none.
-Global CSS respects the same preference: `scroll-behavior: auto` under
-`prefers-reduced-motion: reduce`, and two pure-CSS keyframe animations exist only inside a
-`prefers-reduced-motion: no-preference` block (`globals.css:578-653`).
-
-### 9.4 · Rules for a new page to look native
-
-1. Spacing lands on one of the seven named tiers (§9.1); the four banned values are 48, 56,
-   32, 96.
-2. Body prose is the only thing `.prose-lane`/`--measure` narrows; headings, leads, figures,
-   tables and code panes run the container's width.
-3. The z-index ladder has five fixed rungs — pick one, don't invent a number; nothing inside
-   a card exceeds 20.
-4. Radii are the four-step ladder; `rounded` is `sm`, not Tailwind's default.
-5. Color semantics are fixed and may not be reassigned — cyan/violet/emerald/signal/amber as
-   above.
-6. Mono type has exactly three tiers and none is a heading level: "a mono uppercase run is a
-   LABEL... if it needs to appear in the document outline it is a `PanelHeading`."
-7. Motion is gated in exactly one place (`useMotionAllowed`/`useReveal`); a new
-   animated component renders its finished, accessible state under SSR/no-JS/reduced-motion
-   rather than starting hidden, and should route through `useReveal`/`useLuminousFlow`/
-   `useScrollProgress` rather than adding a second `matchMedia`/`IntersectionObserver`.
-8. Hover states are gated behind the `hoverable` custom variant
-   (`@media (hover: hover) and (pointer: fine)`) — "a touch pointer has no leave."
-9. Panels use `.panel`/`.panel-lead` rather than ad hoc `bg-surface`/`border` combinations,
-   and at most one `.panel-lead` per page ("two leads is no lead").
-
-**Divergence from a prior working note.** An earlier project memory recorded "text runs
-full width — no max-w, no prose-lane" as an absolute rule. The current code does not match
-that description: `.prose-lane`/`--measure` is a real, actively used token system (~15
-direct consumers) governing body prose specifically, and `.container-page` caps overall
-page width at 1200px. Per this repository's own rule that code wins over a stale note, §9.4
-above states the rule as the code actually enforces it today; the note is being corrected
-in the assistant's memory as part of this session.
-
----
-
-## 10 · Cross-cutting
-
-### 10.1 · Metadata and SEO, including JSON-LD
-
-`LIVE` (partial). `app/layout.tsx:36-57` sets global defaults — `metadataBase`, a title
-template (`"%s · DarkPrint"`), description, keywords, and a partial `openGraph` block
-(title/description/type only, no `images`, no `twitter` card, no `viewport`/`themeColor`
-export anywhere). 9 dynamic routes export their own minimal `generateMetadata` (`{ title,
-description }` with a `"X not found"` fallback, e.g. `app/blueprints/[slug]/page.tsx:60-67`);
-14 static routes export `metadata` directly, same shape. The homepage (`app/page.tsx`) has
-no metadata of its own by design, so it inherits the root default and the hero's claim is
-the indexable one (`app/layout.tsx:26-35`). `PLANNED`/absent: no `canonical`/`alternates`,
-no JSON-LD anywhere in the codebase, and no `app/sitemap.ts` or `app/robots.ts` (no shell
-file exists for either — not even a stub).
-
-### 10.2 · Accessibility
-
-`LIVE`. One skip link (`app/layout.tsx:76-81`, WCAG 2.4.1, justified in-comment by the
-header's ~10 links plus every hero graph node being a focus stop). 120 files carry `aria-*`
-attributes, 41 use `sr-only`, and real ARIA roles are used purposefully (`role="search"`,
-`role="status"` live region, `role="switch"` + `aria-checked`, `role="img"`/`role="region"`
-with accessible names). A centrally enforced rule — glyph *and* word both carry meaning,
-colour is decoration — lives in `components/ui/severity.ts:1-19` after a real regression
-(a diagnostic once shipped `aria-hidden` glyph with no text), enforced by
-`components/blueprint/severity-word.test.ts` across all nine archive bundles. Two
-accessibility properties CLAUDE.md names are `LIVE`-tested under other file names: contrast
-(`components/viz/flow.test.ts:520-650`, full WCAG relative-luminance math against real hex
-values pulled from `app/globals.css`, not hardcoded) and label overlap
-(`components/panes/archive-labels.test.ts`, measures every archive blueprint's rendered
-graph at 7 widths and asserts nothing collides).
-
-### 10.3 · Responsive breakpoints
-
-`LIVE`. No custom breakpoints — Tailwind's stock `sm`/`md`/`lg`/`xl`/`2xl`, mobile-first.
-Usage skews toward `sm:` (65 files) and `lg:` (43); `2xl:` is nearly unused (1 file). A
-custom `hoverable` variant (`@media (hover: hover) and (pointer: fine)`,
-`globals.css:215`) gates hover-only affordances separately from width. `prefers-reduced-motion`
-is respected globally (§9.3).
-
-### 10.4 · Error handling
-
-`PLANNED`/absent for framework-level boundaries, `LIVE` for content-level handling. No
-`error.tsx`, `not-found.tsx`, `global-error.tsx` or `loading.tsx` exists anywhere under
-`app/` — not even a stub — so the app falls back entirely to Next.js's built-in default
-404/500 pages (the `/_not-found` and `/_global-error` rows in
-[4 · Sitemap and routing](architecture/routes.md) are framework defaults for exactly this
-reason). `notFound()` is used consistently across every dynamic route, each paired with
-`dynamicParams = false` so an unknown slug/id is a build-time 404, not a runtime lookup.
-The engine's own `Diagnostic[]` (error/warning/info) is fully `LIVE`-surfaced:
-`components/ui/DiagnosticList.tsx` renders it in two places, and on `/upload`
-`components/upload/ValidationReport.tsx:266-279` prints a plain-language verdict sentence
-*above* the raw diagnostic list — parse failure, unfinished bundle ("not a defect"), or
-resolved-with-errors — a deliberate fix so a reader isn't left to infer the verdict from five
-red rows.
-
-### 10.5 · Loading and empty states
-
-`LIVE` for empty states, absent for loading. No `loading.tsx`/Suspense boundary exists
-anywhere. A single shared `EmptyState` component (`components/profile/parts.tsx:180-198`)
-renders five distinct, real copy strings across the profile tabs ("Nothing published yet",
-"Saves are private", "No published blueprints", "No node cards", "No terms under this
-handle" — each with its own action link). The validator has its own separate empty state
-("No problems found, the validator had nothing to say about this bundle",
-`components/ui/DiagnosticList.tsx:79-88`).
-
-### 10.6 · Analytics
-
-`LIVE`, pageviews only. `@vercel/analytics` (`package.json:21`) is mounted once, globally,
-as the last child of `<body>` (`app/layout.tsx:3,96`). The adjacent comment
-(`:91-95`) states the scope explicitly: page-view counting only, no-ops outside a Vercel
-deployment, and distinct from the unbuilt blueprint-run telemetry of SEAM-84/85. No custom
-`track()` calls exist anywhere in the codebase.
-
----
-
-## 11 · Known gaps and decisions
-
-### 11.1 · Deliberate shortcuts
-
-Recorded in the code as intentional, not accidental:
-
-- **`lib/core/**` is fully built and real** — autonomy, static risk exposure, phase
-  coverage and every digest are genuinely computed, at build time for the archive and
-  in-tab for `/upload` and `/build`. The gap is entirely in the write plane: nothing in the
-  UI can *submit* a vote, a run, a publish, or a session, and every such control says so in
-  place rather than pretending.
-- **Community and account data is deliberately seeded, not deleted or half-built.** Each
-  `lib/data/**` file states outright, in its own header comment, that it stands in for a
-  table that doesn't exist yet (e.g. `lib/data/community.ts:1-9`).
-- **The read/write split (`docs/architecture/seams.md` §5.2 in Phase 2A's own analysis)
-  means the read plane — 22 of 113 seams — could be built first, behind the same URLs the
-  pages already consume, without moving a single page component's data shape.**
-
-### 11.2 · Open `TBD:` questions
-
-Per this document's grounding rule, a `PENDING-OWNER-REVIEW` row in `docs/DECISIONS.md`
-becomes a question here, never a statement. The full sets already live in the split
-documents rather than being repeated:
-
-- [3 · Concept model](architecture/concept-model.md#open-tbd-questions-in-this-document) —
-  9 questions about entity shape (`DotAttrs` persistence, draft digest typing, comment
-  polymorphism, download/support counting grain, release versioning, card/term privacy,
-  ownership transfer, term-usage indexing, ontology overlay versioning).
-- [8 · Backend contract seams](architecture/seams.md#open-tbd-questions-in-this-document) —
-  4 questions about the write plane (object-storage vs. Git as the archive backend,
-  "create" vs. "add a release" semantics for publishing, slug uniqueness scope, and
-  whether `localStorage` favorites migrate into a real account on launch).
-- [4 · Sitemap and routing](architecture/routes.md#orphan-routes) — 1 question: which file
-  is the canonical audit deliverable, since `docs/audit/CHANGELOG.md` (named by this
-  document's own instructions, see §11.3) exists in no commit.
-
-Two structural gaps outside those documents, worth stating plainly here: **who is allowed to
-grant the `validator` badge** (`Account.validatorWeight` exists and is seeded, but nothing
-in the code proposes a granting process — `app/settings/page.tsx:47-52`), and **whether the
-16 product policies `docs/DECISIONS.md` D-58 lists as deliberately open (publishability,
-fork identity, blueprint versioning, privacy, trust signals, run normalisation, ontology
-governance, the MCP retrieval contract, licensing, malicious-bundle boundaries, account
-roles, event semantics, ranking, moderation, retention, the star service)** are meant to be
-resolved before or after Stage 0 of any implementation.
-
-### 11.3 · `PENDING-BACKEND` and `UNREACHABLE-ROUTE`, from the audit
-
-This document's own instructions name `docs/audit/CHANGELOG.md` as the source for this
-subsection. That file does not exist in the working tree or in any commit reachable from
-`HEAD` (`git log --all -- docs/audit/CHANGELOG.md` returns nothing) — the same absence
-`docs/architecture/routes.md` already flags as a `TBD:`. The equivalent findings live in
-`docs/audit/REPORT.md`, used here instead with that divergence noted rather than silently
-substituted.
-
-**`UNREACHABLE-ROUTE`: zero found** (`docs/audit/REPORT.md:291-300`). `components/site/nav.test.ts`
-is a live, passing guard walking every top-level `app/*/page.tsx`, asserting a header/Learn-menu/
-account-menu entry exists for each, and asserting every chrome link resolves to a real page.
-Matches [4 · Sitemap and routing](architecture/routes.md#orphan-routes) exactly.
-
-**`PENDING-BACKEND`: two module families kept on purpose** (`docs/audit/REPORT.md:205-236`):
-
-1. `lib/core/**` — ~90 flagged unused-export/type lines. The barrel at `lib/core/index.ts`
-   states in its own header that it is a declared API surface, not incidental code; the UI
-   exercises only the parts a given screen needs today, and the rest (`emitAttractorDot`,
-   `lintAttractor`, `buildRegistry`, `computeSecurity`, `checkVersionChain`, and their
-   types) sits ready for the API routes and CLI tooling a real backend will add. Fully
-   mapped to seam IDs in [8 · Backend contract seams § cross-check](architecture/seams.md#cross-check-against-the-audits-pending-backend-items).
-2. `lib/data/{account,bundles,community,profiles}.ts` — 6 flagged unused types
-   (`NotificationSetting`, `Drift`, `DraftDetail`, `Draft`, `ReportedCost`, `PinnedRef`),
-   each used to type a sibling field in the same file but never imported by name elsewhere
-   (normal under TypeScript's structural typing). Same cross-check, same conclusion: keep,
-   no action, textbook `PENDING-BACKEND`.
-
----
-
-## 12 · Maintenance protocol and revision log
-
-**Protocol.** This file (and its `docs/architecture/*.md` companions) follows the context
-hygiene rules in `CLAUDE.md`: no new root-level markdown files, durable knowledge goes in
-exactly one of `CLAUDE.md` (rules), this document (how the system is), or
-`docs/DECISIONS.md` (why it is that way), and a decision here is never asserted with more
-authority than `docs/DECISIONS.md` gives it — a `PENDING-OWNER-REVIEW` row stays a `TBD:`
-question. When the code and this document disagree in the future, the code wins and the
-next revision records the divergence; nobody edits the code to match a stale doc.
-
-**Revision log.**
-
-| Date | Commit | Sections touched |
-|---|---|---|
-| 2026-08-12 | `f32267c` | Initial publication — all sections (0-12), assembled from Phase 2A's `ROUTES.md`, `ENTITIES.md`, `SEAMS.md` (carried over unchanged into §2-4, §8) and a fresh code-derived pass for §1, §5-7, §9-11 |
-| 2026-08-13 | `f8ff1f7` | §4 sitemap (call sites for `ContentRow` / `NodeCardSummary`), §8 seams (SEAM-56 rewritten for stars/validated, SEAM-59 split, SEAM-113 added), §2 glossary and §3 concept model (`stars`, `validated`, card visibility) |
+(Drop `--prod` from the last three lines for a preview.) A prebuilt deployment's functions run
+on linux/arm64, so `next.config.ts` traces `models/**`, `onnxruntime-node`'s linux/arm64
+binding and sharp's linux-arm64 packages into the seven routes that embed (the two searchers,
+the MCP endpoint and its two find routes, publish and health) and excludes every other
+platform's binaries. A build made on Vercel's machines runs x64 instead; `/api/health` names
+the missing file when the two disagree.
+
+`/api/health` reports `db` (latency, `migrationsHead`, `migrationsApplied`), `encoder`
+(`present` or `absent`, with `encoderFailure`), `storage`, `auth.providers`,
+`auth.sessionSecret` (`set`, `example` or `missing`) and `commit`. Measured through a
+preview's health route, production holds `migrationsHead` `0007_drafts` with 7 applied, the
+preview environment has no OAuth provider configured, and the session secret must be set before
+anyone can sign in. On the last preview the encoder was still `absent`: sharp's linux-arm64
+build refused to load even when traced, so search on Vercel ranks by words until that is
+resolved (see Known gaps).
+
+Production migration runbook. `$D` is the direct connection (`db.<ref>.supabase.co:5432` or
+the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transaction pooler.
+
+1. Read-only preflight first: `npm run preflight:db -- "$D"` prints applied migrations, table
+   counts, the shape of stored card bodies and manifests, embedding coverage and whether the
+   URL is a pooler. Expect head `0007_drafts`, pending 0008 to 0011, 9 releases, cards still
+   carrying `requiresHuman` and none carrying `willNot`.
+2. Confirm in the Vercel dashboard which commit production serves; `vercel env pull
+   --environment=production` to a file outside the tree; set `GOOGLE_CLIENT_ID`,
+   `GOOGLE_CLIENT_SECRET` and a fresh `SESSION_SECRET` in the production environment.
+3. `pg_dump "$D" --no-owner --no-privileges -f pre.sql`, restore it into a throwaway database
+   to prove it restores, and keep it somewhere durable: after step 9 it is the only way back.
+4. Build and deploy a preview with the prebuilt commands above; when Ready, probe `/api/health`
+   and `/api/mcp/blueprints/find?task=<a sentence>` for ranked hits. `encoder: present` is the
+   goal and is not reached yet; the hits still come back, ranked by words.
+5. Open a read-only window: block `POST /api/bundles` and the fork route (a firewall rule or
+   a temporary 503).
+6. Card bodies: `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres` as a
+   dry run, read the plan, then add `--write --rollback-sql <durable>/rb-prod.sql
+   --rescore-analysis` and confirm at the prompt. This script reads `DATABASE_URL`, does not
+   itself refuse a pooler, and refuses a dirty `content/` or `public/bundles/`. What the dry
+   run will show against production as it stands: 49 of the 61 archive cards differ from
+   `content/` and 12 are absent, and four of the 49 also carry rewritten `notes:` prose —
+   `acceptance-verifier@2.0.0`, `bounded-retry@2.0.0`, `confidence-escalation@1.0.0` and
+   `maintainer-approval@1.0.0`, whose notes described `cannot` and `requires_human` as live
+   fields. Those four are printed for confirmation; a disagreement in any field other than
+   `notes` stops the run instead.
+7. Additive schema: `MIGRATE_DATABASE_URL="$D" npm run db:migrate -- --to 0008_embedding_input`,
+   then `-- --only 0010_key_scope`. The old code tolerates both.
+8. Promote with the prebuilt commands above (`--prod`). Verify `/blueprints` lists 9, a blueprint page and a
+   card page answer 200, `/api/files/cards/spec-planner@1.0.0` carries `will_not` and no
+   `requires_human`, and `/api/health` shows `migrationsApplied` 9 with head `0010_key_scope`.
+9. Only after step 8 holds: `MIGRATE_DATABASE_URL="$D" npm run db:migrate` applies
+   `0009_drop_ontology_versioning` (destructive) and `0011_tutorial_live` (the live tutorial
+   table); the preflight then shows 11 applied.
+10. Rename the registry account, and do not retire it.
+    `DATABASE_URL="$D" npm run account:rename -- --from darkprint --to autogen` prints the
+    account, every bundle whose URL moves and the handle it releases, then writes with
+    `--yes`. `changeHandle` allocates the new name, moves `account.handle` and releases the
+    old one in one transaction, so the ten bundles, their releases, and the stars, forks and
+    notes on them all keep resolving under the new handle. What moves is public: every
+    `/blueprints/darkprint/<slug>` and `/u/darkprint` stops answering and the `autogen` form
+    starts, and `darkprint` goes into the reservation table as `released`, which
+    `checkHandle` refuses forever: no account claims it again, this one included, so the
+    rename is one-way.
+    Retiring instead would destroy all of it, and refuses outright while another account's
+    public fork pins a card version the archive also ships.
+11. `DATABASE_URL="$D" npm run bundle:delete -- --owner alessandro --slug smoke-checker`
+    prints the bundle and its releases; a public bundle with a release is refused, so re-run
+    with `--take-private --yes`.
+12. `DATABASE_URL="$D" npm run seed:import` publishes the whole archive under `autogen` at
+    1.1.0. Expect `created 10, skipped 0`: the manifests changed, so each bundle takes a new
+    release at a new digest, and no card conflicts, because `publishCard` skips a version
+    already stored under the same bytes. **That last part is step 6's doing and this step
+    cannot run before it.** Production today holds 49 of the 61 archive cards under
+    pre-migration bytes (`cannot:` unsplit, `requires_human` and `ontology_version` still
+    present) and does not hold the other 12 at all; step 6 rewrites each archive card from
+    `content/cards/<ref>.yaml` verbatim, which is what makes them match here. The digest
+    collision that skips a bundle cannot bite the nine that are deployed: each one's stored
+    `topology.dot` differs from `content/`, so `bundleDigest` differs whatever step 6 does to
+    the card half, and `pipeline-observability` is not deployed at all. Run out of
+    order and the import throws `conflict` at the first bundle pinning a stale card, leaving
+    the archive half moved. It also stops, naming both handles, if the sentinel account
+    still holds `darkprint`, which step 10 prevents.
+    One thing the import cannot do: `bundleDigest` covers the DOT and the card digests and
+    NOT `blueprint.yaml`, so a bundle whose only change is its manifest keeps its digest,
+    `holdsRelease` finds that digest already stored and the bundle is counted skipped with
+    the old author and description left in place. Every one of the ten differs from what is
+    deployed today by more than its manifest, so all ten publish; a later pass that edits
+    only a description has to move the topology or a card as well, or delete the bundle and
+    import it again.
+13. Verify `/u/autogen` lists ten, `/blueprints/autogen/starter-software-factory` answers 200,
+    and `/api/files/cards/spec-planner@1.0.0` still carries `author: orin`. The card's author
+    line is authorship and the account is ownership; the import moves the second and leaves
+    the first where the archive wrote it.
+14. `npm run db:reembed` against `$D` from a machine with `models/`: the descriptions changed,
+    so every blueprint vector is stale. Re-probe the find route with `task=add observability
+    to a scraping pipeline` and expect `pipeline-observability` first.
+15. Build and deploy with the prebuilt commands above (`--prod`).
+
+16. Publish the CLI package, which is what every `npx -y darkprint` line on the site fetches:
+    `cd packages/mcp && npm publish` (its `prepack` builds `dist/cli.js` and copies the skill
+    in). Check with `npm view darkprint version`, then `npx -y darkprint skill install` in a
+    scratch `HOME`. Until this runs, every printed `npx -y darkprint` line carries the same
+    "not published to npm" sentence beside it, on seven surfaces:
+    `components/skill/SkillSetup.tsx` (the install step, with the badge),
+    `app/tutorial/page.tsx` (the install step, with the badge),
+    `components/bundle/DraftLanding.tsx` (twice, the skill line and the clone line),
+    `components/bundle/CodeMenu.tsx`, `components/blueprint/CloneMenu.tsx`,
+    `app/mcp/page.tsx`, and `app/capabilities/page.tsx` in four places: the page
+    `description`, the line above the intent list, the CLI panel's framing and the Assisted
+    Design panel. Those sentences, the `ComingSoonBadge` mounts and the cells that pin them
+    come off in one commit after the package is up, and not before, or the site claims
+    something untrue. The cells to move are the two install rows in
+    `components/skill/SkillSetup.test.ts`, whose no-amber cell also goes back to measuring
+    the whole page, the four rows of "the limit every printed npx line is under" in
+    `app/capabilities/honesty.test.ts`, the install row in
+    `components/tutorial/tutorial-page.test.ts`, and the honesty rows in
+    `components/site/honesty.test.ts` and `components/mcp/honesty.test.ts`. Four `because`
+    strings in that page's `INTENTS` also describe the unpublished state.
+
+Rollback while the old code is still promoted: `psql "$D" -v ON_ERROR_STOP=1 -f rb-prod.sql`,
+then `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres --check-manifest
+rb-prod.sql.manifest.tsv`. After step 9 only the dump from step 3 restores the dropped rows, and
+step 10 cannot be undone: the released handle is reserved permanently, so the old URLs stay
+gone. Every
+`/d/<digest>` address recorded before step 6 answers 404 after it; the embeddings are keyed by
+row id and refreshed by step 14.
+
+## 16. Known gaps
+
+- The sentence encoder does not load on Vercel yet. A prebuilt deployment carries the model, the
+  arm64 onnxruntime binding and sharp's linux-arm64 packages, and sharp still answers "Could not
+  load the sharp module using the linux-arm64 runtime"; `@huggingface/transformers` imports
+  sharp at load, so the whole encoder is absent and search ranks by words. Two ways out: a hosted
+  embedding provider (Vercel AI Gateway, `openai/text-embedding-3-small` at 384 dimensions, which
+  keeps the `vector(384)` columns), or the Pro plan, where a build made on Vercel's machines with
+  the x64 binaries is not subject to the 12-function cap.
+- The `darkprint` npm package is unpublished; `npx -y darkprint` answers 404. The package is
+  ready to publish from `packages/mcp` and every install line on the site is written for the
+  published state, with the limit stated beside it until step 16 of the runbook has run.
+- The `write` bucket is spent by nothing, and `upload` only by `POST /api/cards`; the key-based
+  bundle publish and run-report paths have no rate limit.
+- `darkprint report` still refuses `DARKPRINT_API_KEY` although the runs route accepts a
+  write-scoped key.
+- No mail sender exists behind `NotificationDelivery`; the queue fills and nothing drains it.
+- `ballot` is declared and unwritten; `lib/data` fixtures still have about thirty non-test
+  importers; both are owner decisions.
+- Production has no Google credentials and the example session secret; the skill's curl
+  names `$DARKPRINT_KEY` while the CLI reads `DARKPRINT_API_KEY`.
+- `.design-sync/` and the vendored skills under `.agents/skills` are owner-managed.
+- The fork stance control was removed from the gallery; a card fork is listed nowhere except
+  its own page; the profile shelf draws archive graphs only.
+- Comment narration citing retired rulings remains in the code; delete a citation when you
+  touch its line.

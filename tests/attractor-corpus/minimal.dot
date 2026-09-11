@@ -1,0 +1,14 @@
+// The smallest pipeline the format admits, in the shape Attractor's own §2.13 examples
+// take: one start node, one unit of work, one exit. Everything else in this corpus is
+// this file plus one construct, so a failure here is a failure of the round trip itself
+// rather than of the construct a later file is about.
+digraph minimal {
+  goal="Answer one question and stop.";
+
+  start  [label="start", shape=Mdiamond];
+  answer [label="Answer", shape=box, prompt="Read the question you were handed and write the answer. Nothing else reaches you."];
+  exit   [label="exit", shape=Msquare];
+
+  start -> answer;
+  answer -> exit;
+}

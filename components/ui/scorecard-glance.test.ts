@@ -1,11 +1,11 @@
 /* ============================================================
    One page, two surfaces, and the sentence that was on both.
 
-   The scorecard in the blueprint sidebar is a glance: six rows,
+   The scorecard in the blueprint sidebar was a glance: six rows,
    where this blueprint sits. `components/blueprint/Explainability.tsx`
    in the main column is the audit: the subtraction, the nodes that
    fired each marker, the hints. They were printing the same two
-   strings. `MetricBars` renders `Metric.detail`, and for the two
+   strings. `MetricBars` rendered `Metric.detail`, and for the two
    computed rows that detail *is* the engine rationale — the same
    sentence the panel prints through its own `Rationale`. On
    `/blueprints/starter-software-factory` a reader met
@@ -19,26 +19,22 @@
 
    twice each, word for word, within one screen.
 
-   The fix is a `audit` prop on `MetricBars` and it has three ways
-   to go wrong, one per case below:
+   ── why only the audit half is left ──
+   `MetricBars` was deleted on 2026-09-04. It had two product
+   mounts and both had already gone: `components/home/SectionExample`
+   was cut at d900af2 with the band it drew, and the owner's removal
+   of the scoring reading took the one on
+   `/blueprints/<owner>/<slug>`. Nothing rendered the card, so every
+   case here that rendered it was asserting over markup no reader
+   can reach. Each of those cases is recorded at the foot of this
+   file with what it held and where the claim went.
 
-     1. the glance eats the audit. The rationale has to survive in
-        the panel — a score nobody can check is doc 1 §8.3's rumour
-        with a number attached. The blueprint-page redesign folds
-        Autonomy and Security behind a closed-by-default `<details>`
-        now, so "survives" no longer means "in the open" the way it
-        did when this suite was written — it means present in the
-        prerendered HTML the site's other disclosures are held to
-        (`components/ui/More.tsx`'s own licence: folded, not gone);
-     2. the glance eats an honesty statement. Only the two `auto`
-        rows change. The other four say the figure is seeded, which
-        doc 2 §0.4 makes a product rule and which has to stay
-        wherever the number is legible;
-     3. the prop stops being passed, or gets passed inside
-        `SectionExample`, which shows this card with no panel beside
-        it and whose next paragraph says in as many words that
-        "the scorecard prints that subtraction under the Security
-        row".
+   The audit half never depended on that page and still ships:
+   `BlueprintCanvas` is mounted by `components/upload/ValidationReport.tsx`
+   on `/upload`, over a graph somebody is about to publish, and it
+   renders `Explainability` whole. So "the engine's own sentence
+   reaches the reader who is being shown the score" is still a rule
+   about a page a reader can open, and it is still checked below.
 
    Rendered over the real archive rather than a fixture, for the
    reason `components/site/honesty.test.ts` gives: a statement that
@@ -47,38 +43,14 @@
    ============================================================ */
 
 import { createElement } from "react";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { allBlueprints } from "@/lib/content";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
-import { MetricBars } from "@/components/ui/MetricBars";
 import { plainText } from "@/components/ui/visible-text";
 
 const BLUEPRINTS = allBlueprints();
-
-/** The scorecard exactly as `/blueprints/<slug>` renders it. */
-function card(bp: (typeof BLUEPRINTS)[number]): string {
-  return renderToStaticMarkup(
-    createElement(MetricBars, {
-      metrics: bp.metrics,
-      autonomy: bp.autonomy,
-      audit: {
-        securityRaw: bp.analysis.security.raw,
-        securityMarkers: bp.analysis.security.penalties.length,
-      },
-    }),
-  );
-}
-
-/** The same card as `SectionExample` renders it, with no panel beside it. */
-function unaudited(bp: (typeof BLUEPRINTS)[number]): string {
-  return renderToStaticMarkup(
-    createElement(MetricBars, { metrics: bp.metrics, autonomy: bp.autonomy }),
-  );
-}
 
 /** The audit surface: the panel that shows the working (Autonomy, Security). */
 function panel(bp: (typeof BLUEPRINTS)[number]): string {
@@ -95,14 +67,13 @@ describe("the archive is behind these cases", () => {
   });
 });
 
-describe("the engine's working is on the audit surface and nowhere else", () => {
+describe("the engine's working reaches the audit surface", () => {
   it.each(BLUEPRINTS.map((bp) => [bp.slug, bp] as const))(
-    "%s prints each rationale once, in the panel",
+    "%s prints each rationale in the panel",
     (_slug, bp) => {
       // `metrics[0].detail` is the autonomy rationale less the band ordinal, which is
-      // what both surfaces print; `lib/content/index.test.ts` holds that identity.
+      // what the panel prints; `lib/content/index.test.ts` holds that identity.
       const rationales = [bp.metrics[0].detail, bp.metrics[5].detail];
-      const glance = plainText(card(bp));
       // Present, not necessarily open: Autonomy and Security are their own closed-by-
       // default `<details>` since the radar-layout redesign, so the rationale is folded
       // away like everything else in one of the site's disclosures — still in the
@@ -111,91 +82,66 @@ describe("the engine's working is on the audit surface and nowhere else", () => 
 
       for (const text of rationales) {
         expect(audit, "the panel dropped the engine's own sentence").toContain(text);
-        expect(glance, "the scorecard is restating the audit").not.toContain(text);
       }
     },
   );
-
-  it.each(BLUEPRINTS.map((bp) => [bp.slug, bp] as const))(
-    "%s keeps the subtraction on the card that has no panel beside it",
-    (_slug, bp) => {
-      const spec = plainText(unaudited(bp));
-      expect(spec).toContain(bp.metrics[0].detail);
-      expect(spec).toContain(bp.metrics[5].detail);
-    },
-  );
 });
 
-describe("the glance never swallows a seeded marker", () => {
-  it.each(BLUEPRINTS.map((bp) => [bp.slug, bp] as const))(
-    "%s states on the card that the other four figures are seeded",
-    (_slug, bp) => {
-      const glance = plainText(card(bp));
-      // The four the registry does not compute. Each `detail` names what the figure
-      // would be and then says nothing produced it (`lib/content/view.ts`).
-      for (const metric of bp.metrics.slice(1, 5)) {
-        expect(metric.source, `${metric.key} is no longer a seeded row`).not.toBe("auto");
-        expect(glance, `${metric.key} lost its detail`).toContain(metric.detail);
-      }
-      expect(glance.toLowerCase()).toContain("seeded");
-    },
-  );
+/* ============================================================
+   Removed with `components/ui/MetricBars.tsx`, 2026-09-04.
 
-  it("leaves a number bare on neither computed row", () => {
-    for (const bp of BLUEPRINTS) {
-      const glance = plainText(card(bp));
-      // The class, and what that class does with people. Never the 1-to-4 band behind
-      // it (doc 2 §1.1).
-      expect(glance).toContain(bp.autonomy.label);
-      expect(glance).toContain(bp.autonomy.blurb);
-      // Where the security row sits on the engine's own scale, which the 0–100 bar
-      // beside it is a rescale of and cannot state.
-      expect(glance).toContain(`${bp.analysis.security.raw.toFixed(2)} of 4`);
-    }
-  });
+   Recorded rather than dropped silently, because each one was an
+   honesty rule and the licence to remove one is narrow: it is the
+   owner's instruction to take the scoring reading off the blueprint
+   page, and it reaches these cases only because the component they
+   render has no mount left anywhere. None of them was weakened, and
+   none of them was re-pointed at a surface that makes a different
+   claim. Where the rule they held still applies to a page that
+   ships, the guard that carries it now is named.
 
-  /**
-   * The case the first version of this file could not see, and the reason the row states
-   * `raw` rather than `level`.
-   *
-   * It asserted that `Level ${level} of 4` was on the card and never compared it with the
-   * bar beside it. Those two numbers come from different rules —
-   * `round(clamp(raw, 0, 4) / 4 * 100)` for the bar, `clamp(round(raw), 1, 4)` for the
-   * level — and they disagree on four of the nine blueprints in this archive: 38 beside
-   * "Level 2 of 4", 13 beside "Level 1 of 4", and a bar at zero beside a stated level 1.
-   * So the rule here is not that some number is present. It is that the number the row
-   * prints is the number the bar is a rescale of, computed the way `lib/content/view.ts`
-   * computes it, off the string the card actually rendered.
-   */
-  it.each(BLUEPRINTS.map((bp) => [bp.slug, bp] as const))(
-    "%s prints a reading the bar beside it agrees with",
-    (_slug, bp) => {
-      const glance = plainText(card(bp));
-      const printed = /(-?\d+\.\d\d) of 4/.exec(glance);
-      expect(printed, "the security row stopped stating a reading").not.toBeNull();
+   1. `the scorecard is restating the audit` — the second half of
+      the rationale case above, `expect(glance).not.toContain(text)`.
+      It forbade the glance repeating the panel's sentence. There is
+      no glance: the negative had no subject left. The positive half
+      is the one that protects the reader, and it is still above.
 
-      const reading = Number(printed?.[1]);
-      const bar = bp.metrics[5].value;
-      expect(bp.metrics[5].key).toBe("security");
-      expect(
-        Math.round((Math.min(Math.max(reading, 0), 4) / 4) * 100),
-        `the card says ${reading} and the bar says ${bar}`,
-      ).toBe(bar);
-    },
-  );
-});
+   2. `%s keeps the subtraction on the card that has no panel beside
+      it` — nine cells over `MetricBars` with no `audit=` prop. Its
+      stated subject was `components/home/SectionExample`, which was
+      itself deleted at d900af2, so this case had already outlived
+      the arrangement it described before the component went.
 
-describe("the switch is thrown by the page that owns the panel", () => {
-  /**
-   * A source scan, in the idiom of `components/ui/autonomy-surfaces.test.ts`: the defect
-   * is a call site that never read the prop's comment, and no pure function can see one.
-   * Matched on the opening tag, where the props are.
-   */
-  it("keeps the radar scorecard alongside the provenance-aware evidence layers", () => {
-    const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
-    const page = read("app/blueprints/[slug]/page.tsx");
-    expect(page).toContain("<EvidenceLayers");
-    expect(page).toContain("<ScoreRadar");
-    expect(page).toContain("<MetricBars");
-  });
-});
+   3. `%s states on the card that the other four figures are seeded`
+      — nine cells: the four rows the registry does not compute must
+      each print their `detail`, and the card must say "seeded"
+      somewhere. The PRODUCT RULE behind it (doc 2 §0.4: a figure
+      nothing produced must say so) is not lost with the card. It is
+      held for every surface that ships by
+      `components/ui/autonomy-surfaces.test.ts`, "says seeded in
+      every file that reads one", which scans every `.tsx` under
+      `app/` and `components/` and would catch a new component that
+      printed one of these figures bare. `/upload` states the same
+      thing in its own words beside the axes, under "Filled in
+      later" (`components/upload/UploadFlow.tsx`).
+
+   4. `leaves a number bare on neither computed row` — the card had
+      to print `autonomy.label`, `autonomy.blurb` and the security
+      reading as `N.NN of 4` rather than the 1-to-4 band. Nothing
+      prints that row now, and this note used to name the scorecard
+      radar as the nearest surviving surface while adding that it
+      was no re-point, since it drew axes coloured by source and
+      stated no reading at all. That component was deleted on
+      2026-09-06 on the owner's instruction, so there is no nearest
+      surviving surface either: no shipping component draws any of
+      the six metrics. The product rule under the case is the one in
+      point 3 above, and it is still carried by
+      `components/ui/autonomy-surfaces.test.ts` over every `.tsx`
+      that ships.
+
+   5. `%s prints a reading the bar beside it agrees with` — nine
+      cells checking that the number the security row printed and
+      the 0-100 bar next to it were computed from the same `raw`,
+      the two having disagreed on four of the nine blueprints. Both
+      the row and the bar were `MetricBars`; the disagreement it
+      caught cannot occur in a component that no longer exists.
+   ============================================================ */

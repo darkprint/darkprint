@@ -1,14 +1,24 @@
 import { describe, expect, it } from "vitest";
 
 import { CORE_ONTOLOGY, CORE_PHASE_IDS } from "./core";
+import { splitTermId } from "./resolve";
 import type { OntologyTerm, TermKind } from "./types";
 
 const TERMS = CORE_ONTOLOGY.terms;
 const BY_ID = new Map<string, OntologyTerm>(TERMS.map((t) => [t.id, t]));
 const KINDS: TermKind[] = ["phase", "node-type", "risk-marker", "data-type", "tool"];
 
-/** Bare core ids only — namespaces (`ns/local`) belong to doc 3 §7 extensions, not the nucleus. */
-const CORE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/**
+ * Bare core ids only — namespaces (`ns/local`) belong to doc 3 §7 extensions, not the
+ * nucleus.
+ *
+ * A `.` is admitted alongside `-` because `parallel.fan-in` is named after the Attractor
+ * handler `parallel.fan_in`, and the mapping in `attractor/emit.ts` is an identity row
+ * only for as long as the two documents spell it the same way. The character that stays
+ * out is `/`: that one is the namespace separator `splitTermId` reads, and a core id
+ * carrying it would parse as somebody's local term.
+ */
+const CORE_ID = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 
 const ids = (kind: TermKind): string[] => TERMS.filter((t) => t.kind === kind).map((t) => t.id);
 const childrenOf = (parent: string): string[] =>
@@ -19,9 +29,16 @@ const childrenOf = (parent: string): string[] =>
    ============================================================ */
 
 describe("CORE_ONTOLOGY identity", () => {
-  it("ships as ontology v0.1.0 with a title (doc 3 §8)", () => {
-    expect(CORE_ONTOLOGY.version).toBe("0.1.0");
+  it("ships with a title", () => {
     expect(CORE_ONTOLOGY.title.length).toBeGreaterThan(0);
+  });
+
+  /* The vocabulary declares no version, and this is the cell that says so rather than a
+     silence anyone could read as an oversight: `version` was a DarkPrint-only semver on a
+     vocabulary whose job is to name what an Attractor node is. */
+  it("declares no version of its own", () => {
+    expect(Object.hasOwn(CORE_ONTOLOGY, "version")).toBe(false);
+    expect(Object.keys(CORE_ONTOLOGY).sort()).toEqual(["terms", "title"]);
   });
 
   it("is frozen so analyzers cannot mutate the shared singleton", () => {
@@ -40,8 +57,11 @@ describe("CORE_ONTOLOGY identity", () => {
     expect(BY_ID.size).toBe(TERMS.length);
   });
 
-  it("declares every term as introduced by this version", () => {
-    const wrong = TERMS.filter((t) => t.since !== CORE_ONTOLOGY.version).map((t) => t.id);
+  /* `since` is no longer a version of anything: the vocabulary has none. It stays as the
+     release each term was published in, and every core term was published in one go, so
+     one value across the whole set is still the fact to assert. */
+  it("declares every core term as introduced in the same release", () => {
+    const wrong = TERMS.filter((t) => t.since !== "0.1.0").map((t) => t.id);
     expect(wrong).toEqual([]);
   });
 
@@ -168,7 +188,7 @@ describe("phase (doc 3 §2)", () => {
    ============================================================ */
 
 describe("node types (doc 3 §3)", () => {
-  it("has the six concrete types and the two abstract categories, and nothing else", () => {
+  it("has the ten concrete types and the three abstract categories, and nothing else", () => {
     expect(ids("node-type").slice().sort()).toEqual([
       "agent",
       "decision",
@@ -176,6 +196,11 @@ describe("node types (doc 3 §3)", () => {
       "human-gate",
       "human-in-the-loop",
       "human-input",
+      "manager-loop",
+      "orchestration",
+      "parallel",
+      "parallel.fan-in",
+      "shell-tool",
       "tool",
       "validation",
     ]);
@@ -184,7 +209,8 @@ describe("node types (doc 3 §3)", () => {
   it.each([
     ["human-in-the-loop", ["human-gate", "human-input"]],
     ["evaluative", ["decision", "validation"]],
-  ] as const)("category `%s` has exactly the children doc 3 §3 draws", (parent, expected) => {
+    ["orchestration", ["manager-loop", "parallel", "parallel.fan-in"]],
+  ] as const)("category `%s` has exactly the children it draws", (parent, expected) => {
     expect(BY_ID.get(parent)?.kind).toBe("node-type");
     expect(childrenOf(parent).slice().sort()).toEqual([...expected].sort());
   });
@@ -194,11 +220,74 @@ describe("node types (doc 3 §3)", () => {
     expect(BY_ID.get("tool")?.broader).toBeUndefined();
   });
 
-  it("leaves the two categories unparented, so the type dimension has no invented root", () => {
+  /**
+   * The one subsumption edge in this dimension doc 3 does not draw, pinned at both ends.
+   *
+   * `shell-tool` is a kind of `tool` so that `isA(type, "tool")`, the question every rule in
+   * the engine actually asks, keeps catching the node that runs a command once
+   * `attractor/emit.ts` gives `tool` the `box` row. Making it a fifth root instead would
+   * split one idea across two unrelated top-level types, and every existing tool rule would
+   * silently stop applying to half of it.
+   */
+  it("subsumes `shell-tool` under `tool`, which is the only concrete type with a child", () => {
+    expect(BY_ID.get("shell-tool")?.kind).toBe("node-type");
+    expect(BY_ID.get("shell-tool")?.broader).toBe("tool");
+    expect(childrenOf("tool")).toEqual(["shell-tool"]);
+    // `agent` is the other type that runs work and it stays a leaf: a shell command is a
+    // deterministic operation, and nothing about it is a kind of model reasoning.
+    expect(childrenOf("agent")).toEqual([]);
+  });
+
+  it("leaves the three categories unparented, so the type dimension has no invented root", () => {
     expect(BY_ID.get("human-in-the-loop")?.broader).toBeUndefined();
     expect(BY_ID.get("evaluative")?.broader).toBeUndefined();
+    expect(BY_ID.get("orchestration")?.broader).toBeUndefined();
     const roots = ids("node-type").filter((id) => BY_ID.get(id)?.broader === undefined);
-    expect(roots.slice().sort()).toEqual(["agent", "evaluative", "human-in-the-loop", "tool"]);
+    expect(roots.slice().sort()).toEqual([
+      "agent",
+      "evaluative",
+      "human-in-the-loop",
+      "orchestration",
+      "tool",
+    ]);
+  });
+
+  /**
+   * The fan-in is a sibling of the fan-out and not a kind of it.
+   *
+   * `isA` is what every rule in the engine asks, so parenting the join under the split
+   * would make a rule written about fan-out catch the join too — silently, and in the one
+   * direction nobody would test. The two are counterparts and the vocabulary says so by
+   * putting both under `orchestration` directly.
+   */
+  it("does not subsume the fan-in under the fan-out", () => {
+    expect(BY_ID.get("parallel.fan-in")?.broader).toBe("orchestration");
+    expect(BY_ID.get("parallel")?.broader).toBe("orchestration");
+  });
+
+  /**
+   * The three control-flow ids are the Attractor handler names, so `ATTRACTOR_TYPE_SHAPES`
+   * holds identity rows. `attractor/emit.test.ts` pins the shapes; this pins the spelling
+   * on the vocabulary's side, which is the half a rename would break first.
+   */
+  it("spells the control-flow types the way Attractor spells its handlers", () => {
+    expect(ids("node-type")).toContain("parallel");
+    expect(ids("node-type")).toContain("parallel.fan-in");
+    expect(ids("node-type")).toContain("manager-loop");
+  });
+
+  /**
+   * The dot in `parallel.fan-in` is a character in a name, not a separator.
+   *
+   * `splitTermId` reads `/` and nothing else, so a dotted id has to come back whole and
+   * unnamespaced or the term would be filed as somebody's local extension, excluded from
+   * the curated core by `partitionTerms`, and demanded to declare a `broader` reaching the
+   * core by the §7 rules. Asserted here rather than only in `resolve.test.ts` because the
+   * id lives in this file and a future rename would be made here.
+   */
+  it("keeps the dotted id unnamespaced, so it is read as a core term", () => {
+    expect(splitTermId("parallel.fan-in")).toEqual({ local: "parallel.fan-in" });
+    expect("namespace" in splitTermId("parallel.fan-in")).toBe(false);
   });
 
   it("flags `impliesHuman` on exactly the two human types (doc 3 §3)", () => {
@@ -213,8 +302,39 @@ describe("node types (doc 3 §3)", () => {
   });
 
   it("leaves the autonomous types unflagged", () => {
-    for (const id of ["agent", "tool", "decision", "validation", "evaluative"]) {
+    for (const id of ["agent", "tool", "shell-tool", "decision", "validation", "evaluative"]) {
       expect(BY_ID.get(id)?.impliesHuman, id).toBeUndefined();
+    }
+  });
+
+  /**
+   * `governsFlow` is the mirror image of `impliesHuman`, and the flags sit on opposite
+   * kinds of term for a stated reason.
+   *
+   * `impliesHuman` rides the concrete types because a category already answers the
+   * membership question (`isA(type, "human-in-the-loop")`) and a flag on the category
+   * would be a second source of truth for it. `governsFlow` rides the two categories,
+   * because there is no single ancestor over `evaluative`, `orchestration` and
+   * `human-gate` and the flag has to be inherited to be the rule. `human-gate` is the
+   * only concrete type carrying it directly: its one `broader` slot is spent saying a
+   * person is here, so it cannot inherit the fact that approving is a routing decision.
+   */
+  it("flags `governsFlow` on the two categories and on human-gate, and nowhere else", () => {
+    const flagged = TERMS.filter((t) => t.governsFlow === true).map((t) => t.id);
+    expect(flagged.slice().sort()).toEqual(["evaluative", "human-gate", "orchestration"]);
+  });
+
+  it("leaves the types that only do work unflagged", () => {
+    for (const id of ["agent", "tool", "shell-tool", "human-input", "human-in-the-loop"]) {
+      expect(BY_ID.get(id)?.governsFlow, id).toBeUndefined();
+    }
+  });
+
+  it("does not repeat the flag on a term that inherits it", () => {
+    // A repeat is invisible until somebody removes it from the category and one child
+    // keeps answering true. The children are control points through `broader` alone.
+    for (const id of ["decision", "validation", "parallel", "parallel.fan-in", "manager-loop"]) {
+      expect(BY_ID.get(id)?.governsFlow, id).toBeUndefined();
     }
   });
 

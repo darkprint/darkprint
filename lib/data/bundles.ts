@@ -120,7 +120,7 @@ export interface DraftDetail {
   files: readonly BundleFile[];
   history: readonly HistoryEntry[];
   releases: readonly Release[];
-  /** The rows the `BundlePanel` prints for a bundle the engine has resolved. */
+  /** The summary rows for a bundle the engine has resolved. */
   facts: {
     nodes: number;
     pinnedCards: number;
@@ -208,17 +208,10 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "gate node replaced with a second verifier",
             state: "changed",
-            at: "2026-08-08",
-          },
-          {
-            path: "factory.dot",
-            kind: "dot",
-            change: "regenerated from the topology",
-            state: "generated",
             at: "2026-08-08",
           },
           {
@@ -232,13 +225,6 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
             path: "README.md",
             kind: "doc",
             change: "identity, digest and the download command",
-            state: "generated",
-            at: "2026-08-08",
-          },
-          {
-            path: "AGENTS.md",
-            kind: "doc",
-            change: "how to fit this pattern into your own repository",
             state: "generated",
             at: "2026-08-08",
           },
@@ -331,17 +317,10 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "risk markers added to two nodes",
             state: "changed",
-            at: "2026-07-28",
-          },
-          {
-            path: "factory.dot",
-            kind: "dot",
-            change: "regenerated from the topology",
-            state: "generated",
             at: "2026-07-28",
           },
           {
@@ -362,13 +341,6 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
             path: "README.md",
             kind: "doc",
             change: "identity, digest and the download command",
-            state: "generated",
-            at: "2026-07-28",
-          },
-          {
-            path: "AGENTS.md",
-            kind: "doc",
-            change: "how to fit this pattern into your own repository",
             state: "generated",
             at: "2026-07-28",
           },
@@ -421,11 +393,16 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         /* Real on both sides: `intent-router` is a card in `content/cards/` with two
            published versions, and `frontline-triage` pins the first. So the amber panel
            names a repin a reader can go and read, on the card's own page, instead of a
-           version nobody can check. */
+           version nobody can check.
+
+           Both versions moved a minor on 2026-09-05 (§11.0 Q17): the card was RENAMED
+           1.0.0 -> 1.1.0 and 2.0.0 -> 2.1.0 to carry the `lane` emission, so the archive no
+           longer holds either old number. Read off `content/cards/intent-router@*.yaml` and
+           `content/blueprints/frontline-triage/topology.dot`, which pins `@1.1.0`. */
         upstreamMoved: {
           card: "intent-router",
-          from: "1.0.0",
-          to: "2.0.0",
+          from: "1.1.0",
+          to: "2.1.0",
           at: "2026-07-04",
         },
         changes: 9,
@@ -454,7 +431,7 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "two nodes drawn with no card pinned",
             state: "changed",
@@ -503,26 +480,6 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
 /** Every bundle a handle holds, published and private, in one list. */
 export function bundlesOwnedBy(username: string): OwnedBundle[] {
   return OWNED_BUNDLES.filter((b) => b.owner === username);
-}
-
-/**
- * The published forks of a bundle, and public means public.
- *
- * A private fork is never announced on its upstream and its author is not told it exists —
- * that is the promise `/settings` §04 makes when it recommends Private as the default, and
- * every surface that counts forks reads it through this function so the promise is kept in
- * one place rather than in four.
- *
- * It returns nothing in this build, and that is the honest state rather than a gap: the
- * rule in this file's header makes every seeded bundle private, because a public one is a
- * claim about a registry a fixture cannot make true. `guarded-merge-bot` is the case worth
- * knowing — it really does have a fork here, and every fork surface is right to stay silent
- * about it.
- */
-export function publicForksOf(slug: string): OwnedBundle[] {
-  return OWNED_BUNDLES.filter(
-    (b) => b.forkedFrom?.slug === slug && b.visibility === "public",
-  );
 }
 
 /**

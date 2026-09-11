@@ -1,47 +1,17 @@
 /* ============================================================
    Four words, one inside the next, arriving one at a time.
 
-   The author, 2026-08-08: move the nested figure to "a new section that starts with such
-   drawing … the node should be clear they are cards in the blueprint, maybe you can
-   substitute the node with a minimal drawing of a card. On the right the description of
-   what it is. When scrolling it appears the box harness with its description and when
-   scrolling further appear the rubric box and its description and eventually the eval box."
+   The figure is a walk rather than a plate. It opens on the one object
+   this site hands over, a blueprint, and the three things that
+   surround it arrive in the order a reader would meet them: give the
+   blueprint a runtime, decide what good looks like, then measure.
 
-   So the figure is a walk rather than a plate. It opens on the one object this site
-   actually hands over — a blueprint — and the three words that surround it arrive in the
-   order a reader would meet them: give the blueprint a runtime, decide what good looks
-   like, then measure. Each frame's sentence lands with its frame.
-
-   ── The definitions are the author's document, not the site's guesses ──
-   The figure this replaces carried `agent = model + harness` in its caption and the author
-   struck it: "remove … as it is not totally correct. The correct namings and definitions
-   you find here". That document's own table is unambiguous, and two of its rows are what
-   the equation got wrong:
-
-     Agente        Applicazione       LLM con strumenti, memoria e stato che decide e
-                                      agisce in loop
-     Harness       Runtime dell'agente Orchestrazione del loop: dispatch tool, gestione
-                                      contesto, persistenza, safety tecnica
-     Eval          Misura offline     Valutazioni statistiche su dataset di goldens
-     Rubric        Schema di scoring  Criteri multi-dimensionali usati da metriche e
-                                      LLM-judge per assegnare punteggi
-
-   An agent is the APPLICATION, not a sum: a model with tools, memory and state, deciding
-   and acting in a loop. The harness is that agent's RUNTIME. "Model + harness" left out
-   the tools, the memory and the state, and it put the agent on the same footing as an
-   arithmetic identity — which is why none of the four sentences below is written as one.
-
-   The same document draws the eval/rubric line the old figure blurred. An eval is an
-   offline measure over a distribution of inputs, not a test of one exact output; a rubric
-   is the scoring schema it applies. It also names the offline/online split, which is why
-   the word "guardrail" is not in this figure at all: a guardrail acts on the live path, and
-   nothing here is live.
-
-   ── The static state is all four ──
-   `useScrollProgress` reports 1 and attaches nothing when motion is off, so the server, a
-   reader without JS and a reader who asked for stillness get every frame and every sentence
-   at once. The pin and the staging are the enhancement. Nothing is `hidden`, and the
-   unreached rows are dimmed rather than removed, so find-in-page reaches all four.
+   The four definitions follow the owner's own table, which the earlier
+   caption `agent = model + harness` got wrong: an agent is the
+   application, a model with tools, memory and state deciding and
+   acting in a loop; the harness is that agent's runtime; a rubric is
+   the scoring schema; an eval is the offline measurement. None of them
+   is written as a sum.
    ============================================================ */
 
 
@@ -120,35 +90,37 @@ export const LAYERS = [
     id: "blueprint",
     role: "the specification",
     body:
-      "The graph and the cards it pins: which agents exist, what each is handed, what each " +
-      "is kept away from. Text, versioned, checkable, and the only one of the four you " +
-      "download from here.",
+      "The graph and the cards it pins define which agents exist, what each agent is " +
+      "handed, and what each agent is kept away from. It is text, versioned and " +
+      "checkable, and the only one of the four you download from here.",
   },
   {
     id: "harness",
     role: "the agent's runtime",
     body:
-      "What runs the loop: it dispatches the tools, manages the context, keeps the session " +
-      "state and enforces the safety invariants. An agent is a model with tools, memory and " +
-      "state acting in that loop; the harness is what the loop runs on. You bring your own.",
+      "This runs the loop. It dispatches the tools, manages the context, keeps the " +
+      "session state and holds the safety rules. An agent is a model with tools, memory " +
+      "and state acting in that loop. You bring your own harness.",
   },
   {
     id: "rubric",
     role: "the scoring schema",
     body:
-      "The criteria a result is graded against, several at once, each with a scale: what " +
-      "turns “good” into something with an answer. Deterministic checks, a judge model, or " +
-      "both. It is written down before the run, which is what makes two runs comparable, " +
-      "and kept away from the harness: a system that can read its own criteria optimises " +
-      "for them rather than for the work they stood in for.",
+      "These are the criteria a result is graded against. Several apply at once, each " +
+      "with a scale, so “good” has a gradable answer: deterministic checks, a model " +
+      "acting as judge, or both. The criteria are written down before the run, so two " +
+      "runs can be compared. They are kept away from the agents doing the work: a system " +
+      "that can read its own grading criteria learns to satisfy the criteria instead of " +
+      "doing the work.",
   },
   {
     id: "eval",
     role: "the measurement",
     body:
-      "Running the blueprint through the harness and grading what comes back. Not a test of " +
-      "one exact output: an eval asks whether behaviour is acceptable across a distribution " +
-      "of inputs, and reports it in aggregate. It happens offline, before anything ships.",
+      "Running the blueprint through the harness and grading what comes back. An eval " +
+      "asks whether the behaviour is acceptable over many inputs rather than checking " +
+      "one exact output, and reports the result across all of them. It happens " +
+      "offline, before anything ships.",
   },
 ] as const;
 

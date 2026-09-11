@@ -51,12 +51,23 @@ describe("Wordmark", () => {
        would all fail here, and every one of them would put a gap in the brand name. */
     expect(html).toMatch(/Dark<[^>]+>Print</);
     expect(text).toContain("Reusable blueprints for agent workflows.");
-    expect(text).toContain("Find a blueprint");
-    expect(text).toContain("Create a blueprint");
-    expect(html).toContain('href="/blueprints"');
-    // `/skill`, not `/build`: creating a blueprint is the authoring skill, and the two were
-    // split apart on 2026-08-10. `/build` is the worked sandbox and is a Learn stop.
-    expect(html).toContain('href="/skill"');
+
+    /* The fold's action is `HeroAction` now, not the two route buttons: the owner replaced
+       them with the sign-in choice (signed out) or the reader's own name (signed in), so
+       "Find a blueprint" / "Create a blueprint" and their hrefs are no longer this
+       component's to render. `components/home/beats.test.ts` holds the other half — that
+       both routes are still reachable from the landing, through `SectionLifecycle`, which
+       is what makes the change a move rather than a removal.
+
+       What is pinned here is the STATIC frame, which is the only frame this renderer sees:
+       `HeroAction` reads the session in the browser (the landing must stay prerendered,
+       and `tests/server/t261/ac3-prerender-verdicts.test.ts` asserts `/` does), so the
+       server-rendered output is its claimless loading placeholder. A hero that shipped
+       "Sign in" or a name in this frame would be stating something about a reader nobody
+       has identified yet. */
+    expect(html).toContain("animate-pulse");
+    expect(text).not.toContain("Sign in with");
+    expect(text).not.toContain("Welcome,");
   });
 
   it("keeps the decorative trace hidden in the static frame", () => {
@@ -75,7 +86,7 @@ describe("Wordmark", () => {
    * component there is no timeline to join, and nothing here can put them back on one
    * without this case saying so: no `data-mark`, and no opacity or transform to start from.
    */
-  it("paints the setup commands immediately, outside the entrance", () => {
+  it("paints the setup links immediately, outside the entrance", () => {
     const html = renderChips();
     expect(html).not.toContain("data-mark");
     expect(html).not.toContain("opacity-0");
@@ -85,27 +96,26 @@ describe("Wordmark", () => {
   });
 
   /**
-   * The two commands reach their own pages, and neither cell claims anything else.
+   * Two doors, each a link to its own page, and neither cell prints a command or hedges.
    *
-   * This case asserted `expect(mcp.toLowerCase()).toContain("coming soon")` — the band drew
-   * a `ComingSoonBadge` on the MCP cell and this held it there. The author asked the badge
-   * off on 2026-08-12 ("we will implement before sharing the service with people"), so the
-   * assertion is inverted rather than deleted: what used to be required is now forbidden, on
-   * BOTH cells, which is the strongest form of the same case and catches the badge being
-   * reinstated by an edit that does not read this file.
+   * The cells are the two labels alone; the command with its copy control lives on the page
+   * each one opens, where a reader can act on it. Both commands are asserted ABSENT here so
+   * an edit that puts one back is caught, and both are still imported so a renamed constant
+   * breaks this file loudly rather than letting the needle go stale.
    *
-   * **The claim it was protecting has not moved and is not weakened.** MCP is still unbuilt
-   * and the site still says so on `/mcp` — the lead, the `metadata.description` and the
-   * status column of the contract table — and `components/site/honesty.test.ts` pins all
-   * three verbatim. This band was repeating that disclosure, not holding it up alone. The
-   * link asserted below is what puts a reader in front of it.
+   * No "coming soon" on either cell: the disclosure about MCP lives on `/mcp`, where
+   * `components/mcp/honesty.test.ts` pins it, and the link asserted here is what puts a
+   * reader in front of it.
    */
-  it("links both setup commands to their detail pages, and neither cell hedges", () => {
+  it("links both doors to their pages as labels alone, and neither cell hedges", () => {
     const html = renderChips();
     const skill = plainText(setupCard(html, SKILL_ROUTE));
     const mcp = plainText(setupCard(html, MCP_ROUTE));
-    expect(skill).toContain(SKILL_INSTALL_COMMAND);
-    expect(mcp).toContain(MCP_CONNECT_COMMAND);
+    expect(skill).toContain("Design your blueprint via the DarkPrint skill");
+    expect(mcp).toContain("Connect via MCP");
+    expect(skill, "the install command is back in the band").not.toContain(SKILL_INSTALL_COMMAND);
+    expect(mcp, "the connect command is back in the band").not.toContain(MCP_CONNECT_COMMAND);
+    expect(html, "a cell prints a shell prompt, so a command came back").not.toContain("$ ");
     expect(skill.toLowerCase()).not.toContain("coming soon");
     expect(mcp.toLowerCase()).not.toContain("coming soon");
   });

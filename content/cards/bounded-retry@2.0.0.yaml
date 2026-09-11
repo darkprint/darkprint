@@ -42,20 +42,20 @@ outputs:
     description: The final error, surfaced once the cap is spent instead of being swallowed.
 dependencies:
   - episodic-memory
-cannot:
+cannot: []
+will_not:
   - retry past the declared cap
   - restore past the last valid stage
 
-requires_human: false
 risk_markers: []
 notes: >-
   Both inputs are optional because either one is enough to act on: a failure signal alone
   re-fires the attempt, a checkpoint alone restores and continues. `max_retries` is still the
   declared bound the security analyzer reads for the cycle this node closes. The version is
-  2.0.0 because `restore past the last valid stage` is a prohibition 1.0.0 never declared, and
-  §4 calls a new entry under `cannot` major: a graph that resolved clean against 1.0.0 can
-  refuse against this one with nobody having touched the wiring.
+  2.0.0 because `restore past the last valid stage` is an undertaking 1.0.0 never gave. It sits
+  under `will_not`, which `inferBump` prices as minor either way round, since the resolver
+  never reads it and no graph changes its answer. The major is the author's: a node that has
+  started refusing to restore past a stage boundary behaves differently on the same wiring.
 
 version: 2.0.0
 author: k0bra
-ontology_version: 0.1.0

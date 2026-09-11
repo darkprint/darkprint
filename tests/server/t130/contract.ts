@@ -1,0 +1,1019 @@
+/* ============================================================
+   T130 — the blind contract surface
+
+   Not a test file. `vitest.config.ts` collects `.test.ts` under
+   `tests/` and nothing else, so this module is imported by the
+   suites beside it and is never collected as one itself.
+
+   ── why every load is a dynamic import ──
+   Written in a worktree branched from `backend` before
+   `lib/server/profiles/**` existed. A static top-level import of
+   an absent module fails the whole FILE at collection, which
+   reports one red where the protocol asks for one per acceptance
+   criterion. Loading inside the test that needs it turns "the
+   module is not there yet" into the per-criterion red the handback
+   is supposed to produce. The specifier stays a literal so the `@`
+   alias resolves, and `tsc` reporting TS2307 for it on this branch
+   is the same fact the reds report rather than a second one.
+
+   ── no candidate lists ──
+   Every name is bound exactly and its absence quotes the clause
+   that publishes it. T000 paid two rounds for the alternative.
+
+   ── one route, and only one ──
+   The first version of this file had NO route tests and said so:
+   `app/api/authors/**` was owned with nothing published for it, so
+   AC5's 404 lived at a surface that did not exist and inventing
+   URLs would have been the candidate list this run charges.
+   **D-130-05 published it** — `GET /api/authors/[handle]` ->
+   `200 ProfileRecord | 404` — and the frontend's `ProfileView`
+   is superseded with it. So `routes.test.ts` exists.
+
+   **The two WRITE routes are still not written, and that is the
+   ruling rather than an omission.** D-130-05 publishes them as
+   BLOCKED: `PUT .../pinned` needs pin storage and
+   `POST/DELETE .../watch` needs follow storage, and neither has a
+   column. A marked absence is not silence, and a cell against a
+   URL published as blocked would be a cell against something
+   nobody has decided.
+
+   ── the route is bound by URL, never by module path ──
+   Copied from T080's suite, where binding by folder syntax was
+   charged as a defect three ways: a published path is a URL and
+   not a folder name, a dynamic `import()` specifier resolves at
+   COMPILE time so a wrong guess takes `tsc` and `npm run build`
+   with it, and a precedence test that imports its subject directly
+   cannot observe shadowing in either direction. The table is
+   discovered by walking `app/api/**`, ordered by Next's own
+   `getSortedRoutes` and matched by its own `getRouteRegex`, so
+   this file cannot disagree with the router about which file
+   serves a URL. What the contract publishes is the URL; the layout
+   is the implementation's to choose.
+
+   ── the fixtures go in as plain SQL ──
+   T130 is a reader of other tasks' rows plus a writer of two things
+   (`setPins`, `toggleFollow`) with no table behind them. Bundles,
+   releases, cards, accounts and ontology terms are seeded through
+   `@/lib/db`'s published client with plain SQL, the same route
+   T020's and T080's blind suites took: the writers for these tables
+   belong to tasks that have not merged, and seeding through another
+   task's writer makes every red ambiguous between two modules.
+   ============================================================ */
+
+import { readdirSync, type Dirent } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { getRouteMatcher } from "next/dist/shared/lib/router/utils/route-matcher.js";
+import { getRouteRegex } from "next/dist/shared/lib/router/utils/route-regex.js";
+import { getSortedRoutes } from "next/dist/shared/lib/router/utils/sorted-routes.js";
+
+import {
+  bundleDigest,
+  cardDigest,
+  type BundleManifest,
+  type CardRef,
+  type NodeCard,
+} from "@/lib/core";
+import { SESSION_COOKIE_NAME, encodeSession } from "@/lib/server/auth";
+import { createTestDb, type TestDb } from "@/tests/support";
+
+export type Namespace = Record<string, unknown>;
+export type UnknownFn = (...args: unknown[]) => unknown;
+
+export const PROFILES = "@/lib/server/profiles";
+export const ACCOUNTS = "@/lib/server/accounts";
+
+let profiles: Promise<Namespace> | undefined;
+
+/**
+ * Memoised as the promise, rejection included: a module that is absent stays absent for the
+ * whole run, so every test that awaits it gets its own copy of the same red rather than one
+ * test's failure cascading into an unhandled rejection in the next.
+ */
+export function loadProfiles(): Promise<Namespace> {
+  profiles ??= import("@/lib/server/profiles").then(
+    (m) => m as unknown as Namespace,
+    (cause: unknown) => {
+      throw new Error(
+        `${PROFILES} does not load.\n` +
+          `  T130 owns \`lib/server/profiles/**\` and publishes three functions: ` +
+          `${FUNCTION_NAMES.join(", ")}.\n` +
+          `  This is a failed acceptance criterion — the profile surface is absent — and not ` +
+          `a broken test. The specifier is a literal so the \`@\` alias resolves.`,
+        { cause },
+      );
+    },
+  );
+  return profiles;
+}
+
+/* --------------------- what the contract publishes --------------------- */
+
+/**
+ * The Published signatures block of T130's contract, quoted so a red says where the name
+ * comes from rather than merely that a test wanted it.
+ */
+export const PUBLISHED = {
+  getProfile:
+    "getProfile(db: Db, actor: Actor, handle: string): Promise<ProfileRecord | undefined>",
+} as const;
+
+export type FunctionName = keyof typeof PUBLISHED;
+
+/** Three, in the order the block publishes them. The D-13 sweep is quantified over this. */
+export const FUNCTION_NAMES = Object.keys(PUBLISHED) as FunctionName[];
+
+/**
+ * The seven members of `ProfileRecord`, exactly as the block declares them.
+ *
+ * Asserted as a KEY SET rather than field by field, which is T050's AC2 precedent: "the test
+ * that matters asserts the key set of what a visitor receives rather than the value of one
+ * field". An extra member is how a column arrives on a public surface, and no per-field
+ * assertion can see one.
+ *
+ * **Three at T130's merge, seven since T131, and this table moving is the sanctioned path** —
+ * `COUNT_KEYS` below records the same shape of move for T132, and both are granted edits to a
+ * merged suite rather than an implementer widening an instrument on its own authority
+ * (D-131-08, on D-132-02 C-2's precedent).
+ *
+ * The four that arrive are the four D-130-06 cut for want of a column, and every one of its
+ * reasons was a missing table rather than a missing opinion: `watchers` and `support` had no
+ * relation to count, `pinned` had nowhere to live, and `validated` is a count (D-130-01) that
+ * needed T180's run reports. `0004_social` closes all four. **None of them is a counter
+ * column** — AC1's inherited clause is why this list can grow without the guard weakening.
+ */
+export const RECORD_KEYS = [
+  "author",
+  "counts",
+  "joinedAt",
+  "pinned",
+  "support",
+  "validated",
+  "watchers",
+] as const;
+
+/**
+ * The members of `ProfileRecord.counts`, exactly as the block declares them.
+ *
+ * **Two at T130's merge, three since T132, and this table moving is the sanctioned path.**
+ * `counts.cards` was cut by D-130-06 because D-130-04 made it unreachable — `CardSummary`
+ * carried no owner and re-implementing T080's visibility filter against `card_version` is
+ * the one thing this task's inherited-read-semantics paragraph exists to prevent. T132
+ * amended that merged record instead: T080 published `cardsOwnedBy`, D-132-02 ruled the
+ * count is cards this handle OWNS rather than cards the index carries for it, and the
+ * figure came back. This is an exact key set, so the addition reds it BY DESIGN and the
+ * amendment lands in the same commit as the key it pins (D-132-02 C-2, granted) — the same
+ * construction as T080's `PUBLISHED`. An EXTRA member is still how a column reaches a
+ * public surface, and no per-field assertion can see one.
+ */
+export const COUNT_KEYS = ["blueprints", "cards", "terms"] as const;
+
+export function describe_(value: unknown): string {
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (Array.isArray(value)) return `an array of ${value.length}`;
+  if (value instanceof Date) return "a Date";
+  return typeof value;
+}
+
+function requireFrom(mod: Namespace, name: string, source: string, clause: string): unknown {
+  if (mod[name] !== undefined) return mod[name];
+  const exported = Object.keys(mod).sort().join(", ") || "(nothing)";
+  throw new Error(
+    `${source} exports no \`${name}\`.\n` +
+      `  the contract publishes: ${clause}\n` +
+      `  found: ${exported}\n` +
+      `  This is a failed acceptance criterion, not a naming difference. The Published ` +
+      `signatures block names this export exactly, and the rule above it ("the contract must ` +
+      `name the interface, not only the behaviour") exists because two rounds of candidate ` +
+      `lists in T000 each resolved to the wrong thing. Do not add a synonym; publish the name ` +
+      `the contract states.`,
+  );
+}
+
+export async function bind(name: FunctionName): Promise<UnknownFn> {
+  const mod = await loadProfiles();
+  const value = requireFrom(mod, name, PROFILES, PUBLISHED[name]);
+  if (typeof value !== "function") {
+    throw new Error(
+      `${PROFILES} exports \`${name}\` as ${describe_(value)}; the contract publishes it as a ` +
+        `function: ${PUBLISHED[name]}`,
+    );
+  }
+  return value as UnknownFn;
+}
+
+/**
+ * T050's `getPublicAuthor`, bound the same way.
+ *
+ * Used as the ORACLE for `ProfileRecord.author` rather than as a second opinion about it:
+ * the block types that member `PublicAuthor`, `PublicAuthor` is keyed by handle, and
+ * `getPublicAuthor(db, handle)` is the published reader that yields one. Comparing the two
+ * asks "does T130 delegate the author projection", which is the question — a hand-rolled
+ * comparison against fields this file typed would be checking my transcription of T050.
+ */
+export async function bindPublicAuthor(): Promise<UnknownFn> {
+  const mod = (await import("@/lib/server/accounts")) as unknown as Namespace;
+  const value = mod.getPublicAuthor;
+  if (typeof value !== "function") {
+    throw new Error(`${ACCOUNTS} exports no callable \`getPublicAuthor\`; it is merged and must.`);
+  }
+  return value as UnknownFn;
+}
+
+/* --------------------- the record shape --------------------- */
+
+export interface Counts {
+  blueprints: number;
+  terms: number;
+}
+
+export interface ProfileRecord {
+  author: Record<string, unknown>;
+  joinedAt: Date;
+  counts: Counts;
+}
+
+function integer(value: unknown, where: string, clause: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${where} is ${describe_(value)}; the contract publishes ${clause}.`);
+  }
+  return value;
+}
+
+/**
+ * `ProfileRecord`, checked member by member because the shape IS part of the published
+ * signature. Every message quotes the block, so a red says which clause is unmet.
+ *
+ * `validated` is a NUMBER. The first version of this file pinned it as a boolean, which is
+ * what the block said, while reporting that `lib/data/profiles.ts:57` and the profile header both make
+ * it a count and that `PublicAuthor` already carries the boolean — so the published field
+ * was either a duplicate or a wrong transcription. **D-130-01 ruled it the count**, by
+ * displacement, and this pin follows the ruling rather than the sentence it replaced.
+ */
+export function asProfileRecord(value: unknown, where: string): ProfileRecord {
+  if (value === null || typeof value !== "object") {
+    throw new Error(
+      `${where} returned ${describe_(value)}; the contract publishes \`ProfileRecord\`.`,
+    );
+  }
+  const r = value as Record<string, unknown>;
+
+  if (r.author === null || typeof r.author !== "object") {
+    throw new Error(
+      `${where}.author is ${describe_(r.author)}; the block declares \`author: PublicAuthor\`.`,
+    );
+  }
+  if (!(r.joinedAt instanceof Date)) {
+    throw new Error(
+      `${where}.joinedAt is ${describe_(r.joinedAt)}; the block declares \`joinedAt: Date\`. ` +
+        `An ISO string is what \`lib/data/profiles.ts\` carries and is not what the block ` +
+        `publishes.`,
+    );
+  }
+  const counts = r.counts;
+  if (counts === null || typeof counts !== "object") {
+    throw new Error(
+      `${where}.counts is ${describe_(counts)}; the block declares ` +
+        `\`counts: { blueprints: number; cards: number; terms: number }\`.`,
+    );
+  }
+  const c = counts as Record<string, unknown>;
+  for (const key of COUNT_KEYS) {
+    integer(c[key], `${where}.counts.${key}`, `\`counts.${key}: number\``);
+  }
+
+  return r as unknown as ProfileRecord;
+}
+
+/**
+ * The same seven members, checked on the WIRE, where `joinedAt` is an ISO string.
+ *
+ * A separate validator rather than a loosened one: `Date` is what the block declares of the
+ * module's return and JSON has no date type, so a route answering a string is correct and a
+ * module answering one is not. One validator serving both would have to accept whichever the
+ * caller happened to hand it, which is how a shape assertion stops being one.
+ */
+export function asWireProfileRecord(body: unknown, where: string): Record<string, unknown> {
+  if (body === null || typeof body !== "object") {
+    throw new Error(`${where} answered ${describe_(body)}; D-130-05 publishes ProfileRecord.`);
+  }
+  const r = body as Record<string, unknown>;
+  const keys = Object.keys(r).sort();
+  if (keys.join(",") !== [...RECORD_KEYS].join(",")) {
+    throw new Error(
+      `${where} answered members [${keys.join(", ")}]; \`ProfileRecord\` is ` +
+        `[${[...RECORD_KEYS].join(", ")}]. An EXTRA member is how a column reaches a public ` +
+        `surface, and \`ok(record)\` puts whatever the reader returned straight onto the wire.`,
+    );
+  }
+  if (typeof r.joinedAt !== "string" || Number.isNaN(Date.parse(r.joinedAt))) {
+    throw new Error(
+      `${where} answered \`joinedAt\` = ${describe_(r.joinedAt)}. The block declares a ` +
+        `\`Date\` and \`Response.json\` renders one as an ISO string, so the wire form is a ` +
+        `parseable string — not a number, and not an object.`,
+    );
+  }
+  const counts = r.counts;
+  if (counts === null || typeof counts !== "object") {
+    throw new Error(`${where} answered \`counts\` = ${describe_(counts)}.`);
+  }
+  const countKeys = Object.keys(counts as object).sort();
+  if (countKeys.join(",") !== [...COUNT_KEYS].join(",")) {
+    throw new Error(
+      `${where} answered counts [${countKeys.join(", ")}]; the block declares ` +
+        `[${[...COUNT_KEYS].join(", ")}].`,
+    );
+  }
+  return r;
+}
+
+/**
+ * RFC 9457's five members, checked on a `problem+json` body.
+ *
+ * `detail`'s WORDING is not asserted anywhere in this suite. D-130-02 withdrew the published
+ * message and put the string in "the route's `problem` detail rather than on a class", and no
+ * string was published in its place — so a pin here would be wording I invented, and it would
+ * red a correct implementation that phrased it differently. What is asserted is the envelope,
+ * which B-03 and every merged 404 in this repository already decide.
+ */
+export function asProblem(body: unknown, where: string): Record<string, unknown> {
+  if (body === null || typeof body !== "object") {
+    throw new Error(`${where} answered ${describe_(body)}; B-03 makes this problem+json.`);
+  }
+  const p = body as Record<string, unknown>;
+  for (const member of ["type", "title", "detail", "instance"] as const) {
+    if (typeof p[member] !== "string" || p[member] === "") {
+      throw new Error(
+        `${where}'s problem document has \`${member}\` = ${describe_(p[member])}; RFC 9457 ` +
+          `§3.1 names five members and \`lib/server/http/problem.ts\` constructs all five.`,
+      );
+    }
+  }
+  if (typeof p.status !== "number") {
+    throw new Error(`${where}'s problem document has \`status\` = ${describe_(p.status)}.`);
+  }
+  return p;
+}
+
+/* --------------------- the database --------------------- */
+
+const open: TestDb[] = [];
+
+export interface Scratch {
+  /** The published `Db` — the drizzle instance every T130 function takes first. */
+  db: unknown;
+  /** The connection string of this scratch database, for the route's shared client. */
+  url: string;
+  query: (sql: string, params?: readonly unknown[]) => Promise<Record<string, unknown>[]>;
+}
+
+/**
+ * A database of this file's own. `createTestDb()` creates `darkprint_test_<uuid>`, migrates it
+ * and drops it on `drop()`; it never opens the shared development database `DATABASE_URL`
+ * names, which is why T000 built it (D-08).
+ */
+export async function scratchDatabase(): Promise<Scratch> {
+  const test = await createTestDb();
+  open.push(test);
+  const client = test.client as unknown as Namespace;
+  const db = client.db;
+  if (db === null || typeof db !== "object") {
+    throw new Error(
+      `createTestDb's client carries no \`db\`. \`Db\` is published from @/lib/db and is the ` +
+        `first parameter of all three T130 functions.`,
+    );
+  }
+  /* `createTestDb` does not hand back the URL it built, and the route half of this suite
+     needs one: `getSharedDbClient()` reads `DATABASE_URL`, so a route can only be pointed at
+     this database by naming it. Asked of the CONNECTION rather than rebuilt from a
+     convention, so it cannot drift from what the client is actually on. */
+  const [current] = (await test.client.query("select current_database() as name")).rows as {
+    name?: unknown;
+  }[];
+  const database = current?.name;
+  if (typeof database !== "string" || database === "") {
+    throw new Error(
+      `\`select current_database()\` answered ${describe_(database)}, so the route handler ` +
+        `cannot be pointed at this scratch database.`,
+    );
+  }
+  const base = new URL(process.env.DATABASE_URL ?? "");
+  base.pathname = `/${database}`;
+
+  return {
+    db,
+    url: base.toString(),
+    query: async (sql, params) => {
+      const result = await test.client.query(sql, params as unknown[]);
+      return result.rows as Record<string, unknown>[];
+    },
+  };
+}
+
+/* --------------------- the one published route (D-130-05) --------------------- */
+
+export const AUTHOR_ROUTE = "GET /api/authors/[handle]";
+
+/** The three trees this file will walk. `authors` is T130's; the rest are other tasks'. */
+const API_ROOT = fileURLToPath(new URL("../../../app/api/", import.meta.url));
+const ROUTE_FILE = /^route\.(ts|tsx|js|mjs)$/;
+
+interface DiscoveredRoute {
+  pattern: string;
+  file: string;
+}
+
+let table: DiscoveredRoute[] | undefined;
+
+function walk(dir: string, segments: string[], out: DiscoveredRoute[]): void {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return; // a tree the implementation has not created yet
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) walk(join(dir, entry.name), [...segments, entry.name], out);
+    else if (ROUTE_FILE.test(entry.name)) {
+      out.push({ pattern: `/api/${segments.join("/")}`, file: join(dir, entry.name) });
+    }
+  }
+}
+
+/**
+ * Every route the tree actually publishes under `app/api/authors/**`, in the App Router's own
+ * precedence order.
+ *
+ * Scoped to that one subtree deliberately: the other trees belong to merged tasks, and a
+ * conflict between two of THEIR patterns is not this task's red to carry. What it costs is
+ * that a `/api/authors/...` URL shadowed by a pattern outside the subtree would be invisible
+ * here — no such pattern exists today, and it is stated rather than left as a silent bound.
+ */
+function routeTable(): DiscoveredRoute[] {
+  if (table !== undefined) return table;
+  const found: DiscoveredRoute[] = [];
+  walk(join(API_ROOT, "authors"), ["authors"], found);
+  if (found.length === 0) {
+    throw new Error(
+      `No route file exists under app/api/authors/**.\n` +
+        `  D-130-05 publishes \`${AUTHOR_ROUTE}\` -> \`200 ProfileRecord | 404\`, and AC5's ` +
+        `404 lives there because \`getProfile\` answers \`undefined\` (D-130-02) and ` +
+        `\`undefined\` is not a status.\n` +
+        `  This is a failed acceptance criterion — the author route is absent — and not a ` +
+        `broken test. Nothing here binds a file path: the route is discovered.`,
+    );
+  }
+  const byPattern = new Map(found.map((r) => [r.pattern, r]));
+  let ordered: string[];
+  try {
+    ordered = getSortedRoutes([...byPattern.keys()]);
+  } catch (cause) {
+    throw new Error(
+      `The published route tree does not sort: ${String(cause)}\n` +
+        `  Patterns found: ${[...byPattern.keys()].sort().join(", ")}\n` +
+        `  This is Next's own conflict check, not this suite's opinion about layout.`,
+      { cause },
+    );
+  }
+  table = ordered.map((pattern) => byPattern.get(pattern)!);
+  return table;
+}
+
+function matchRoute(path: string): { route: DiscoveredRoute; params: Record<string, unknown> } {
+  const routes = routeTable();
+  for (const route of routes) {
+    const params = getRouteMatcher(getRouteRegex(route.pattern))(path);
+    if (params !== false) return { route, params };
+  }
+  throw new Error(
+    `No published route matches \`${path}\`.\n` +
+      `  Discovered patterns, in the App Router's precedence order: ` +
+      `${routes.map((r) => r.pattern).join(", ")}\n` +
+      `  The contract publishes a URL and the file layout is the implementation's, so this ` +
+      `says the URL is unserved rather than that a file is missing from a guessed path.`,
+  );
+}
+
+/** Which discovered pattern serves a URL. Answers the surface question without a database. */
+export function routePatternFor(path: string): string {
+  return matchRoute(path).route.pattern;
+}
+
+/**
+ * Drive the published URL the way a caller does: matched through Next's router, dispatched to
+ * whichever file wins, and invoked with `params` as a PROMISE — which is what this version of
+ * Next hands a handler
+ * (`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`).
+ */
+export async function callRoute(
+  path: string,
+  headers: Record<string, string> = {},
+): Promise<Response> {
+  const { route, params } = matchRoute(path);
+  let mod: Namespace;
+  try {
+    mod = (await import(/* @vite-ignore */ pathToFileURL(route.file).href)) as Namespace;
+  } catch (cause) {
+    throw new Error(
+      `\`${route.pattern}\` — the route serving \`${path}\` — does not load.\n` +
+        `  Driving the published URL \`${AUTHOR_ROUTE}\`, 200 body \`ProfileRecord\`.`,
+      { cause },
+    );
+  }
+  const get = mod.GET;
+  if (typeof get !== "function") {
+    throw new Error(
+      `\`${route.pattern}\` exports no \`GET\` (it has: ` +
+        `${Object.keys(mod).sort().join(", ") || "(nothing)"}). D-130-05 publishes the method.`,
+    );
+  }
+  const request = new Request(`https://darkprint.test${path}`, { headers });
+  const answered = await (get as UnknownFn)(request, { params: Promise.resolve(params) });
+  if (!(answered instanceof Response)) {
+    throw new Error(
+      `\`${AUTHOR_ROUTE}\` answered ${describe_(answered)}; a route handler returns a Response.`,
+    );
+  }
+  return answered;
+}
+
+/**
+ * A `Cookie` header carrying a real session, minted through T000's own published surface
+ * rather than hand-assembled — a hand-built token would test this suite's idea of the format.
+ *
+ * This is what makes the route's ACTOR observable at all. A suite that only ever sends
+ * anonymous requests covers the reader half and the transport half separately and never the
+ * join between them, so whatever turns a session into an `Actor` can regress to "nobody" with
+ * every assertion still passing. T080's adversary found exactly that regression at
+ * `actorFrom`, unobserved, in a merged task.
+ */
+export function sessionCookie(accountId: string, handle: string | null): Record<string, string> {
+  return { cookie: `${SESSION_COOKIE_NAME}=${encodeSession({ accountId, handle })}` };
+}
+
+export async function dropScratchDatabases(): Promise<number> {
+  let dropped = 0;
+  for (const test of open.splice(0)) {
+    await test.drop();
+    dropped += 1;
+  }
+  return dropped;
+}
+
+/* --------------------- actors --------------------- */
+
+/** T060's published `Actor`, built here rather than imported so a fixture reads as a fixture. */
+export const anonymous = { kind: "anonymous" } as const;
+export const account = (accountId: string, handle: string | null = null) =>
+  ({ kind: "account", accountId, handle }) as const;
+export const operator = (accountId: string) => ({ kind: "operator", accountId }) as const;
+
+/* --------------------- fixtures --------------------- */
+
+/** Unique per run and per process, so two suite files never mint the same identifier. */
+let counter = 0;
+export function mark(prefix: string): string {
+  counter += 1;
+  return `${prefix}-${process.pid}-${counter}`;
+}
+
+export interface AccountFixture {
+  id: string;
+  handle: string;
+  /** What was written to `account.created_at`, which is what `joinedAt` must report. */
+  createdAt: Date;
+  email: string;
+}
+
+export interface AccountOptions {
+  handle: string;
+  createdAt?: Date;
+  validator?: boolean;
+  email?: string;
+  displayName?: string;
+  bio?: string;
+  avatarHue?: number;
+}
+
+export async function insertAccount(s: Scratch, o: AccountOptions): Promise<AccountFixture> {
+  const createdAt = o.createdAt ?? new Date("2026-02-11T09:15:00.000Z");
+  const email = o.email ?? `${o.handle}@example.test`;
+  const [row] = await s.query(
+    "insert into account " +
+      "(github_id, github_login, handle, display_name, email, bio, avatar_hue, validator, created_at) " +
+      "values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id",
+    [
+      `gh-${o.handle}`,
+      `login-${o.handle}`,
+      o.handle,
+      o.displayName ?? null,
+      email,
+      o.bio ?? null,
+      o.avatarHue ?? null,
+      o.validator ?? false,
+      createdAt.toISOString(),
+    ],
+  );
+  const id = row?.id;
+  if (typeof id !== "string") {
+    throw new Error(`Could not insert the account fixture: got ${describe_(id)} for its id.`);
+  }
+  return { id, handle: o.handle, createdAt, email };
+}
+
+/** An account row with NO handle. `account.handle` is nullable (T050 AC1). */
+export async function insertHandlelessAccount(s: Scratch, tag: string): Promise<string> {
+  const [row] = await s.query(
+    "insert into account (github_id, github_login, handle) values ($1, $2, null) returning id",
+    [`gh-${tag}`, `login-${tag}`],
+  );
+  const id = row?.id;
+  if (typeof id !== "string") {
+    throw new Error(`Could not insert the handle-less account fixture: got ${describe_(id)}.`);
+  }
+  return id;
+}
+
+export interface CardOptions {
+  id: string;
+  version?: string;
+  phases?: readonly string[];
+  name?: string;
+  notes?: string;
+  /**
+   * `NodeCard.author` (`lib/core/card/schema.ts:154`). Set to the owning handle by
+   * `insertCard`, so "authored by this handle" agrees whether it is read off
+   * `card_version.owner_id` (the schema's authority) or off the card body's own `author`
+   * (what `components/profile/load.ts:161` filters on). Nothing published says which, so no
+   * cell here depends on the answer.
+   */
+  author?: string;
+}
+
+/** A complete `NodeCard`. Every required field of `lib/core/card/schema.ts` is present. */
+export function nodeCard(o: CardOptions): NodeCard {
+  return {
+    id: o.id,
+    name: o.name ?? "Fixture Card",
+    type: "agent",
+    phases: [...(o.phases ?? [])],
+    action: "do-the-fixture-thing",
+    spec: "A self-sufficient instruction for the fixture node.",
+    tools: [],
+    mcp: [],
+    params: {},
+    inputs: [],
+    outputs: [],
+    dependencies: [],
+    cannot: [],
+    willNot: [],
+    riskMarkers: [],
+    author: o.author,
+    notes: o.notes,
+    version: o.version ?? "1.0.0",
+  };
+}
+
+/**
+ * `manifest.author` carries the owning handle for the same reason `nodeCard`'s does: a
+ * blueprint's owner is `bundle.owner_id` in the schema and `blueprint.author.username` in the
+ * frontend's own loader, and the contract does not say which T130 reads. Both agree on every
+ * fixture here, so no cell binds the undecided half.
+ */
+export function manifest(slug: string, author?: string): BundleManifest {
+  return {
+    slug,
+    title: `Fixture ${slug}`,
+    summary: `A fixture blueprint named ${slug}.`,
+    description: undefined,
+    category: undefined,
+    tags: [],
+    author,
+  };
+}
+
+/** The wire form of a card. Stored verbatim in `card_version.source`, which is NOT NULL. */
+function cardSource(card: NodeCard): string {
+  return [
+    `id: ${card.id}`,
+    `name: ${card.name}`,
+    `type: ${card.type}`,
+    `version: ${card.version}`,
+    `action: ${card.action}`,
+    `spec: ${JSON.stringify(card.spec)}`,
+    "",
+  ].join("\n");
+}
+
+/** Plausible DOT for `release.dot`, which is NOT NULL. Nothing published reads it. */
+export function dotFor(refs: readonly CardRef[]): string {
+  const nodes = refs.map((ref, i) => `  n${i} [card="${ref}"];`).join("\n");
+  return `digraph fixture {\n${nodes}\n}\n`;
+}
+
+export interface CardFixture {
+  rowId: string;
+  cardId: string;
+  version: string;
+  ref: CardRef;
+  digest: string;
+  body: NodeCard;
+  visibility: "public" | "private";
+}
+
+export async function insertCard(
+  s: Scratch,
+  o: CardOptions & {
+    ownerId: string;
+    visibility?: "public" | "private";
+    /** The owner's handle, written into `NodeCard.author`. See `CardOptions.author`. */
+    authorHandle?: string;
+  },
+): Promise<CardFixture> {
+  const body = nodeCard({ ...o, author: o.author ?? o.authorHandle });
+  const digest = cardDigest(body);
+  const visibility = o.visibility ?? "public";
+  const [row] = await s.query(
+    "insert into card_version (card_id, version, digest, owner_id, visibility, body, source) " +
+      "values ($1, $2, $3, $4, $5, $6, $7) returning id",
+    [body.id, body.version, digest, o.ownerId, visibility, JSON.stringify(body), cardSource(body)],
+  );
+  const rowId = row?.id;
+  if (typeof rowId !== "string") {
+    throw new Error(`Could not insert the card fixture: got ${describe_(rowId)} for its id.`);
+  }
+  return {
+    rowId,
+    cardId: body.id,
+    version: body.version,
+    ref: `${body.id}@${body.version}`,
+    digest,
+    body,
+    visibility,
+  };
+}
+
+export interface BundleFixture {
+  id: string;
+  ownerId: string;
+  ownerHandle: string;
+  slug: string;
+  visibility: "public" | "private";
+  releaseId: string;
+}
+
+/**
+ * A bundle AND one release for it, always together.
+ *
+ * Deliberate: nothing published says whether `counts.blueprints` counts `bundle` rows or
+ * bundles with a current release, and T080's readers project from the current release while
+ * B-06 says a bundle first exists at its first publish. Seeding both halves makes the two
+ * readings agree on every fixture here, so no cell binds a decision the contract has not
+ * taken. A bundle with no release is a state this suite deliberately does not create; if the
+ * distinction is ruled, it is one fixture away.
+ */
+export async function insertBundle(
+  s: Scratch,
+  o: {
+    owner: AccountFixture;
+    slug: string;
+    visibility?: "public" | "private";
+    cards?: readonly CardFixture[];
+    /**
+     * Namespaced `OntologyTerm[]` this release declares. Stored through `storedVocabulary`
+     * as `{ text, terms }` — the column's shape since D-90-03 — never as the bare array this
+     * fixture used to write, which both merged readers refuse.
+     */
+    localVocabulary?: readonly Record<string, unknown>[];
+    /**
+     * A vocabulary written to the column VERBATIM, bypassing `storedVocabulary`.
+     *
+     * Exists for one caller: D-130-21's witness, which needs a release the parser refuses in
+     * order to observe `MalformedStoredVocabularyError` at all. Separate from
+     * `localVocabulary` on purpose — a single option that sometimes wrapped and sometimes did
+     * not is how the wrong shape got written the first time.
+     */
+    rawLocalVocabulary?: unknown;
+    version?: string;
+  },
+): Promise<BundleFixture> {
+  const visibility = o.visibility ?? "public";
+  const [bundleRow] = await s.query(
+    "insert into bundle (owner_id, slug, visibility) values ($1, $2, $3) returning id",
+    [o.owner.id, o.slug, visibility],
+  );
+  const bundleId = bundleRow?.id;
+  if (typeof bundleId !== "string") {
+    throw new Error(`Could not insert the bundle fixture: got ${describe_(bundleId)} for its id.`);
+  }
+
+  const cards = o.cards ?? [];
+  const cardRefs = cards.map((c) => c.ref);
+  const cardDigests = cards.map((c) => c.digest);
+  const dot = dotFor(cardRefs);
+  const digest = bundleDigest({ dot, cardDigests });
+  const [releaseRow] = await s.query(
+    "insert into release " +
+      "(bundle_id, version, digest, dot, manifest, card_refs, card_digests, local_vocabulary) " +
+      "values ($1, $2, $3, $4, $5, $6, $7, $8) returning id",
+    [
+      bundleId,
+      o.version ?? "1.0.0",
+      digest,
+      dot,
+      JSON.stringify(manifest(o.slug, o.owner.handle)),
+      cardRefs,
+      cardDigests,
+      o.rawLocalVocabulary !== undefined
+        ? JSON.stringify(o.rawLocalVocabulary)
+        : o.localVocabulary === undefined
+          ? null
+          : JSON.stringify(storedVocabulary(o.localVocabulary)),
+    ],
+  );
+  const releaseId = releaseRow?.id;
+  if (typeof releaseId !== "string") {
+    throw new Error(`Could not insert the release fixture: got ${describe_(releaseId)}.`);
+  }
+
+  return {
+    id: bundleId,
+    ownerId: o.owner.id,
+    ownerHandle: o.owner.handle,
+    slug: o.slug,
+    visibility,
+    releaseId,
+  };
+}
+
+/**
+ * The `OntologyTerm` body a namespaced term carries, in both of the stores below.
+ *
+ * **This was wrong and the correction is the interesting half.** It carried
+ * `{ id, kind, label, definition }` — no `description`, no `since`, and `definition` is not a
+ * field of anything. `lib/content/ontology-file.ts`'s `toTerm` requires `id`, `kind`, `label`,
+ * `description` and `since` as non-empty strings and `kind` from the five `TermKind`s, and it
+ * is the ONE reader of this shape by design: "the same document is read in three places and a
+ * second reader would be a second opinion about what a term is". I wrote the second opinion
+ * anyway, in a fixture, without having read the first.
+ */
+export function namespacedTerm(termId: string): Record<string, unknown> {
+  return {
+    id: termId,
+    kind: "phase",
+    label: `Fixture term ${termId}`,
+    description: "A namespaced term minted by the T130 fixtures.",
+    since: "0.1.0",
+  };
+}
+
+/**
+ * The stored shape of `release.local_vocabulary`: `{ text, terms }` since **D-90-03**, the
+ * file's own bytes beside the parsed terms.
+ *
+ * **The fixture stored a BARE ARRAY and that was the defect T130's adversary traced.** Both
+ * merged readers refuse an array — `parseOntologyTerms` throws *"is not a YAML mapping"* and
+ * T090's `storedVocabulary` throws before it even gets there — so `getProfile` answered a
+ * sealed `ProfileStoreError` for every profile whose handle owned such a release, and the
+ * module was behaving correctly the whole time.
+ *
+ * **`text` is not decoration.** D-90-03 keeps the bytes because `exportBundle` writes them
+ * into the folder unaltered, and a copy reconstructed from the terms would define the
+ * reader's vocabulary slightly differently from the one the site scored. A fixture that
+ * omitted it would store a shape no writer produces.
+ */
+export function storedVocabulary(
+  terms: readonly Record<string, unknown>[],
+): Record<string, unknown> {
+  const text = ["terms:", ...terms.map((t) => `  - id: ${String(t.id)}`)].join("\n") + "\n";
+  return { text, terms: [...terms] };
+}
+
+/**
+ * A term namespaced `<handle>/<name>`, on `release.local_vocabulary`.
+ *
+ * It used to write BOTH stores that could hold one, because AC1's "namespaced terms" did not
+ * choose between them:
+ *
+ *   (a) `ontology_term` rows whose `term_id` starts with `<handle>/` — except that table's
+ *       own docblock said "Core terms only", and core terms belong to nobody, so under this
+ *       reading `counts.terms` was zero for every handle and the criterion was vacuous;
+ *   (b) the distinct namespaced ids in `release.local_vocabulary` across the handle's
+ *       releases — which is where the schema says a namespaced overlay actually lives, and
+ *       what `components/profile/load.ts` counts through the merged view.
+ *
+ * `0009_drop_ontology_versioning` removed the table behind (a) along with the versions it
+ * was keyed to, so the ambiguity is settled by the schema rather than by this fixture. Every
+ * cell's claim was already true under (b); what is lost is the redundancy, not a claim.
+ */
+export async function insertNamespacedTerm(
+  s: Scratch,
+  o: { bundle: BundleFixture; termId: string },
+): Promise<string> {
+  const [row] = await s.query("select local_vocabulary from release where id = $1", [
+    o.bundle.releaseId,
+  ]);
+  /* Read back through the stored shape rather than assuming the column holds a list: the
+     column is `{ text, terms }` and the terms live under a key. Reading it as an array is
+     what put a bare array there in the first place. */
+  const stored = row?.local_vocabulary;
+  const existing =
+    stored !== null && typeof stored === "object" && !Array.isArray(stored)
+      ? ((stored as { terms?: unknown }).terms as Record<string, unknown>[] | undefined) ?? []
+      : [];
+  await s.query("update release set local_vocabulary = $1 where id = $2", [
+    JSON.stringify(storedVocabulary([...existing, namespacedTerm(o.termId)])),
+    o.bundle.releaseId,
+  ]);
+  return o.termId;
+}
+
+/* --------------------- leak scanning --------------------- */
+
+/**
+ * Every string reachable inside a value, keys included. A leak arrives as a property NAME as
+ * readily as a value.
+ *
+ * Written as a walk with a `seen` set rather than `JSON.stringify`: the input is whatever the
+ * module returned, and a value that cycles or carries a `toJSON` would make stringification
+ * either throw or quietly answer a different question. T-02's `seen` set for the same reason
+ * it exists there — shared substructure is walked once.
+ */
+export function collectStrings(value: unknown): string[] {
+  const out: string[] = [];
+  const seen = new Set<object>();
+  const walk = (node: unknown): void => {
+    if (typeof node === "string") {
+      out.push(node);
+      return;
+    }
+    if (node === null || typeof node !== "object") return;
+    if (seen.has(node)) return;
+    seen.add(node);
+    if (node instanceof Date) return;
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item);
+      return;
+    }
+    for (const [key, item] of Object.entries(node as Record<string, unknown>)) {
+      out.push(key);
+      walk(item);
+    }
+  };
+  walk(value);
+  return out;
+}
+
+/** Which of `tokens` appear anywhere inside `value`. Sorted, so a red reads the same twice. */
+export function findTokens(value: unknown, tokens: readonly string[]): string[] {
+  const strings = collectStrings(value);
+  const hits = new Set<string>();
+  for (const token of tokens) {
+    for (const s of strings) {
+      if (s.includes(token)) {
+        hits.add(token);
+        break;
+      }
+    }
+  }
+  return [...hits].sort();
+}
+
+/**
+ * T-04's fix, applied before the tells are used rather than after one over-matches.
+ *
+ * A blacklist asserted with `includes` answers "do these characters appear", where the claim
+ * is "did this leak". The two differ exactly when a tell is a substring of something a
+ * response may legitimately carry. So every tell is checked against every string the
+ * ADMISSIBLE fixtures contain, at fixture time, and a collision is a broken test rather than
+ * a red.
+ */
+export function assertTellsCannotOverMatch(
+  tells: readonly string[],
+  admissible: readonly unknown[],
+): void {
+  const strings = admissible.flatMap((value) => collectStrings(value));
+  const collisions: string[] = [];
+  for (const tell of tells) {
+    if (tell === "") {
+      collisions.push("(empty string)");
+      continue;
+    }
+    for (const s of strings) {
+      if (s.includes(tell)) {
+        collisions.push(`${JSON.stringify(tell)} is a substring of ${JSON.stringify(s)}`);
+        break;
+      }
+    }
+  }
+  if (collisions.length > 0) {
+    throw new Error(
+      `A tell is a substring of admissible fixture content, so the sweep would red an ` +
+        `implementation that leaked nothing (T-04).\n  ` +
+        collisions.join("\n  ") +
+        `\n  This is a broken test. Re-mint the fixture identifier; do not delete the tell.`,
+    );
+  }
+}

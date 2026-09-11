@@ -32,9 +32,9 @@ outputs:
 dependencies: []
 cannot:
   - acceptance-criteria
+will_not:
   - read the checks the work will be run against
 
-requires_human: false
 risk_markers: []
 notes: >-
   Doc 1 §3.2: isolation is not only an absent edge, it is the absence of the content from the
@@ -49,4 +49,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

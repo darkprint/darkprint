@@ -74,7 +74,13 @@ describe("the file tree renders something", () => {
   it("found the pages", () => {
     // A scan that silently matched nothing passes every rule below.
     expect(SOURCES.length).toBeGreaterThan(40);
-    expect(SOURCES.map((f) => f.path)).toContain("components/ui/AutonomyMeter.tsx");
+    /* `components/ui/AutonomyMeter.tsx` stood here as the named file, on the argument that a
+       walk which cannot find the one component this suite is about is a walk looking in the
+       wrong place. The owner deleted that component on 2026-09-06 ("about the Autonomy meter:
+       yes, drop") once the upload preview gave up its last mount, so the premise names a
+       surface the rules below still govern instead. `ContentRow` prints the human-presence
+       mark and is read by two of the three sections here. */
+    expect(SOURCES.map((f) => f.path)).toContain("components/ui/ContentRow.tsx");
   });
 });
 
@@ -135,42 +141,35 @@ describe("where a person acts is never painted in the alarm colour", () => {
   });
 });
 
-/* --------------------- 2. the meter's second half --------------------- */
+/* --------------------- 2. the meter's second half, RETIRED --------------------- */
 
-describe("AutonomyMeter is always given the per-node reading", () => {
-  /**
-   * The dark factory token is gated on `isDarkFactory` alone; both counterpart statements
-   * are gated on `contributions !== undefined`. Omit the prop and a closed-loop graph
-   * answers with two tokens while a graph with a person in it answers with one and nothing
-   * in its place, which is the asymmetry the meter exists to avoid and which doc 2 §1.1
-   * makes a product problem rather than a layout one. `/upload` omitted it, on the one
-   * surface where somebody is looking at their own graph.
-   *
-   * Matched on the opening tag rather than on the whole element: the props are all inside
-   * it, self-closing in every call site, and a `>` cannot appear in a JSX attribute name.
-   */
-  it("passes contributions at every call site", () => {
-    const calls: { path: string; tag: string }[] = [];
-    for (const { path, text } of STRIPPED) {
-      let at = text.indexOf("<AutonomyMeter");
-      while (at >= 0) {
-        const close = text.indexOf("/>", at);
-        expect(close, `${path}: unterminated <AutonomyMeter`).toBeGreaterThan(at);
-        calls.push({ path, tag: text.slice(at, close) });
-        at = text.indexOf("<AutonomyMeter", at + 1);
-      }
-    }
+/* `AutonomyMeter is always given the per-node reading` stood here and is retired with its
+   subject, 2026-09-06, on the owner's instruction ("about the Autonomy meter: yes, drop").
 
-    // The component's own file declares it and does not call it, so a scan that found
-    // nothing is a scan that is looking in the wrong place.
-    expect(calls.length).toBeGreaterThanOrEqual(3);
-    for (const call of calls) {
-      expect(call.tag.includes("contributions"), `${call.path} omits contributions`).toBe(
-        true,
-      );
-    }
-  });
-});
+   The rule it enforced: every call site passes `contributions`, because the dark-factory
+   token is gated on `isDarkFactory` alone while both counterpart statements are gated on
+   having the contributions — so omitting the prop made a closed-loop graph answer with two
+   tokens and a graph with a person in it answer with one and nothing in its place. That is
+   the asymmetry doc 2 §1.1 makes a product problem rather than a layout one, and `/upload`
+   committed it once, on the one surface where somebody is looking at their own graph.
+
+   IT IS RETIRED RATHER THAN INVERTED, and the distinction matters. The cell was inverted
+   two hours earlier — the floor of one call site became an assertion of exactly zero — while
+   the component still existed and could have been re-mounted. `components/ui/
+   AutonomyMeter.tsx` is deleted now, so there is no subject to hold and a cell asserting
+   zero mounts of a file that is gone is green in every world.
+
+   WHAT THE COMPONENT'S OWN DOCBLOCK ARGUED, carried here because this is the enforcement
+   site and the argument outlives the file. Doc 2 §1.1 governs how autonomy may be rendered
+   AT ALL, not merely how that one component rendered it: name the class and print no number,
+   because a four-segment gauge reads as two-out-of-four with a gap left to close; carry no
+   class-to-colour ramp, because dim → amber → cyan → emerald is the visual grammar of a
+   warning climbing to a pass, which paints a verdict onto a description; and state
+   `isDarkFactory` in the same chrome as the class it sits beside, the way "acyclic" states a
+   fact about a graph, because neither reading is an award and nothing on this site sorts on
+   either. Sections 1 and 3 below enforce two halves of that against EVERY surface and are
+   untouched; a future component that renders autonomy is held to them without needing to be
+   named here first. */
 
 /* --------------------- 3. what a page asks a visitor to bring --------------------- */
 
@@ -226,11 +225,24 @@ describe("no surface prints a seeded index figure as a fact", () => {
    * would report the correct arrangement. What it catches is a surface that prints one of
    * these numbers and never says the word.
    */
+  /* AMENDED at T280 (owner-instructed wiring wave, 2026-08-25; blob re-pinned in
+     tests/server/t260/frozen-tests.test.ts in the same commit, cause named there). The
+     two profile surfaces now sum REAL signals — `getSignalsMany` over the account's own
+     bundles, watchers/support off `getProfile` — so demanding the word "seeded" of them
+     would demand the false claim this rule exists to prevent, in the other direction.
+     They are exempted BY NAME, not by category: any new file printing one of these reads
+     still owes the word until it can show a live source the way load.ts does. */
+  const LIVE_PRINTERS = new Set([
+    "components/profile/ProfileHeader.tsx",
+    "components/profile/ProfileShell.tsx",
+  ]);
+
   it("says seeded in every file that reads one", () => {
     const printers: string[] = [];
     for (const { path, text } of STRIPPED) {
       if (!SEEDED_READS.some((read) => text.includes(read))) continue;
       printers.push(path);
+      if (LIVE_PRINTERS.has(path)) continue;
       expect(text.toLowerCase(), `${path} prints an index figure and never says seeded`)
         .toContain("seeded");
     }
@@ -238,14 +250,28 @@ describe("no surface prints a seeded index figure as a fact", () => {
     // counters. The remaining social surfaces must still identify seeded values.
     //
     // `app/u/[username]/page.tsx` read `.downloads` here until the accounts pass folded
-    // Preview signals into the account header: the sum now happens once in
-    // `ProfileShell.tsx` (every profile tab shares it) rather than in the overview page
-    // alone, so that is the file this list names instead — not a weaker check, the same
-    // read followed to where it moved.
+    // Preview signals into the account header: the sum moved once into `ProfileShell.tsx`
+    // (every profile tab shares it) rather than the overview page alone, and this list
+    // followed the read to where it had moved rather than dropping it.
+    //
+    // AMENDED 2026-09-06, owner-instructed: "just show the number of blueprints, cards and
+    // stars, remove downloads and validated". `ProfileShell.tsx` stopped passing
+    // `view.downloads` and `view.validated`, so it no longer matches `SEEDED_READS` at all
+    // and naming it here would demand a read the owner just removed. It is replaced rather
+    // than deleted, and by TWO survivors rather than one, because this list's whole job is
+    // to keep the walk above from going vacuous: if every printer disappeared, the `for`
+    // loop would assert nothing and pass. `Pinned.tsx` keeps a profile-side witness so the
+    // replacement is not a retreat to a different area of the site.
+    //
+    // `LIVE_PRINTERS` deliberately still names both profile files. Neither prints one of
+    // these reads today, so the exemption is inert — but it is an exemption for surfaces
+    // that sum REAL signals, which is still what they do with `stars`, so it stays correct
+    // for the day one of them prints a live sum again rather than being re-earned then.
     expect(printers).toEqual(
       expect.arrayContaining([
         "components/blueprint/Comments.tsx",
-        "components/profile/ProfileShell.tsx",
+        "components/profile/Pinned.tsx",
+        "app/blueprints/[owner]/[slug]/page.tsx",
       ]),
     );
   });

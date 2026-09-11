@@ -7,15 +7,17 @@ import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Logo } from "./Logo";
 import { ButtonLink } from "@/components/ui/Button";
-import { SPEC_SEQUENCE, SANDBOX } from "@/components/spec/sequence";
-import { ACCOUNT } from "@/lib/data/account";
+import { SPEC_SEQUENCE } from "@/components/spec/sequence";
+import { authorFor, profileHref } from "@/components/profile/author";
+import type { AccountRecord } from "@/lib/server/accounts";
 import { cx } from "@/lib/format";
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-42) (cited at line 373): POST /api/auth/session, DELETE /api/auth/session, GET /api/auth/me
+import { SIGN_IN_PROVIDERS } from "@/components/auth/SignInButtons";
 
 /* ============================================================
-   Five targets, not seven.
+   Five targets, not seven. Four since the ontology fold, and the count is left in the
+   heading rather than quietly corrected because what this docblock argues is the SHAPE:
+   one row per thing a reader can browse, one menu per thing they can make. The fold took a
+   browsable thing away, so the shape held and the number moved.
 
    The bar was Blueprints · Cards · Create · [Publish] · MCP · | · Learn ▾, and it had three
    problems a reader met before they met a page:
@@ -28,35 +30,63 @@ import { cx } from "@/lib/format";
       the registry holds, it has a browser and a profile tab, and the only route to it in
       the nav was the Learn menu's row for the *spec document* about it.
 
-   So: three Browse rows for the three things the registry holds, a Build menu for the three
+   So: one Browse row per thing the registry holds a browser for, a Build menu for the three
    ways to make one, Learn unchanged in mechanism, Publish as the button, and the account
    last, where a reader already looks for identity.
 
-   ── Decision 1: `/ontology` is "Ontology", and the spec row takes its siblings' shape ──
-   The browser and the spec document about it are two routes, and `nav.test.ts` forbids one
-   label on two of them. That constraint was answered for a while by calling the browser
-   "Vocabulary" — the words a blueprint and a card are allowed to use — and leaving
-   "Ontology" to the format.
+   ── Decision 1, and its reversal on 2026-09-06 ──
+   Decision 1 said `/ontology` is "Ontology" and the spec row takes its siblings' shape. The
+   browser and the spec document about it were two routes, and `nav.test.ts` forbids one
+   label on two of them; that constraint was answered for a while by calling the browser
+   "Vocabulary", and the author overruled that on 2026-08-12 ("adopt the term Ontology also
+   for /ontology page … be consistent through all the website"). The collision was resolved
+   at the other end instead: `/spec/ontology` became "Ontology file (YAML)", the shape its
+   two siblings in the same menu already have.
 
-   The author overruled it on 2026-08-12: "adopt the term Ontology also for /ontology page …
-   be consistent through all the website". One concept, one word, everywhere it appears —
-   the route is `/ontology`, the file is `ontology/`, the field on a card is
-   `ontology_version`, and the chrome was the only surface calling it something else.
+   The owner collapsed the two routes into one on 2026-09-06: "move the ontology page in the
+   /spec/ontology substituing the "every term" box. Then, you can delete the /ontology page".
+   The browser is a band on the spec page now and the index is a 308, so there is no longer a
+   pair of routes to hold apart — and the Browse row that pointed at the index has nowhere
+   left to point that is not already named one group down.
 
-   So the collision is resolved at the other end, and the fix was available all along:
-   `/spec/ontology` becomes "Ontology file (YAML)", which is the shape its two siblings in
-   the same menu already have — "Blueprint file (DOT)", "Node card (YAML)". Those pages'
-   own `h1`s differ from their nav rows in exactly this way ("The node card, in YAML"), so
-   nothing on the spec page moves. Neither route moves either.
+   So the row is DELETED rather than repointed, and that is a deliberate choice against the
+   obvious one. Repointing it at `/spec/ontology` would put a row called "Ontology" in the
+   bar and a row called "Ontology file" in the Learn menu, both opening the same URL on the
+   same screen, which is defect 1 at the top of this file with new names. The Learn row was
+   not free to rename either: it was a stop of `SPEC_SEQUENCE`, sitting between "Topology
+   file (DOT)" and "Node card (YAML)", and `spec-routes.test.ts` pinned the pair. One route
+   keeps one name.
+
+   ── And the second half of it, later the same day ──
+   `/spec/ontology` is gone as well. The owner accepted the finding that the vocabulary and
+   the Attractor specification read as two rival standards because of the order a reader
+   meets them in ("The motivations you provided are sound. Apply them"), so every ontology
+   term is printed beside the card field that consumes it and the route folds into
+   `/spec/card`. The docs row that named it is deleted for the plainest of the reasons in
+   this file: it pointed at a 308, and a chrome row pointing at a redirect is the two-hop
+   link `nav.test.ts`'s `RENAMED` block refuses everywhere else.
+
+   `/spec/attractor` takes the slot rather than the group dropping to three, and that is an
+   addition on its own merits rather than a seat filled. It is stop 01 of the sequence now,
+   the footer's Specification column has named it since it shipped, and it was the one Learn
+   route with a footer label and no header row to be held against — so the parity cell in
+   `nav.test.ts` could not see it. The label is the footer's, byte for byte, which is what
+   that cell asks of every other row.
+
+   What a reader loses is the word "Ontology" in the chrome. What they keep is every way in
+   that carried them to the vocabulary: the Learn menu and the footer name `/spec/card`,
+   which prints the terms, `/ontology` and `/spec/ontology` both 308 onto it, and
+   `/ontology/<term>` is untouched.
    ============================================================ */
 
 export const NAV = [
   { href: "/blueprints", label: "Blueprints", group: "browse" },
   { href: "/nodes", label: "Cards", group: "browse" },
-  /* The third thing the registry holds. It had no entry in the chrome at all until this
-     pass, and was called "Vocabulary" until 2026-08-12; see decision 1 in the header
-     docblock for why the word changed and what it cost the spec row below. */
-  { href: "/ontology", label: "Ontology", group: "browse" },
+  /* The third thing the registry holds had a row here from the accounts pass until
+     2026-09-06, when the owner folded its browser into `/spec/ontology` and deleted the
+     index. There is no third browse route to name, and the docs row below already names the
+     surviving one; see the reversal in this file's header docblock for why the row is gone
+     rather than repointed at the spec page. */
   /* MCP first, then the skill. The author set this order in the footer and it holds here
      too: the two are not a sequence, and the one a reader is likelier to be looking for by
      name goes first.
@@ -64,29 +94,44 @@ export const NAV = [
      "Assisted Design" rather than "Create", on the author's instruction, and the page's own
      `h1` and `<title>` moved with it — `nav.test.ts` holds a route to one name everywhere,
      so a rename is three files or it is a bug. What the page is remains what it always was:
-     the authoring skill that interviews you into a bundle. `/build`, the worked sandbox, is
-     not in this menu; it is stop 04 of Learn, where it says what it is. */
+     the authoring skill that interviews you into a bundle. The worked sandbox at `/build`
+     used to be named here as the thing this row is not; the owner deleted that route on
+     2026-09-06 and there is nothing left to tell it apart from. */
   { href: "/mcp", label: "MCP", group: "build" },
   { href: "/skill", label: "Assisted Design", group: "build" },
-  /* `/build` is NOT a row in the Build menu, and the omission is the author's call.
-     It had one for a pass, and it put the sandbox in front of a reader twice — once here
-     and once as the worked example under stop 03 of Learn, which is where it belongs and
-     where it says what it is. The route keeps its name from `SANDBOX.nav` on both surfaces
-     that do draw it (the Learn menu and the footer), so it still cannot end up with two
-     names on one screen. It stays in `NAV` as `docs` for the label table below. */
-  { href: "/upload", label: "Publish", group: "action" },
-  { href: SANDBOX.href, label: SANDBOX.nav, group: "docs" },
+  /* `/build` had a row here, then deliberately did not, and now has no route to point at.
+     The owner deleted it and `components/build/**` on 2026-09-06: "it is not useful and
+     make confusion". Its `docs` row below is gone with it, and so is the import from
+     `sequence.ts` that supplied the label. That import's name is not written here on
+     purpose: `spec-routes.test.ts` reads this file and the footer for it, because a Learn
+     row surviving its route is a 404 the sequence cannot see, and a comment quoting the
+     token it forbids reds a correct file. */
+  /* `/upload` stood here as `group: "action"` (the Publish button) until the owner took
+     publishing out of the chrome (2026-08-25): a release is cut from the surfaces that
+     own one — the profile shelf's New blueprint flow, a draft's own landing, and /skill's
+     accounts row — not from a global button. The route stays exempt in `nav.test.ts`'s
+     ELSEWHERE for that reason. */
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "docs" },
-  { href: "/spec/topology", label: "Blueprint file (DOT)", group: "docs" },
+  /* `/spec/ontology` had a row here, labelled "Ontology file (YAML)" to hold it apart from
+     the browser that had taken the bare word. Both routes are gone: the browser's index was
+     deleted on 2026-09-06 and the spec page folded into `/spec/card` the same day, so this
+     row would point at a 308. See the second half of the reversal in this file's header
+     docblock for why the vocabulary's name leaves the chrome rather than moving onto the
+     card row, which already has one.
+
+     `/spec/attractor` is in its place, and the label is `SiteFooter`'s `LEARN_LABELS` entry
+     byte for byte. This group exists to give the footer's Learn rows a header label to be
+     held against, and the crosswalk was the one Learn route the parity cell could not see,
+     because it had a footer label and no row here. The Learn dropdown prints the sequence's
+     own short form ("Attractor crosswalk"), which is a different surface with a run heading
+     over it, the way the three rows above already differ from theirs. */
+  { href: "/spec/attractor", label: "Reading it as Attractor", group: "docs" },
+  { href: "/spec/topology", label: "Topology file (DOT)", group: "docs" },
   { href: "/spec/card", label: "Node card (YAML)", group: "docs" },
-  /* "Ontology file (YAML)" and not "Ontology": the browser one group up took that word on
-     the author's instruction, and this row moves to the shape its two siblings above it
-     already have rather than the browser wearing a synonym. See decision 1. */
-  { href: "/spec/ontology", label: "Ontology file (YAML)", group: "docs" },
-  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "docs" },
   /* `/towards-a-dark-factory` stood here as `group: "guides"` and was deleted 2026-08-11.
-     `guides` is not one of the groups this file renders (`browse`, `build`, `action`,
-     `docs`) nor one of `MOBILE_GROUPS`, so the row drew nothing on any surface: it was a
+     `guides` is not one of the groups this file renders (`browse`, `build`, `docs`;
+     `action` left with the Publish button) nor one of `MOBILE_GROUPS`, so the row drew
+     nothing on any surface: it was a
      table entry describing a control that does not exist. The route reaches the header
      through `LEARN`, as stop 06 of the sequence, and Learn is its only home.
 
@@ -96,13 +141,15 @@ export const NAV = [
      which is the surface that actually names it. */
 ] as const;
 
-/** The three rows that stand in the bar itself. */
+/** The rows that stand in the bar itself: one per registry shelf a reader can browse. */
 const BROWSE = NAV.filter((item) => item.group === "browse");
 
 /**
  * The Design menu: the ways to make a blueprint, each with the line that tells them apart.
  *
- * Publishing is deliberately not among them. It is the button beside this menu, and a
+ * Publishing is deliberately not among them. It was the button beside this menu until the
+ * owner took it out of the chrome entirely (2026-08-25) — a release is cut from the pages
+ * that own one — and a
  * paragraph at the foot of the panel used to explain that at length — three lines about the
  * validator, the tab it runs in and the backend that does not exist. The author asked it out
  * on 2026-08-11 and it is not moved elsewhere, because it was not carrying anything this
@@ -114,7 +161,7 @@ const BUILD = NAV.filter((item) => item.group === "build");
 
 const BUILD_BLURB: Record<string, string> = {
   "/mcp": "Reach the registry from your own agent",
-  "/skill": "Install the authoring skill and name your goal",
+  "/skill": "A skill for your coding agent that interviews you and writes the blueprint",
 };
 
 export const LEARN = SPEC_SEQUENCE.map((page) => ({
@@ -128,16 +175,45 @@ export const LEARN = SPEC_SEQUENCE.map((page) => ({
  *
  * `nav.test.ts` reads this table: these are header destinations the same way `LEARN`'s are,
  * which is what lets `/settings` be held to the same completeness rule as every other
- * top-level route instead of sitting in an exemption. `Sign out` is not in it, because it
- * is not a route and there is nothing to sign out of — the panel says so under the rows.
+ * top-level route instead of sitting in an exemption.
+ *
+ * ── Why the four profile rows name a ROUTE and not a reader (D-262-06) ──
+ * These hrefs used to interpolate the seeded handle, which made the whole table a function
+ * of `lib/data/account.ts`. There is a session now, so the handle is per-request — and
+ * `nav.test.ts:47` imports this array at MODULE SCOPE and reads `.href` off every row,
+ * which is exactly what a per-request value cannot be. So the row carries the route
+ * pattern, the way `app/u/[username]` is spelled on disk, and `accountMenuHref` below
+ * substitutes the reader at render. The table stays static, the test stays unchanged, and
+ * no row claims to know who is reading.
+ *
+ * `Sign out` is not a row here because it is not a route: it is a `POST` to
+ * `/api/auth/logout`, and it renders as a control under the rows rather than beside them.
  */
 export const ACCOUNT_MENU = [
-  { href: `/u/${ACCOUNT.author.username}`, label: "Your profile" },
-  { href: `/u/${ACCOUNT.author.username}/blueprints`, label: "Your blueprints" },
-  { href: `/u/${ACCOUNT.author.username}/cards`, label: "Your cards" },
-  { href: `/u/${ACCOUNT.author.username}/saved`, label: "Saved" },
-  { href: "/settings", label: "Settings" },
+  /* "Your blueprints" left at T280: the profile index IS the bundle shelf now, so its row
+     and this one had one destination — /u/[username]/blueprints survives only as a 308.
+     "Your cards" and "Saved" left on the owner's instruction (2026-08-25): the profile's
+     own tab strip is where those lists live, and the menu keeps the two destinations that
+     are not tabs of the page the first row already opens. */
+  { href: "/u/[username]", segment: "", label: "Your profile" },
+  { href: "/settings", segment: undefined, label: "Settings" },
 ] as const;
+
+/**
+ * One account-menu row's destination for one reader, or `undefined` when there is nowhere
+ * to send them.
+ *
+ * `/settings` has no `segment` and is the same URL for everybody, so it passes through. The
+ * four profile rows go through `profileHref`, which answers `undefined` for an account with
+ * no handle yet — the state D-263-09 established is reachable by T050 AC1. A row that
+ * cannot resolve is not rendered as a dead link; the panel omits it and says why.
+ */
+function accountMenuHref(
+  item: (typeof ACCOUNT_MENU)[number],
+  handle: string | null,
+): string | undefined {
+  return item.segment === undefined ? item.href : profileHref(handle, item.segment);
+}
 
 /**
  * The collapsed panel's four groups, and its headings now match the bar exactly.
@@ -148,16 +224,33 @@ export const ACCOUNT_MENU = [
  */
 const MOBILE_GROUPS = [
   { id: "browse", title: "Browse" },
-  { id: "build", title: "Design" },
+  { id: "build", title: "AI Tools" },
   { id: "learn", title: "Learn" },
   { id: "you", title: "You" },
 ] as const;
 
 function mobileLinks(
   group: (typeof MOBILE_GROUPS)[number]["id"],
+  account: AccountRecord | null | undefined,
 ): readonly { href: string; label: string; step?: string }[] {
   if (group === "learn") return LEARN;
-  if (group === "you") return ACCOUNT_MENU;
+  if (group === "you") {
+    /* The whole account state, not just the handle, because a null handle means two
+       different things here: nobody is signed in, or somebody is and has not chosen one
+       yet. The first gets a sign-in and the second gets Settings, which is where the
+       choosing happens — collapsing them would offer a signed-in reader a second sign-in
+       and hide the one row that would fix their account. */
+    if (account === undefined || account === null) {
+      /* Both providers, from the one list that also feeds `/welcome` and `/settings`
+         (`components/auth/SignInButtons.tsx`). A single row naming GitHub is how this
+         menu keeps offering one provider after a second one ships. */
+      return SIGN_IN_PROVIDERS.map((provider) => ({ href: provider.href, label: provider.label }));
+    }
+    return ACCOUNT_MENU.flatMap((item) => {
+      const href = accountMenuHref(item, account.author.handle);
+      return href === undefined ? [] : [{ href, label: item.label }];
+    });
+  }
   return NAV.filter((item) => item.group === group);
 }
 
@@ -199,6 +292,45 @@ export function SiteHeader() {
   const menus = useRef<HTMLElement>(null);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
+  /**
+   * Who is reading, read from the browser rather than from the server.
+   *
+   * `undefined` while the answer is outstanding, `null` for a signed-out reader, the record
+   * for a signed-in one. Three states rather than two because the first paint genuinely
+   * knows nothing: rendering the signed-out control during it would flash `Sign in` at
+   * somebody who is signed in on every page they open.
+   *
+   * ── Why a fetch, and not `readSession()` ──
+   * This component is in the ROOT layout. A server-side session read here is a request-time
+   * API on every route in the repository, which would opt T260's browse shelves out of the
+   * static rendering B-15 keeps them in — the chrome would decide the caching policy for
+   * pages it has nothing to do with. So the header pays one request for itself and the
+   * pages stay static. `components/profile/session.ts` carries the other half of this
+   * decision, for the routes whose CONTENT is per-reader.
+   *
+   * `/api/account` rather than `/api/auth/session`: the menu needs a display name and a hue
+   * as well as a handle, and `SessionPayload` is `{ accountId, handle }`. One request that
+   * answers both is one request. A 401 is the ordinary signed-out answer, not an error.
+   */
+  const [account, setAccount] = useState<AccountRecord | null | undefined>(undefined);
+
+  useEffect(() => {
+    const cancelled = new AbortController();
+    void (async () => {
+      try {
+        const response = await fetch("/api/account", { signal: cancelled.signal });
+        setAccount(response.ok ? ((await response.json()) as AccountRecord) : null);
+      } catch {
+        /* An aborted or failed request is not evidence of being signed out, but the menu
+           has to draw something. Signed-out is the safe wrong answer: it offers a sign-in
+           that works, where a signed-in menu drawn on no evidence offers profile links
+           built from a handle this component does not have. */
+        if (!cancelled.signal.aborted) setAccount(null);
+      }
+    })();
+    return () => cancelled.abort();
+  }, []);
 
   useEffect(() => {
     if (openAt === null) return;
@@ -265,7 +397,8 @@ export function SiteHeader() {
 
           <span aria-hidden className="mx-1 h-5 w-px bg-line xl:mx-2" />
 
-          {/* Build ▾ — the three ways to make one, with the line that tells them apart. */}
+          {/* AI Tools ▾: the two surfaces a coding agent uses, with the line that tells them
+              apart. */}
           <details
             open={isOpen("build")}
             onToggle={(event) =>
@@ -281,7 +414,7 @@ export function SiteHeader() {
                   : "text-muted hoverable:hover:text-fg",
               )}
             >
-              Design
+              AI Tools
               <Caret />
             </summary>
             <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
@@ -352,85 +485,121 @@ export function SiteHeader() {
 
           <span aria-hidden className="mx-1 h-5 w-px bg-line xl:mx-2" />
 
-          <ButtonLink href="/upload" variant="primary" size="sm">
-            Publish
-          </ButtonLink>
-
-          {/* The account, last, where a reader already looks for identity.
-
-              `ml-3` and not the row's `gap-1`: a 32px avatar sitting a hair off a filled
-              primary button reads as part of the button, and the two are the least related
-              controls in the row — one is the site's single ask, the other is who you are.
-              The 12px is the `tight` tier of the vertical scale, spent horizontally. */}
-          <details
-            open={isOpen("account")}
-            onToggle={(event) =>
-              setOpenAt(event.currentTarget.open ? { menu: "account", at: pathname } : null)
-            }
-            className="group relative ml-3"
-          >
-            <summary
-              className="flex cursor-pointer list-none items-center gap-1.5 rounded-md p-1 [&::-webkit-details-marker]:hidden"
-              aria-label="Account menu"
+          {/* The account, last, where a reader already looks for identity. The Publish
+              button that stood between the divider and the avatar left with the NAV row
+              above — publishing belongs to the pages that own a release now. */}
+          {account === undefined ? (
+            /* The outstanding answer. A dimmed disc the same size as the avatar, so the row
+               does not reflow when the account arrives, and `aria-hidden` because there is
+               nothing here for a screen reader to act on yet. */
+            <span
+              aria-hidden
+              className="ml-3 inline-flex h-8 w-8 shrink-0 animate-pulse rounded-full bg-surface-2"
+            />
+          ) : account === null ? (
+            /* `/welcome` rather than a provider directly: it is the one surface that offers
+               the choice, and hard-coding GitHub here would make the header disagree with
+               the menu beside it about how many ways in there are. */
+            <ButtonLink href="/welcome" variant="outline" size="sm" className="ml-3">
+              Sign in
+            </ButtonLink>
+          ) : (
+            <details
+              open={isOpen("account")}
+              onToggle={(event) =>
+                setOpenAt(event.currentTarget.open ? { menu: "account", at: pathname } : null)
+              }
+              className="group relative ml-3"
             >
-              <Avatar author={ACCOUNT.author} size="md" />
-              <span className="text-dim">
-                <Caret />
-              </span>
-            </summary>
-            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
-              <div className="flex items-center gap-3 border-b border-line p-4">
-                <Avatar author={ACCOUNT.author} size="md" />
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-sm text-fg">
-                    {ACCOUNT.author.displayName}
-                  </span>
-                  <span className="font-mono text-[11px] text-dim">
-                    @{ACCOUNT.author.username}
-                  </span>
+              <summary
+                className="flex cursor-pointer list-none items-center gap-2 rounded-md p-1 [&::-webkit-details-marker]:hidden"
+                aria-label="Account menu"
+              >
+                <Avatar author={authorFor(account.author)} size="md" />
+                {/* The name beside the icon, on the owner's instruction (2026-08-25).
+                    The handle when one exists (it is the identity URLs use), the display
+                    name for the T050 AC1 account that has not chosen one yet. */}
+                <span className="max-w-[14ch] truncate text-sm text-muted">
+                  {account.author.handle ?? authorFor(account.author).displayName}
                 </span>
-              </div>
-
-              <div className="flex flex-col py-2">
-                {ACCOUNT_MENU.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cx(
-                      "px-4 py-2 text-sm transition-colors hoverable:hover:bg-cyan/5 hoverable:hover:text-cyan",
-                      /* Settings is the one row that is not under `/u/`, and the divider
-                         above it is what the design uses to separate what you have made
-                         from how the account behaves. */
-                      item.href === "/settings" && "mt-2 border-t border-line pt-4",
-                      isActive(item.href) ? "text-cyan" : "text-muted",
+                <span className="text-dim">
+                  <Caret />
+                </span>
+              </summary>
+              <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
+                <div className="flex items-center gap-3 border-b border-line p-4">
+                  <Avatar author={authorFor(account.author)} size="md" />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm text-fg">
+                      {authorFor(account.author).displayName}
+                    </span>
+                    {/* The handle line is omitted rather than printed as `@null` for an
+                        account that has not chosen one yet — a state T050 AC1 makes legal.
+                        Settings is where it gets chosen, and that row is still below. */}
+                    {account.author.handle !== null && (
+                      <span className="font-mono text-[11px] text-dim">
+                        @{account.author.handle}
+                      </span>
                     )}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
+                  </span>
+                </div>
 
-              {/* No `Sign out` row. There is nothing to sign out of, and a menu item that
-                  cannot do the one thing its verb names is worse than its absence — this
-                  says why instead. */}
-              <div className="flex flex-col gap-1.5 border-t border-line bg-surface-2/60 px-4 py-3">
-                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber">
-                  ◐ seeded
-                </span>
-                <p className="text-xs leading-relaxed text-muted">
-                  There is no sign-in. This menu always names the handle{" "}
-                  <span className="font-mono text-fg">lib/data/account.ts</span> seeds, and
-                  downloads, stars, validated and the three community metrics behind it
-                  stay seeded: there is no telemetry, no ballot and no verified run report.
-                </p>
+                <div className="flex flex-col py-2">
+                  {ACCOUNT_MENU.map((item) => {
+                    const href = accountMenuHref(item, account.author.handle);
+                    if (href === undefined) return null;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={href}
+                        className={cx(
+                          "px-4 py-2 text-sm transition-colors hoverable:hover:bg-cyan/5 hoverable:hover:text-cyan",
+                          /* Settings is the one row that is not under `/u/`, and the divider
+                             above it is what the design uses to separate what you have made
+                             from how the account behaves. */
+                          item.href === "/settings" && "mt-2 border-t border-line pt-4",
+                          isActive(href) ? "text-cyan" : "text-muted",
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* The four profile rows resolve to nothing until a handle exists, so the
+                    menu would otherwise be a single Settings row with no explanation. */}
+                {account.author.handle === null && (
+                  <p className="border-t border-line px-4 py-3 text-xs leading-relaxed text-muted">
+                    Your profile is at a handle. This account does not have one yet.
+                    Choose one in <span className="text-fg">Settings</span> and these rows
+                    appear.
+                  </p>
+                )}
+
+                {/* Sign out is a `POST`, so it is a form and not a menu row: a `GET` link
+                    that ends a session is reachable by a prefetch and by anything that
+                    walks links. It was absent entirely until there was a session to end,
+                    and the panel that stood here saying so has come off with it (D-78). */}
+                <form action="/api/auth/logout" method="post" className="border-t border-line">
+                  <button
+                    type="submit"
+                    className="w-full px-4 py-3 text-left text-sm text-muted transition-colors hoverable:hover:bg-cyan/5 hoverable:hover:text-cyan"
+                  >
+                    Sign out
+                  </button>
+                </form>
+
+                {/* The `✓ counted` strip stood here from T280 until the owner took it off
+                    (2026-08-25). Its claims were true and stay true elsewhere: the two
+                    residual absences (no mail, no instrumented runs) are stated on
+                    /settings and /reading-the-radar, the surfaces that own them — a menu
+                    is chrome, not a ledger. */}
               </div>
-            </div>
-          </details>
+            </details>
+          )}
         </nav>
 
-        <ButtonLink href="/blueprints" variant="primary" size="sm" className="lg:hidden">
-          Find one
-        </ButtonLink>
         <button
           type="button"
           className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hoverable:hover:text-fg lg:hidden"
@@ -440,6 +609,37 @@ export function SiteHeader() {
         >
           <span className="text-xl" aria-hidden>{mobileOpen ? "✕" : "☰"}</span>
         </button>
+        {/* Narrow viewports carry the menu and then the account, and nothing else
+            (owner-instructed, 2026-08-26). The primary "Find one" button stood here and
+            was the wrong thing to spend a phone's header on: Browse is a row inside the
+            menu already, so the button duplicated a destination while the reader's own
+            identity — the one thing the menu cannot show at a glance — had no place at
+            all. Signed out, the avatar's slot carries the way in instead; the panel's
+            "You" group still holds the same link for a reader who opens it. */}
+        {account === undefined ? (
+          /* Same 36px the avatar occupies, so the row does not reflow when the answer
+             arrives. `aria-hidden` because there is nothing here to act on yet. */
+          <span
+            aria-hidden
+            className="inline-flex h-9 w-9 shrink-0 animate-pulse rounded-full bg-surface-2 lg:hidden"
+          />
+        ) : account === null ? (
+          <ButtonLink href="/welcome" variant="outline" size="sm" className="lg:hidden">
+            Sign in
+          </ButtonLink>
+        ) : (
+          <Link
+            href={profileHref(account.author.handle) ?? "/settings"}
+            aria-label={
+              account.author.handle === null
+                ? "Your account"
+                : `Your profile, @${account.author.handle}`
+            }
+            className="inline-flex shrink-0 items-center rounded-full lg:hidden"
+          >
+            <Avatar author={authorFor(account.author)} size="md" />
+          </Link>
+        )}
       </div>
 
       {mobileOpen && (
@@ -450,7 +650,7 @@ export function SiteHeader() {
                 <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
                   {group.title}
                 </p>
-                {mobileLinks(group.id).map((item) => (
+                {mobileLinks(group.id, account).map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -466,20 +666,9 @@ export function SiteHeader() {
                     {item.label}
                   </Link>
                 ))}
-                {/* Publish is the button in the wide row and the last row of this group on a
-                    phone: there is no button beside the sheet to put it in. */}
-                {group.id === "build" && (
-                  <Link
-                    href="/upload"
-                    onClick={() => setMobileAt(null)}
-                    className={cx(
-                      "block rounded-md px-3 py-2.5 text-sm",
-                      isActive("/upload") ? "text-cyan" : "text-cyan/90",
-                    )}
-                  >
-                    Publish
-                  </Link>
-                )}
+                {/* The Publish row that closed this group left with the wide row's button
+                    (owner, 2026-08-25) — publishing is reached from the pages that own a
+                    release, not from the chrome. */}
               </nav>
             ))}
           </div>

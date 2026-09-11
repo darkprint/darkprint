@@ -1,0 +1,13 @@
+{
+  "name": "@darkprint/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The verbs of the `darkprint` command. Not a distributable of its own: `packages/mcp` carries the bin and dispatches into this barrel (D-270-01 C1).",
+  "license": "MIT",
+  "dependencies": {
+    "yaml": "^2.9.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

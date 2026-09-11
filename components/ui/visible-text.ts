@@ -2,9 +2,9 @@
    Reading a rendered page the way a reader does.
 
    `components/ui/More.tsx` and the inline `<details>` disclosures
-   around the site are PROJECT.md §3.1's licensed way to cut density
-   without cutting content: the text stays in the prerendered HTML,
-   stays keyboard-reachable and stays findable by find-in-page.
+   around the site are the licensed way to cut density without
+   cutting content: the text stays in the prerendered HTML, stays
+   keyboard-reachable and stays findable by find-in-page.
 
    That licence has a boundary, and the guards that hold the site to
    it need to be able to see the boundary. A statement that
@@ -18,10 +18,9 @@
                    is the line a reader sees without opening
                    anything.
 
-   Used by `components/site/honesty.test.ts` and
-   `components/blueprint/severity-word.test.ts`. It lives here and
-   not in either of them because a helper imported across two test
-   files registers that file's suites twice.
+   Used by `components/site/honesty.test.ts`. It lives here and not
+   in a test file because a helper imported across two test files
+   registers that file's suites twice.
    ============================================================ */
 
 /** The five characters React escapes on the way into markup, undone. */

@@ -52,7 +52,7 @@ import type {
 } from "./types";
 
 /** The bundle-relative name the DOT source is reported under. */
-const DOT_FILE = "blueprint.dot";
+const DOT_FILE = "topology.dot";
 
 /** The top of the data-type lattice: it accepts anything and anything accepts it. */
 const ANY_TYPE = "any";
@@ -524,9 +524,9 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
   };
 
   /**
-   * Doc 2 §3, made checkable. A `cannot` entry that names a `data-type` is a declared
-   * prohibition on receiving it, so an edge into this node that can carry the type puts
-   * the card and the graph in contradiction.
+   * Doc 2 §3, made checkable. A `cannot` entry is a declared prohibition on receiving a
+   * `data-type`, so an edge into this node that can carry the type puts the card and the
+   * graph in contradiction.
    *
    * **Which types the edge can carry.** When the author pinned the output with `out=`,
    * that port alone: they have said what this edge is for, and the whole engine already
@@ -544,9 +544,17 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
    * violation of a narrower prohibition, since inventing one would fire on every
    * permissive card in the archive.
    *
-   * Entries naming no `data-type` are skipped in silence. They are free text addressed to
-   * a reader (`NodeCard.cannot`), and `card/unknown-term` deliberately does not fire on
-   * them either.
+   * **`cannot` and nothing else.** The card's other prohibition field, `willNot`, holds
+   * the author's own sentences about what the node undertakes never to do, and this
+   * resolver has no way to decide "never opens a shell" against a topology. It does not
+   * read that field, and nothing here may report an unchecked undertaking as a defect: an
+   * author who wanted a rule enforced writes a `data-type` into `cannot`, and
+   * `card/prohibition-misfiled` is what tells them so at the card.
+   *
+   * An entry that resolves to nothing is still skipped in silence rather than reported.
+   * `card/wrong-term-kind` and `card/unknown-term` already fired on it at the card, where
+   * the author wrote it, and a second complaint from the edges would name a graph that has
+   * nothing wrong with it.
    */
   const checkProhibitions = (stmt: DotEdgeStmt, from: ResolvedNode, to: ResolvedNode): void => {
     const prohibitions = to.card.cannot;
@@ -577,7 +585,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
           "bundle/prohibition-violated",
           `Card \`${to.ref}\` declares that \`${to.nodeId}\` cannot receive \`${entry}\`, and edge ${describeEdge(stmt)} carries that type.`,
           {
-            hint: `\`${from.nodeId}\` declares the output \`${carried.name}\` (\`${carried.type}\`). Remove the edge, or take \`${entry}\` out of \`cannot\` on \`${to.card.id}\`.`,
+            hint: `\`${from.nodeId}\` declares the output \`${carried.name}\` (\`${carried.type}\`). Remove the edge, or take \`${entry}\` out of \`cannot\` on \`${to.card.id}\`. Moving it to \`will_not\` states the same rule and stops it being checked.`,
             location: { ...edgeLocation(stmt), nodeId: to.nodeId, cardRef: to.ref },
           },
         ),
@@ -590,6 +598,15 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
     const edge: ResolvedEdge = { source: stmt.source, target: stmt.target, attrs: stmt.attrs };
     const label = attr(stmt.attrs, "label");
     if (label !== undefined) edge.label = label;
+    // Lifted out of `attrs` for the same reason `label` is: a modelled field is one the
+    // exporter, the schematic and a reader of the type all agree exists, and an unmodelled
+    // passenger is one every consumer has to know to look for. Carried verbatim — see
+    // `ResolvedEdge.condition` for why nothing here parses the expression, and for the
+    // rule that a guarded edge is a real edge for every analysis that follows.
+    const condition = attr(stmt.attrs, "condition");
+    if (condition !== undefined) edge.condition = condition;
+    const weight = attr(stmt.attrs, "weight");
+    if (weight !== undefined) edge.weight = weight;
 
     const from = byNodeId.get(stmt.source);
     const to = byNodeId.get(stmt.target);
@@ -605,6 +622,12 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
   }
 
   /* ---------- 5. structure ---------- */
+  // EVERY edge enters the graph, guarded or not. This is the single line the rule on
+  // `ResolvedEdge.condition` reduces to: the analyzers walk `graph`, so filtering here on
+  // `condition` — or ranking on `weight` — is the one edit that would make a guarded edge
+  // count for less than an unconditional one everywhere at once, silently and archive-wide.
+  // The guard decides which branch a RUN takes; it does not decide which branches EXIST,
+  // and existence is the only question a static reading of the topology can answer.
   const graph = buildGraph(
     dot.nodes.map((n) => n.id),
     dot.edges.map((e) => ({ source: e.source, target: e.target })),
@@ -710,33 +733,15 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
     }
   }
 
-  /* ---------- 6. the declared vocabulary (§6.2) ---------- */
-  if (bundle.manifest.ontologyVersion !== ontology.ontology.version) {
-    ds.push(
-      warning(
-        "bundle/ontology-mismatch",
-        `The bundle is written against ontology \`${bundle.manifest.ontologyVersion}\`, but it is being read against \`${ontology.ontology.version}\`.`,
-        {
-          hint: "Terms may have been added, deprecated or re-parented since; check the migration notes before trusting the analysis.",
-        },
-      ),
-    );
-  }
-  for (const [ref, entry] of entries) {
-    if (entry.card.ontologyVersion === bundle.manifest.ontologyVersion) continue;
-    ds.push(
-      warning(
-        "bundle/ontology-mismatch",
-        `Card \`${ref}\` is written against ontology \`${entry.card.ontologyVersion}\`, but the bundle declares \`${bundle.manifest.ontologyVersion}\`.`,
-        {
-          hint: `Set \`ontology_version: ${bundle.manifest.ontologyVersion}\` once the card has been checked against that vocabulary.`,
-          location: { file: entry.file, cardRef: ref },
-        },
-      ),
-    );
-  }
-
-  /* ---------- 7. the blueprint ---------- */
+  /* ---------- 6. the blueprint ----------
+     There used to be a step between: the manifest declared an ontology version, every card
+     declared one too, and this function reported `bundle/ontology-mismatch` twice over —
+     once when the manifest disagreed with the vocabulary it was being read against, once
+     per card that disagreed with the manifest. Three hand-maintained copies of one number,
+     and a diagnostic whose entire content was that they had drifted apart. Neither told a
+     reader anything about the blueprint. `bundle/ontology-mismatch` itself survives and is
+     raised by `ontology/resolve.ts` for the case that is about the vocabulary rather than
+     about a version string: a local overlay term shadowing a curated core id. */
   const cards = new Map<CardRef, NodeCard>();
   for (const [ref, entry] of entries) cards.set(ref, entry.card);
 

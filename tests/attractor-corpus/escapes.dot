@@ -1,0 +1,20 @@
+// Attractor's `String` rule, exercised.
+// The rule is `'"' ( '\"' | '\n' | '\t' | '\\' | [^"\] )* '"'` — four escapes and nothing
+// else. DarkPrint's DOT lexer implements Graphviz's rule instead, where `\n` is a label
+// directive rather than a lexical escape, so the two disagree about every one of the
+// prompts below. This file is where that disagreement is held to being handled rather
+// than discovered: `unquoteAttractorString` is the half the lexer does not apply, and if
+// it stops being applied these prompts come home with literal backslashes in them.
+digraph escapes {
+  goal="Read a file, quote it, and write a report.";
+  label="Escapes";
+
+  start [label="start", shape=Mdiamond];
+  read  [label="Read", shape=parallelogram, prompt="Open the file you were given.\n\nReport what you found, in this order:\n\t1. the path\n\t2. the size\n\t3. the first line"];
+  quote [label="Quote", shape=box, prompt="Wrap the finding in \"quotation marks\" and escape any backslash as \\ so the report stays readable."];
+  exit  [label="exit", shape=Msquare];
+
+  start -> read;
+  read -> quote [label="finding", condition="context.size!=0"];
+  quote -> exit;
+}

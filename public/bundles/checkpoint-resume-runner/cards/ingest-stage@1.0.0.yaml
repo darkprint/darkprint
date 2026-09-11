@@ -33,12 +33,11 @@ outputs:
     description: The staged working set plus the source manifest the later stages are checked against.
 dependencies:
   - stage-planner
-cannot:
+cannot: []
+will_not:
   - pull a source the stage does not name
 
-requires_human: false
 risk_markers: []
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

@@ -277,9 +277,16 @@ function BranchList({
  * This carried `max-w-4xl` with a comment about reading measure. The measure was real;
  * the place was not. Capping the *tree* to protect the *description column* left the tree
  * ending 235px inside its own panel border, so the panel border, the section header rule,
- * the grid and the prose were four different right edges in one box. The measure now sits
- * on the description paragraph in `TermRow`, where a measure belongs, and the tree fills
- * whatever column it is mounted in.
+ * the grid and the prose were four different right edges in one box.
+ *
+ * The cap moved to the panel, then came off entirely (owner, 2026-09-05: the panels on
+ * `/ontology` are to fill the band). There is no measure left anywhere on the path — see
+ * `TermRow`, which stopped putting one on the description cell in the same change. The
+ * tree fills whatever column it is mounted in, and that column is `container-page` wide
+ * wherever the catalog mounts. The ruling named `/ontology`; that route was deleted on
+ * 2026-09-06, the panels moved to the ontology specification unchanged, and they moved
+ * again the same day when that specification was folded into `/spec/card`. The rule has
+ * now outlived two of the addresses it was given at.
  */
 export function TermTree({
   kind,

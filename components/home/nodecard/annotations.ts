@@ -1,56 +1,36 @@
 /* ============================================================
-   The nine things spec §3.2 asks this card to be read for, in the
-   order they are written down.
+   The nine parts a node card is read for, in the order the file
+   writes them.
 
-   ── The order is document order, and that is now a rule ──
-   It used to be reading order: the table in the spec puts `skill`
-   before `tools`/`mcp`, and this file followed it, so step 3 pointed
-   at line 22 and step 4 pointed back up at line 19. Every quantity
-   in `geometry.ts` follows the run being read, so scrolling DOWN
-   through that pair slid the listing DOWN too and the highlight
-   climbed the card. The author, watching it: "when scrolling down,
-   the highlighted elements should be ordered from top to bottom.
-   Right now, sometimes scrolling down, highlight something above."
+   Document order is a rule, not a preference. A scroll-driven figure
+   makes one promise, that the reader's gesture and the drawing move
+   the same way, and a step list in reading order once sent the
+   highlight back up the card while the reader scrolled down it.
+   `nodecard.test.ts` asserts the resolved line ranges are strictly
+   increasing so a new step cannot reintroduce that.
 
-   A scroll-driven figure makes exactly one promise, which is that
-   the reader's gesture and the drawing move the same way, and no
-   argument about the ideal order of two facts is worth breaking it.
-   So the sequence is the file's own: identity, what it does, the
-   brief it is handed, what runs it, what it reaches, where its
-   behaviour is written, what arrives, what it hands on, and what
-   must never arrive. `nodecard.test.ts` asserts the resolved line
-   ranges are strictly increasing, so the next person to add a step
-   cannot reintroduce this by putting it in the wrong place.
+   Steps annotate a key group rather than a line: `identity` covers
+   the four lines that name the node, `reach` covers `tools` and `mcp`
+   together because neither answers "what can it touch" alone.
 
-   Steps annotate a KEY GROUP rather than a line: `identity` covers
-   the four lines that name the node, `reach` covers `tools` and
-   `mcp` together because neither answers "what can it touch" alone.
-   The group is the unit a reader thinks in and the unit the leader
-   line points at.
+   Every claim below is one the site can be held to:
+   - "nothing checks it" on `action` is `lib/core/card/validate.ts`,
+     which reads the field for presence and never for content;
+   - forty characters on `spec` is `card/spec-too-thin`, a warning;
+   - `llm_model` is what `lib/core/attractor/emit.ts` writes, and
+     Attractor spec §8.5 puts an explicit node attribute above every
+     stylesheet rule, which is the direction `rows.test.ts` holds
+     every `model` sentence to;
+   - nothing reads what `skill` points at (`lib/core/card/schema.ts`),
+     and the missing document is the paragraph
+     `lib/content/bundle-export.ts` puts in every README;
+   - an output/input type mismatch is `bundle/type-mismatch`;
+   - `cannot` is `lib/core/bundle/resolve.ts`'s `checkProhibitions`,
+     which raises `bundle/prohibition-violated` at error severity.
 
-   ── Every claim below is one the site can be held to ──
-   - step 2's "checked by nothing" is `lib/core/card/validate.ts`,
-     which reads `action` for presence and never for content;
-   - step 3's forty characters is `card/spec-too-thin`, raised at
-     warning severity;
-   - step 4's `llm_model` is what `lib/core/attractor/emit.ts`
-     writes, and Attractor spec §8's model stylesheet is what can
-     override it;
-   - step 6's "the engine reads nothing at the other end" is
-     `lib/core/card/schema.ts` on `skill`, and the missing folder is
-     the paragraph `lib/content/bundle-export.ts` puts in every
-     bundle README;
-   - step 8's mismatch is `bundle/port-mismatch`;
-   - step 9 is `lib/core/bundle/resolve.ts`'s `checkProhibitions`,
-     which raises `bundle/prohibition-violated` at error severity
-     when an incoming edge's source declares an output of the
-     prohibited type or of a narrower one.
-
-   Bodies are written to fit the fixed body box the choreographed
-   layout gives them (`geometry.ts`, `NC.body`). `nodecard.test.ts`
-   holds them to a length that fits, because a body that overflows
-   is clipped rather than scrolled and the sentence that gets cut is
-   always the last one, which is where the consequence is.
+   `nodecard.test.ts` caps every body at 300 characters, because the
+   figure's height is the listing's and a longer body pins the walk
+   off-centre.
    ============================================================ */
 
 import { keySpan } from "./yaml";
@@ -73,24 +53,24 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     title: "What this node is",
     body:
       "The first four lines fix the node's identity. `code-builder` is the id a graph pins by " +
-      "version, `agent` is the node type, so this box runs a model rather than a script, and " +
-      "`implementation` places it in the lifecycle the ontology defines.",
+      "version. `agent` is the node type: a model runs this box. " +
+      "`implementation` places it in the lifecycle the vocabulary defines.",
   },
   {
     id: "action",
     keys: ["action"],
     title: "What it does, in a line",
     body:
-      "The operation, in one sentence a person can read at a glance. Nothing in the engine " +
-      "checks it: `action` is prose for whoever opens the card, and it travels into the " +
-      "download unchanged. The instruction the agent is actually handed is the block under it.",
+      "The operation, in one sentence a person can read at a glance. Nothing checks it. " +
+      "`action` is prose for whoever opens the card. It travels into the " +
+      "download unchanged. The instruction the agent is handed is the block under it.",
   },
   {
     id: "spec",
     keys: ["spec"],
     title: "The brief it is handed",
     body:
-      "The prose an agent is given when somebody instantiates this graph on their own machine. " +
+      "The prose an agent is given when somebody runs this graph on their own machine. " +
       "It has to stand alone, because whatever reads it never sees the rest of the graph. Only " +
       "its length is checked here: under forty characters raises `card/spec-too-thin`.",
   },
@@ -99,22 +79,21 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     keys: ["model"],
     title: "The model it runs on",
     body:
-      // The runnable file is named on `/blueprints/[slug]`'s download panel, not here: the
-      // author asked for `factory.dot` off the landing, and this walk renders there. The
-      // claim is unchanged — the model line really does land in the compiled export and
-      // NOT in `blueprint.dot`, which carries no `model` at all — only the name is gone.
-      "The model this agent is instantiated with. The compiled export writes it as " +
-      "`llm_model`, which Attractor reads, and a model stylesheet can override it at run time. " +
-      "A card with no such line inherits whatever the run supplies.",
+      // The model line lands in the compiled graph and never in `topology.dot`, which
+      // carries no `model` at all.
+      "The model this agent runs on. The compiled graph writes it as " +
+      "`llm_model`, and Attractor reads that field. Spec §8.5 ranks an explicit node " +
+      "attribute above every model stylesheet rule, and DarkPrint writes none. A card " +
+      "with no such line inherits whatever the run supplies.",
   },
   {
     id: "reach",
     keys: ["tools", "mcp"],
     title: "What it can reach",
     body:
-      "`tools` is empty and `mcp` names one server, so this node touches the filesystem and " +
-      "nothing else. The reach of a whole factory can be read off its cards before anything is " +
-      "run, which is why it is written down here at all.",
+      "`tools` is empty. `mcp` names one server. This node touches the filesystem and " +
+      "nothing else. The reach of a whole blueprint can be read off its cards before " +
+      "anything runs.",
   },
   {
     id: "skill",
@@ -122,35 +101,39 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     title: "The behaviour document",
     body:
       "`skills/code-builder.md` is where this agent's behaviour is written. The field is a " +
-      "pointer and the engine reads nothing at the other end, so no skill document travels in " +
-      "the download. Each bundle's README lists the paths you supply yourself.",
+      "pointer. Nothing here reads what it points at, and no skill document travels in " +
+      "the download. Each blueprint's README lists the paths you supply yourself.",
   },
   {
     id: "inputs",
     keys: ["inputs"],
     title: "What arrives",
     body:
-      "One input, and it carries a type. `brief` is a `plan`, an ontology term rather than free " +
-      "text, so the resolver can check an incoming edge against it. In the starter factory " +
-      "nothing points at this node, and the brief arrives with the run.",
+      "One input. It carries a type. `brief` is a `plan`, a term from the shared vocabulary " +
+      "rather than free text. The validator checks an incoming edge against it. In the " +
+      "starter blueprint nothing points at this node. The brief arrives with the run.",
   },
   {
     id: "outputs",
     keys: ["outputs"],
     title: "What it hands on",
     body:
-      "One output, typed the same way. `build` is `code`, and it is what the edge to the " +
-      "acceptance tester carries. A downstream node declares its own input against that type, " +
-      "and a mismatch is reported as `bundle/port-mismatch`.",
+      "One output, typed the same way. `build` is `code`. It is what the edge to the " +
+      "acceptance tester carries. A downstream node declares its own input against that " +
+      "type. A mismatch is reported as `bundle/type-mismatch`.",
   },
   {
+    /* Two keys, one step, and the walk still has nine parts: `geometry.ts` sizes the rail
+       for a fixed count, and the thing worth showing is the pair. A reader who sees
+       `cannot` alone learns what is checked and nothing about the promise under it. */
     id: "cannot",
-    keys: ["cannot"],
+    keys: ["cannot", "will_not"],
     title: "What must never arrive",
     body:
-      "The prohibition, and the engine holds the graph to it. `acceptance-criteria` names an " +
-      "ontology data type, so an edge carrying it into this node fails the bundle with " +
-      "`bundle/prohibition-violated`. The second entry names no term and is read as free text.",
+      "Two fields, because the validator can hold the graph to only one of them. `cannot` " +
+      "takes data types: an edge carrying `acceptance-criteria` in fails the whole blueprint " +
+      "with `bundle/prohibition-violated`. `will_not` takes the author's sentences, and " +
+      "nothing reads those.",
   },
 ];
 
@@ -166,9 +149,9 @@ export interface ResolvedAnnotation extends AnnotationSpec {
  * The steps this particular card can actually carry, numbered by position.
  *
  * A step whose keys are all absent is dropped rather than pointed at line 1. Sparse cards
- * are correct by design (spec §2b: "a card with no `model` inherits"), so the section has
- * to survive being pointed at one, and a leader line drawn to a line the reader is not
- * looking at is worse than an annotation that is not there.
+ * are correct by design (a card with no `model` inherits), so the section has to survive
+ * being pointed at one, and a leader line drawn to a line the reader is not looking at is
+ * worse than an annotation that is not there.
  *
  * Dropping a step cannot disturb the order: the specs are already in document order, so
  * any subsequence of them is too. What it does disturb is the rail's arithmetic, which is

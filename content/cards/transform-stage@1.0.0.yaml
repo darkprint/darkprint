@@ -39,10 +39,10 @@ outputs:
 dependencies:
   - ingest-stage
   - bounded-retry
-cannot:
+cannot: []
+will_not:
   - emit a partial set
 
-requires_human: false
 risk_markers: []
 notes: >-
   This is the stage the recovery loop re-enters, so it must be idempotent over its own output:
@@ -50,4 +50,3 @@ notes: >-
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

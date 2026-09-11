@@ -33,7 +33,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { NODE_CARD_ANNOTATIONS, resolveAnnotations } from "./annotations";
-import { NC, reelShift } from "./geometry";
 import { keyBlock, keySpan, tokenizeYaml } from "./yaml";
 
 const CARD = readFileSync(
@@ -106,13 +105,25 @@ describe("a key's block is the key plus what is indented under it", () => {
   });
 
   it("stops at the blank line after a sequence", () => {
-    // `cannot` has two entries and a paragraph break under it. A run that swallowed the
+    // `will_not` has an entry and a paragraph break under it. A run that swallowed the
     // break would highlight a blank line and draw the leader to the middle of nothing.
-    const range = keyBlock(CARD, "cannot");
+    // Asked of `will_not` rather than of `cannot` since the prohibition split: `cannot` is
+    // now followed immediately by `will_not`, so it is the second of the pair that sits
+    // against the break and the first that proves a run stops at the next KEY.
+    const range = keyBlock(CARD, "will_not");
     expect(range).toBeDefined();
     expect(LINES[(range?.to ?? 1) - 1]?.trim()).toBe(
       "- read the checks the work will be run against",
     );
+  });
+
+  it("stops at the next top-level key, with no blank line to help it", () => {
+    // The other half, and the split created the case: `cannot` and `will_not` are adjacent
+    // with nothing between them, so a run that read to the next blank line would swallow
+    // the second field whole and the enforced half would highlight the stated one.
+    const range = keyBlock(CARD, "cannot");
+    expect(range).toBeDefined();
+    expect(LINES[(range?.to ?? 1) - 1]?.trim()).toBe("- acceptance-criteria");
   });
 
   it("is undefined for a key the card does not carry", () => {
@@ -144,13 +155,12 @@ describe("the annotations point at the places they name", () => {
    * ordered from top to bottom. Right now, sometimes scrolling down, highlight something
    * above."
    *
-   * The whole section is driven by `reelShift(current.from)`, so the walk's direction is
-   * decided here, in the order of a plain array, and nowhere else. The old order followed
-   * the spec's table, which puts `skill` (line 22) before `tools`/`mcp` (lines 19-21), so
-   * step 4 scrolled the listing 66px back down while the reader was scrolling on. Strictly
-   * increasing, not merely non-decreasing: two steps starting on the same line would leave
-   * the leader pointing at one run twice with nothing moving between them, which reads as
-   * a figure that has got stuck.
+   * The rail's order is the order of a plain array, and the breakdown steps through it in
+   * that order, so the direction of the walk is decided here and nowhere else. The spec's
+   * table puts `skill` (line 22) before `tools`/`mcp` (lines 19-21), and following it sent
+   * the reader's eye back up the listing between two steps. Strictly increasing, not merely
+   * non-decreasing: two steps starting on the same line would mark one run twice with
+   * nothing moving between them, which reads as a figure that has got stuck.
    */
   it("walks the card downwards, one run strictly after the last", () => {
     const starts = resolved.map((a) => a.from);
@@ -243,146 +253,3 @@ describe("the annotations point at the places they name", () => {
   );
 });
 
-/* ============================================================
-   The reel, and what this block used to be.
-
-   It held two sets of arithmetic, because there were two walks:
-   `CardWalk` on the landing with its own `shiftFor`, and
-   `NodeCardStage` on `/spec/card` with `reelShift` clamped against
-   a shorter window, a rail pitch, a leader elbow and a dezoom ramp.
-   The author asked for one figure ("make /spec/card's scrollable
-   node panel the same as the home's"), so there is one component
-   and one reel, and the rail, leader, dezoom and pin-budget cases
-   went with the code they were about rather than being kept over
-   functions nothing calls.
-
-   What is checked below is what survived, and it now covers BOTH
-   routes rather than one: `reelShift` is the function the landing
-   used to duplicate, and these are its cases against the numbers
-   `CardWalk` actually draws (`NC.park` 3, `NC.window` 528).
-   ============================================================ */
-
-describe("the reel's arithmetic", () => {
-  const total = 52;
-
-  /**
-   * The window is whole rows and nothing else, and `CardWalk` declares it as
-   * `NC.window + PAD_Y`. If the two ever disagree the listing shows 23 rows and a sliver
-   * of a 24th in every state but the first, which reads as a rendering fault.
-   */
-  it("is a whole number of rows", () => {
-    expect(NC.window).toBe(NC.rows * NC.line);
-  });
-
-  it("does not scroll above the first line", () => {
-    expect(reelShift(1, total)).toBe(0);
-    expect(reelShift(NC.park, total)).toBe(0);
-  });
-
-  it("parks a run three lines down once there is room", () => {
-    expect(reelShift(NC.park + 3, total)).toBe(-2 * NC.line);
-  });
-
-  it("moves in whole rows, so the window never shows half a line", () => {
-    for (const from of [1, 4, 9, 17, 26, 38, 52]) {
-      // `Math.abs` before the modulo: `-44 % 22` is `-0`, and `toBe` is `Object.is`, which
-      // separates the two zeroes. The assertion is about the remainder, not its sign.
-      expect(Math.abs(reelShift(from, total)) % NC.line).toBe(0);
-    }
-  });
-
-  it("never leaves blank space under the last line", () => {
-    const furthest = -(total * NC.line - NC.window);
-    expect(reelShift(total, total)).toBe(furthest);
-    expect(reelShift(total, total)).toBeGreaterThanOrEqual(furthest);
-  });
-
-  it("does not scroll a card that already fits", () => {
-    expect(reelShift(10, 6)).toBe(0);
-  });
-});
-
-/**
- * The one check that would have caught a wrong constant.
- *
- * Every quantity in `geometry.ts` is chosen so that particular runs of one particular
- * file land inside the window they are supposed to be read in, and the way that goes
- * wrong is quietly: a run whose last line sits at y = 560 in a 528-high box simply is not
- * there, the note beside it says what it is about, and nothing throws.
- *
- * Both ends are asserted. The first line has to be visible or the note points at nothing;
- * the last line has to be visible or the reader gets the head of a run and not the
- * consequence, which for `spec` and `notes` is most of what the run says.
- */
-describe("every annotated run lands inside the window, on the real card", () => {
-  const resolved = resolveAnnotations(CARD);
-
-  it.each(resolved.map((a) => [a.id, a] as const))(
-    "%s is visible from its first line to its last",
-    (_id, annotation) => {
-      const shift = reelShift(annotation.from, LINES.length);
-      const top = (annotation.from - 1) * NC.line + shift;
-      const bottom = (annotation.to - 1) * NC.line + shift + NC.line;
-      expect(top).toBeGreaterThanOrEqual(0);
-      expect(bottom).toBeLessThanOrEqual(NC.window);
-    },
-  );
-});
-
-/* --------------------- the notes stay reachable --------------------- */
-
-describe("the choreography hides the eight closed notes without deleting them", () => {
-  /**
-   * `lg:hidden` is `display: none`, which removes an element from the accessibility tree
-   * as well as from the layout. Every annotation body but one carried it at `lg` with
-   * motion allowed, so a screen reader, find-in-page and a text extractor all saw one note
-   * out of nine, and the only route to the rest was scrolling a 190vh section one step at
-   * a time. Spec §3.2 asks for the choreography and asks for nothing to be unreachable;
-   * `sr-only` is `position: absolute` with a 1px clip, so the reel steps exactly as it did
-   * and the notes column measures the same.
-   *
-   * This case was written over `NodeCardStage`, which had the bug first and fixed it this
-   * way. That component is deleted and `CardWalk` had inherited the bug rather than the
-   * fix, so the case moves here with the mount instead of being deleted with the file it
-   * happened to be pointed at.
-   *
-   * A source scan because the state under test is a client one: `renderToStaticMarkup`
-   * runs with `motion === false` (see `ssr.test.ts`), which is the branch where every body
-   * is open, so no server render can reach the class this is about.
-   */
-  const SOURCE = readFileSync(
-    join(process.cwd(), "components/home/nodecard/CardWalk.tsx"),
-    "utf8",
-  ).replace(/\/\*[\s\S]*?\*\//g, "");
-
-  it("takes the closed body out of the layout with sr-only", () => {
-    expect(SOURCE).toContain('motion && !isOpen && "lg:sr-only"');
-  });
-
-  it("puts no display:none on an annotation body", () => {
-    expect(SOURCE).not.toContain("lg:hidden");
-  });
-
-  /**
-   * The figure is driven by the reader's own scroll and by nothing else. `NodeCardStage`
-   * made each rail head a button that scrolled the page to its own step, and that button
-   * went with it: a walk with nine controls beside it invites a reader to operate the
-   * figure instead of reading it, and the author asked for the landing's version, which
-   * has none. Pinned because the obvious way to "improve" this list is to make the heads
-   * clickable again, and `stepScrollTop` no longer exists to make it work.
-   *
-   * ── This case is now load-bearing in a second way ──
-   * A rail of nine buttons over these nine annotations EXISTS: `./CardBreakdown.tsx`, which
-   * `/spec/card` mounts, on the author's instruction that the scroll effect come off that
-   * page and stay everywhere else ("keep it for the other pages"). This scan is what makes
-   * the parenthesis enforceable. The tempting shape is one component with a `mode` prop,
-   * and that shape puts the buttons in THIS file and obliges whoever writes it to loosen
-   * this case — at which point nothing is left saying the landing's beat has no controls.
-   * If the two ever do merge, the replacement has to assert the landing's mount renders no
-   * button, not merely that some mount might not.
-   */
-  it("gives the reader nothing to click inside the walk", () => {
-    expect(SOURCE).not.toContain("<button");
-    expect(SOURCE).not.toContain("onClick");
-  });
-});

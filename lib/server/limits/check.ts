@@ -1,0 +1,234 @@
+/* ============================================================
+   DarkPrint backend — limits: the verdict, and the two shapes
+   that read it
+   AC5: *an anonymous read below the ceiling is never delayed or
+   challenged* — and the block says how it is to be asserted:
+   **by measuring that `checkLimit` on an under-ceiling read
+   performs no write**, not by observing that a response came
+   back. A counter that writes on every read passes a latency-free
+   test on an idle machine and falls over under load.
+
+   ── `db` is not accepted at all, and that is T231 ──
+   AC5 and a durable counter are incompatible BY DEFINITION: a
+   durable counter is a write per request, which is what the words
+   mean. The absent counter table is not what makes them so, and a
+   table would not have helped.
+
+   So the counter is in process (`counter.ts`) and this function
+   touches `db` on NO path — not on the anonymous one AC5 names,
+   and not on the keyed one either. A keyed subject arrives here
+   already carrying the record `resolveKey` answered with, because
+   the route resolved it, and the tier is carried on the subject.
+
+   T230 shipped `db` as a parameter and never used it, and said so
+   in this comment. That was the published signature and not that
+   task's to change. **D-230-05 had already established the
+   parameter was unused on every path, so it was dead weight with
+   an argument attached** — and the argument for keeping it was
+   that AC5's instrument, a `Proxy`-backed `Db` asserting
+   `touched() === false`, needs something to hand the Proxy.
+
+   T231 takes the stronger reading (C3, ratified): a function that
+   CANNOT REACH a connection beats one observed not to. There is
+   no `Db` in this file's imports, so the claim is checked by the
+   compiler on every build rather than by a cell that has to be
+   run — and the cell it un-writes was measuring the weaker thing.
+   The no-WRITE half of AC5 is still a runtime question and still
+   has a witness; the no-ACCESS half is now structural.
+
+   ── Where the IP bound actually is, and what it does NOT
+      cover ──
+   `subject.ip` is caller-influenced — `X-Forwarded-For` is a
+   header unless an edge overwrites it — so hashing it unbounded
+   would be work proportional to attacker input. `hashSlot` reads
+   at most `MAX_SUBJECT_CHARS` of it, so nothing in THIS module
+   scans the whole string.
+
+   **That is a narrower claim than "the IP is bounded" and the
+   difference is not pedantry.** By the time this function has a
+   `LimitSubject`, the header has already been read into a JS
+   string by whatever built it, and that allocation is upstream of
+   every assertion this module can make about itself — *a limit
+   bounds only the work that happens after it runs, and work done
+   to construct its own input is unbounded by construction.* The
+   corollary is about placement: **the bound belongs where the
+   bytes are, not where the type is.** A route holds bytes; this
+   module holds a string. So the header-length bound is owed by
+   whichever task first turns a request into a `LimitSubject`, and
+   it is not owed here and cannot be paid here.
+
+   ── What this costs, stated in the module as ruled ──
+   **An in-process counter bounds per INSTANCE, not globally.**
+   With N warm instances the effective ceiling is N times the
+   configured one. That weakens AC2 — *limits are enforced
+   server-side regardless of any client cap* — which stays true
+   (this is server-side) while stopping being ONE number. A reader
+   must not infer that the figure in `config.ts` is what a caller
+   can actually spend across the fleet. Making it one number needs
+   shared storage, which needs a table `lib/db/schema.ts` does not
+   have and which is Forbidden here.
+   ============================================================ */
+
+import {
+  DEFAULT_LIMITS,
+  UNCONFIGURED_BACKOFF_MS,
+  limitFor,
+  type LimitConfig,
+} from "./config";
+import { createSlotCounter, type SlotCounter } from "./counter";
+import type { LimitSubject, LimitVerdict } from "./types";
+import { rateLimitedError } from "./errors";
+
+export interface CheckLimitOptions {
+  readonly config?: LimitConfig;
+  readonly counter?: SlotCounter;
+}
+
+/**
+ * The process-wide counter.
+ *
+ * Module state, because the published signature carries no counter and a per-call counter
+ * would count nothing. One per process, which is exactly the per-instance bound this
+ * file's header states — the singleton is where that limitation physically lives, so it is
+ * named here rather than left as a remark in a comment three files away.
+ */
+const processCounter: SlotCounter = createSlotCounter();
+
+/**
+ * Judge one request against its bucket's ceiling.
+ *
+ * Never throws for an over-limit request: the refusal is a VALUE (`allowed: false`) and
+ * `enforceLimit` below is what turns it into a rejection. Both exist because they answer
+ * different questions — a caller that wants to report remaining quota needs the verdict,
+ * and a route that must not serve needs the throw.
+ *
+ * An unconfigured bucket REFUSES. `limitFor` answers `undefined` and this reads it as a
+ * refusal rather than as "no limit", because a config lookup returning `undefined` read as
+ * unlimited is a criterion satisfiable by never limiting anything — D-70-18's shape at a
+ * `Record` index, and the one place AC2 could be false with nothing to show it. The verdict
+ * for that case carries `limit: 0` and `remaining: 0`, which is the honest rendering of "no
+ * ceiling has been set for this bucket" and is not a ceiling anybody chose.
+ *
+ * **All four of the verdict's other fields are priced, not just those two (F-230-M).** The
+ * refusal is a document a client PARSES — D-230-09 publishes `resetAt` as a machine-readable
+ * member for exactly that reason — so `resetAt` and `windowMs` are answers to a caller and
+ * not slots to fill with whatever is cheapest. They carry `UNCONFIGURED_BACKOFF_MS`; the
+ * branch below says why.
+ */
+export async function checkLimit(
+  subject: LimitSubject,
+  bucket: string,
+  options: CheckLimitOptions = {},
+): Promise<LimitVerdict> {
+  const config = options.config ?? DEFAULT_LIMITS;
+  const counter = options.counter ?? processCounter;
+  const tier = subject.tier;
+  const configured = limitFor(config, bucket, tier);
+
+  if (configured === undefined) {
+    /* No window to roll and nothing to count, so the counter is not touched: an
+       unconfigured bucket must not be able to consume slots.
+
+       ── F-230-M: this branch returned `resetAt: new Date(0)` and `windowMs: 0` ──
+       Both reached a caller and both were wrong, in a way `limit: 0` and `remaining: 0` are
+       not. D-230-09 publishes `resetAt` as a MACHINE-READABLE member precisely so a client
+       parses it rather than regexing the sentence, and `http.ts` declines a `retry-after`
+       deliberately — so this one field is the entire recovery signal. The Unix epoch tells a
+       correctly-implemented client to wait zero: it retries, is refused, retries, and loops
+       at full request rate forever. The better-behaved the client, the tighter the loop.
+
+       `windowMs: 0` was the same sentinel surfacing in the exact-matched `detail`, as
+       `per 0ms`. `describeWindow`'s claim that a configured window it cannot describe does
+       not exist is true, and is exactly the assumption a sentinel breaks: an unconfigured
+       bucket has no configured window at all, and it was reaching a renderer that assumes it
+       is looking at one.
+
+       ── What replaces them ──
+       The true answer to *when may I come back* is "not without a deploy", so the refusal
+       says the longest thing a `Date` can honestly carry rather than the shortest. This
+       invents no ceiling: `limit` is 0, no request is ever admitted, and nothing is being
+       rationed over the interval — see `UNCONFIGURED_BACKOFF_MS` for why the number is also
+       chosen to be unlike every configured window, so the sentence identifies itself instead
+       of reading as a cell somebody closed on purpose.
+
+       `windowStart` is now, which keeps D-230-03's bindable `resetAt = windowStart +
+       windowMs` true for this verdict as it is for every other — the two fields are one
+       decision here, not two independent ones.
+
+       `Date.now()` rather than a clock on `CheckLimitOptions`: the counter already owns one,
+       and a second knob for the same quantity is the two-sources shape D-230-10 forecloses
+       at the window. The branch touches no slot, so it cannot borrow the counter's either.
+       `check.test.ts` brackets the call between two real clock reads instead. */
+    const windowStart = Date.now();
+    return {
+      allowed: false,
+      limit: 0,
+      remaining: 0,
+      resetAt: new Date(windowStart + UNCONFIGURED_BACKOFF_MS),
+      windowMs: UNCONFIGURED_BACKOFF_MS,
+    };
+  }
+
+  /* The identifier the tier NAMES, and the union is what makes the three cases total: each
+     arm carries exactly one identifier, so the branches below narrow to a `string` on every
+     path and the `?? ""` this line used to end with is gone. That fallback was not cosmetic —
+     it was the reading under which an absent identifier became one shared empty-string slot,
+     which is what a subject with nullable holes made possible. Reading `ip` for a keyed
+     subject would let one caller's requests count against two slots depending on which field
+     a route happened to fill. */
+  const identifier =
+    subject.tier === "key"
+      ? subject.key.keyId
+      : subject.tier === "account"
+        ? subject.accountId
+        : subject.ip;
+  const { count, resetAt } = counter.hit(bucket, tier, identifier, configured.windowMs);
+
+  return {
+    allowed: count <= configured.limit,
+    limit: configured.limit,
+    remaining: Math.max(0, configured.limit - count),
+    resetAt: new Date(resetAt),
+    windowMs: configured.windowMs,
+  };
+}
+
+/**
+ * `checkLimit`, refusing rather than reporting.
+ *
+ * T000 published `withSession` as a WRAPPER rather than a function returning
+ * `payload | Response`, and gave the reason: a guard that returns a union depends on every
+ * caller checking the union, and a caller who forgets runs the handler anyway. A
+ * `checkLimit` whose refusal is a boolean field has exactly that shape, and AC2 —
+ * *enforced server-side regardless of any client cap* — is the criterion a forgotten check
+ * makes false. So the enforcing form throws, and `withLimitsErrors` turns it into AC1's
+ * 429. The verdict form stays published and stays useful; it is just not the one a route
+ * that must not serve should be reaching for.
+ */
+export async function enforceLimit(
+  subject: LimitSubject,
+  bucket: string,
+  options: CheckLimitOptions = {},
+): Promise<LimitVerdict> {
+  const verdict = await checkLimit(subject, bucket, options);
+  if (verdict.allowed) return verdict;
+  /* Every part comes off the ONE verdict, including the window (D-230-10). Re-deriving any
+     of them here from the config would reintroduce exactly the disagreement the carried
+     field exists to foreclose: two reads of the same table, and nothing asserting they
+     agree. */
+  throw rateLimitedError(bucket, verdict);
+}
+
+/*
+ * `windowFor(subject, bucket, config)` was published here and is WITHDRAWN, struck rather
+ * than deleted because it read as the settled answer to "where does a renderer get the
+ * window".
+ *
+ * It existed to feed a fourth parameter on `rateLimited`. D-230-10 carries `windowMs` on the
+ * verdict instead, and the deciding argument is about this function rather than about the
+ * parameter: **a caller that can fetch the window separately can fetch one that disagrees
+ * with the verdict it is rendering.** Publishing the getter is what makes that reachable, so
+ * removing it is the fix and keeping it beside the carried field would be the hazard with a
+ * second spelling.
+ */
+

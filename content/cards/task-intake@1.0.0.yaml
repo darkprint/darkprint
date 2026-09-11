@@ -26,10 +26,10 @@ outputs:
     type: json
     description: The task as the line will see it, goal, constraints, and the criteria set it must clear.
 dependencies: []
-cannot:
+cannot: []
+will_not:
   - forward a request that failed the schema check
 
-requires_human: false
 risk_markers: []
 notes: >-
   The criteria reference is attached here rather than at the verifier, so both solvers write
@@ -37,4 +37,3 @@ notes: >-
 
 version: 1.0.0
 author: mara-veil
-ontology_version: 0.1.0

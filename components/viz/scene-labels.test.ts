@@ -3,7 +3,7 @@
 
    `roles-labels.test.ts` did this for one drawing and found four
    defects the size-only check could not see, two of which shipped
-   as `builu` and `failure Testence` on every phone. PROJECT.md §3.2
+   as `builu` and `failure Testence` on every phone. This file
    is the consequence: one figure was guarded and fifteen were not,
    and the fixer's own note on the lifecycle strip read "tight but
    legible", which is a measurement nobody had taken.
@@ -54,9 +54,18 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 /* ==================== the props the archive supplies ==================== */
 
 /**
- * The chain and the fan `/spec/ontology` hands the lattice figure, read the way the page
- * reads them. A drawing laid out from `view.ancestors` has to be measured with the terms
- * the vocabulary actually holds, because the widest of them decides the frame.
+ * The chain and the fan a lattice drawing lays out from, read the way a page reads them. A
+ * drawing built out of `view.ancestors` has to be measured with the terms the vocabulary
+ * actually holds, because the widest of them decides the frame.
+ *
+ * NAMED AFTER NO ROUTE SINCE 2026-09-06, and the correction is worth one line. This said
+ * `/spec/ontology`, which is now a redirect source: the owner folded that page into
+ * `/spec/card` so each term sits beside the card field that consumes it. Naming the new
+ * route here would repeat the mistake at a fresh address, because what this reads is the
+ * vocabulary and not a page. `components/spec/LatticeFigure.tsx` itself went earlier, with
+ * `EnforcementFigure` on the same instruction, which is why the roster above carries no
+ * entry for it; the cell at the foot of this file keeps the claim about the SHAPE the
+ * vocabulary still resolves, which is what any such drawing would be laid out from.
  */
 function latticeProps(): { chain: string[]; kin: string[] } {
   const view = getOntologyView();
@@ -161,7 +170,7 @@ const ROSTER: readonly SceneEntry[] = [
     render: () => framesOf(createElement(SectionLevels)),
   },
   // `components/home/lifecycle/ForkScene.tsx` had an entry here and the file is gone.
-  // `ForkAction` was its only caller and the author asked the drawing out of that panel,
+  // The fork panel was its only caller and the author asked the drawing out of that panel,
   // which left the scene with nowhere to render.
   // `components/home/nodecard/DezoomGraph.tsx` had an entry here and the file is gone.
   // It drew the card shrinking into a node of the starter graph at the end of the walk,
@@ -178,14 +187,12 @@ const ROSTER: readonly SceneEntry[] = [
   // blueprint clean and leaked, two frames, rendered through `SectionAbsentEdge` so the
   // numbers came from the engine rather than from this file. Both were deleted with
   // `/what-it-isnt`, which was their only mount.
-  /* `components/explain/WhichTasksGlance.tsx` had an entry here, for two placements of the
-     four-questions figure, and the file draws no scene now. It drew the four QUESTIONS as
-     lit discs on a cyan rail — which in this register says a question is a step in a run —
-     and the author's verdict was "it has wrong concepts assigned to nodes". That is the
-     same category error `ConceptFigures.tsx` was rebuilt out of two comments down, and the
-     answer is the same one: rows, a brace and real DOM text, no `<FlowScene` in the file.
-     Its own guard is `components/explain/which-tasks-glance.test.ts`, which holds the
-     property this file cannot — that every word in it is HTML rather than viewBox units.
+  /* The four-questions figure had an entry here, for two placements, before it stopped
+     drawing a scene and was later deleted. It drew the four QUESTIONS as lit discs on a
+     cyan rail — which in this register says a question is a step in a run — and the
+     author's verdict was "it has wrong concepts assigned to nodes". That is the same
+     category error `ConceptFigures.tsx` was rebuilt out of two comments down, and the
+     answer was the same one: rows, a brace and real DOM text, no `<FlowScene` in the file.
      Note what none of the cases below could see while the entry was here: the figure's four
      `no` edge labels were hidden on every desktop by the `hover` reveal gate, because this
      file renders static markup under `environment: "node"` where that media query never
@@ -255,11 +262,11 @@ describe("the guard covers every scene the site draws", () => {
     // through refactoring: `ConceptFigures.tsx` was rebuilt out of this register entirely
     // ("graphics that are not necessarly drawn from a 'blueprint' style") and no longer
     // contains a `<FlowScene`, and `lifecycle/ForkScene.tsx` was deleted when the drawing
-    // was asked out of `ForkAction`, its only caller. The floor guards the walk, not the
+    // was asked out of the fork panel, its only caller. The floor guards the walk, not the
     // count: lower it when a scene is genuinely deleted, never to make a case pass.
     //
     // 8 since 2026-08-07, and this is the third scene to go on the author's word rather
-    // than through refactoring: `WhichTasksGlance.tsx` drew four questions as five lit
+    // than through refactoring: the four-questions figure drew them as five lit
     // discs on a rail ("it has wrong concepts assigned to nodes") and was rebuilt as a
     // braced ledger of DOM text. The walk still finds every file that draws a scene; there
     // is one fewer file that draws one.
@@ -373,9 +380,12 @@ describe.each(MEASURED)("$name", (entry) => {
    * and it computes it for the two landing placements only — while this file walks a
    * derived roster of every figure on the site and never asked. The two halves sat four
    * files apart long enough for one sweep to find five figures under the floor at once:
-   * `EnforcementFigure` and `SpecLayers` at 6.76, `SectionLevels` at 6.98, `ScoreRadar`
-   * at 7.76, `GraphThumbnail` at 5.69. Every one was clipping-clean and collision-clean,
-   * so every one passed this file.
+   * `EnforcementFigure` and `SpecLayers` at 6.76, `SectionLevels` at 6.98, the scorecard
+   * radar at 7.76, `GraphThumbnail` at 5.69. Every one was clipping-clean and
+   * collision-clean, so every one passed this file. The radar is named without its
+   * symbol because `components/ui/ScoreRadar.tsx` was deleted on 2026-09-06 and a reader
+   * grepping the name would find nothing; the sweep is history, and four of its five
+   * figures still ship.
    *
    * ── What this case checks, and the half it cannot ──
    * It asserts the units, not the rendered pixels: a label below `FLOW.frame.legible`

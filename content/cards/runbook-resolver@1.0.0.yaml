@@ -35,10 +35,10 @@ outputs:
     description: The matched runbook at a pinned revision, preconditions and steps intact.
 dependencies:
   - intent-router
-cannot:
+cannot: []
+will_not:
   - resolve a runbook at any revision but the one current when the incident opened
 
-requires_human: false
 risk_markers: []
 notes: >-
   Pinning the revision matters more than the match. A runbook that changes mid-incident is how the
@@ -47,4 +47,3 @@ notes: >-
 
 version: 1.0.0
 author: mara-veil
-ontology_version: 0.1.0

@@ -1,0 +1,24 @@
+digraph guarded_merge_bot {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  pr     [card="pr-intake@1.0.0"];
+  triage [card="diff-triager@1.0.0"];
+  draft  [card="review-drafter@1.0.0"];
+  tests  [card="test-runner@1.1.0"];
+  gate   [card="maintainer-approval@1.0.0"];
+  merge  [card="merge-executor@1.0.0"];
+
+  pr -> triage -> draft -> tests;
+  // Engine spec §3.3 falls through to the spelling of the target id when no outgoing edge
+  // carries a condition, and `draft` sorts before `gate`, so every green run went back to
+  // the drafter and this bot never merged anything. `outcome` is the discriminator the
+  // engine sets itself from the runner's status: the card emits `green` on `result` only
+  // when every suite passed, and it counts a suite still executing at the timeout as a
+  // failure. §10 has `=` and `!=` and no disjunction, so a single key against its own
+  // negation is what makes the pair total: `fail`, `retry` and `partial_success` all go
+  // back to the drafter, and nothing reaches the maintainer on anything but a full pass.
+  tests -> draft [label="red", style=dashed, condition="outcome!=success"];
+  tests -> gate  [label="green", condition="outcome=success"];
+  gate  -> merge [label="human approve"];
+}

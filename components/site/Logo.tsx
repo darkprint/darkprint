@@ -3,7 +3,7 @@
 
    The site had a wordmark and no mark. This is one, and it is not a new idea — it is the
    site's own sentence drawn once: `components/home/lifecycle/Folder.tsx` already draws a
-   folder in `--color-blueprint-line` that opens to show `blueprint.dot`, `cards/*.yaml`
+   folder in `--color-blueprint-line` that opens to show `topology.dot`, `cards/*.yaml`
    and the two documents, and "a blueprint is a folder of text" is what the whole registry
    is arguing. A folder with a graph inside it states both halves at 24px.
 
@@ -82,6 +82,32 @@ const BACK_PLATE =
 /** The front flap, radii 2/4/4/4. */
 const FRONT_FLAP =
   "M8 26h46a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V28a2 2 0 0 1 2-2z";
+
+/**
+ * How far the back plate steps out from under the flap, in units of the 64 box.
+ *
+ * The two outlines were drawn on the same left, right and bottom edges, so at `plateAlpha`
+ * the only part of the plate a reader could actually see was the tab: the mark read as one
+ * sheet with a nub on it rather than as the two sheets `Folder.tsx` draws. Stepping the
+ * plate LEFT shows a band of it down the left edge, and the tab travels with it because
+ * they are ONE path — rule 1 in this file's header, which is why this is a transform on
+ * that path and not a second set of coordinates.
+ *
+ * **Left, not right, and the sign carries the meaning.** Left puts the band and the tab on
+ * the SAME side, which reads as a stack of sheets. Right puts them on opposite sides, and
+ * two edges pointing away from each other read as a drawing that went wrong.
+ *
+ * **The magnitude is bounded by the box rather than by taste.** The plate spans x 6 → 58
+ * and the `svg` root clips to its viewBox, so |offset| > 6 trades the plate's own 2/4
+ * corner radius for the flat cut of the box edge — visible in any square slot, which is
+ * every place the mark stands alone. At -4 there are 2 units of slack left and the band
+ * lands 1.5px wide at the 24 rung. `logo.test.ts` holds the bound so it is a check rather
+ * than a sentence.
+ *
+ * **It is geometry, so it is not per-pole.** Both grounds step by the same amount; this is
+ * deliberately not a field in `GROUNDS`, which carries colour.
+ */
+export const PLATE_OFFSET_X = -4;
 
 /** Where the flap's own path bottoms out in the 64 box. Read off `FRONT_FLAP` above. */
 const FLAP_FLOOR = 56;
@@ -329,7 +355,12 @@ export function Logo({
         : { role: "img", "aria-label": title })}
     >
       {rung.plate && (
-        <path d={BACK_PLATE} fill={pole.ink} fillOpacity={pole.plateAlpha} />
+        <path
+          d={BACK_PLATE}
+          transform={`translate(${PLATE_OFFSET_X} 0)`}
+          fill={pole.ink}
+          fillOpacity={pole.plateAlpha}
+        />
       )}
       <path
         d={FRONT_FLAP}

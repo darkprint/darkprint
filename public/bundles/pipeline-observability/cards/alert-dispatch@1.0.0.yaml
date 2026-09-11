@@ -1,0 +1,50 @@
+id: alert-dispatch
+name: Alert Dispatch
+type: tool
+phase: deployment
+
+action: >-
+  Post the gate's breach notice to the alert channel exactly once, and stay silent on an
+  all-clear.
+spec: >-
+  Read the notice handed to you on `signal`. When it is a breach, post it once to the
+  `pipeline-alerts` channel as it reached you, step, metric, threshold and figure, together with
+  the run's identifier, and stop; a posted message cannot be recalled, so if the provider has
+  not answered within fifteen seconds report the timeout and do not post again. When the notice
+  says the run is clear, post nothing: a channel that hears from every clean run stops being
+  read. You receive the notice and nothing else: never ask for the report or the records, and
+  never reword what the gate decided.
+tools:
+  - messaging
+mcp:
+  - slack
+skill: skills/alert-dispatch.md
+params:
+  channel: pipeline-alerts
+  quiet_on_clear: true
+  timeout_s: 15
+
+inputs:
+  - name: signal
+    type: event
+    description: The gate's notice, a breach or an all-clear, and the only thing this node ever receives.
+outputs: []
+dependencies:
+  - anomaly-gate
+cannot:
+  - structured
+will_not:
+  - post on an all-clear
+  - post the same breach twice in one run
+
+risk_markers:
+  - irreversible-action
+notes: >-
+  `structured` under `cannot` is the whole isolation of this blueprint stated in one term: the
+  trace records are `json` and the report is a `report`, both narrower than `structured`, so
+  the resolver refuses any edge that would carry either of them here. The notice is an `event`,
+  which sits under `signal` in the lattice and passes. `irreversible-action` is declared because
+  a message posted to a channel cannot be unsent.
+
+version: 1.0.0
+author: hachi

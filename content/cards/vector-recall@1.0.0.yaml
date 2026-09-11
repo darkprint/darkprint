@@ -32,10 +32,10 @@ outputs:
     description: The k nearest passages, nearest first, with document id and similarity score.
 dependencies:
   - retrieval-planner
-cannot:
+cannot: []
+will_not:
   - write this run's own text back into the store
 
-requires_human: false
 risk_markers: []
 notes: >-
   Read-only against the store: the desk recalls what has already been indexed and never writes
@@ -43,4 +43,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

@@ -1,35 +1,35 @@
 /* ============================================================
-   What the engine checks, one table per layer.
+   What the validator checks, one reference per layer.
 
-   These three lists used to sit in `app/spec/page.tsx`, which was
-   the only page that rendered them. Redesign spec §4.1 put each
-   layer on its own route, so the rows moved out here rather than
-   being split three ways into three page files: they are one claim
-   made at three scales, `CheckTable` renders all three in the same
-   shape for that reason, and a reader comparing the DOT table with
-   the card table is comparing two halves of one document.
+   The topology rows render on `/spec/topology` in the `CheckTable`
+   shape and the card rows on `/spec/card` as a stacked field
+   reference that draws the same check cell, because they are one
+   claim made at two scales and a reader comparing the two is
+   comparing two halves of one document.
 
-   Every code below is a real `Diagnostic.code` the engine can
-   raise. That is the whole point of the third column: a code is
-   greppable, it is what `/upload` and the build print, and it is
-   the difference between a promise and a thing a reader can go and
-   trip on purpose.
+   Every code below is a real `Diagnostic.code` the validator can
+   raise. That is the point of the check: a code can be grepped
+   for, it is what `/upload` and the build print, and it is what
+   separates a checked rule from a promise.
 
-   Plain data, no JSX, so a node test can import it.
+   Plain data, no JSX, so a node test can import it. `rows.test.ts`
+   holds the Attractor claims in here to the sections that state them.
    ============================================================ */
+
+import type { TermKind } from "@/lib/core";
 
 import type { CheckRow } from "./CheckTable";
 
-/** Layer 01. The DOT file, and the one attribute DarkPrint adds to it. */
+/** Layer 01. The DOT file, and the attribute names DarkPrint adds to it. */
 export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   {
     name: "digraph name { … }",
-    what: "The whole file. One directed graph per bundle, and a bundle that is not directed stops there, since every rule below reads which way an edge points.",
+    what: "The whole file. One directed graph per blueprint. A graph that is not directed stops there. Every rule below reads which way an edge points.",
     check: { codes: ["dot/parse-error", "dot/not-directed"], level: "error" },
   },
   {
     name: 'builder [card="id@version"]',
-    what: "Which card the node instantiates. The one attribute DarkPrint adds to DOT, and the version is pinned so two readings of the same file describe the same node.",
+    what: "Which card this node is an instance of, by id and exact version. The one DarkPrint attribute every node carries. A version that is not exact is refused, so two readers of the file always get the same card.",
     check: {
       codes: ["bundle/missing-card", "bundle/unpinned-card"],
       level: "error",
@@ -37,12 +37,12 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   },
   {
     name: '[digest="sha256:…"]',
-    what: "Optional integrity pin. A prefix of the card's content hash, with or without the algorithm, so a short display digest can be pasted straight in.",
+    what: "Optional integrity check. A card's digest is the SHA-256 hash of its contents; write the first characters of it here, with or without the sha256: prefix, and the blueprint is refused if the card it names has changed.",
     check: { codes: ["bundle/digest-mismatch"], level: "error" },
   },
   {
     name: "planner -> tester",
-    what: "An interface. The resolver pairs an output port with an input port by type, and an edge with no compatible pairing is a graph that cannot run.",
+    what: "A hand-off between two ports. The resolver, the part of the validator that wires edges, pairs one of the source card's outputs with one of the target card's inputs by data type; an edge with no compatible pair is refused.",
     check: {
       codes: ["bundle/type-mismatch", "bundle/missing-dependency"],
       level: "error",
@@ -50,7 +50,7 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   },
   {
     name: '[out="criteria", in="criteria"]',
-    what: "Which ports the edge carries, when a card declares several and the author wants to say so rather than let the resolver infer it.",
+    what: "Which output and which input the edge joins, by port name. Optional when only one pairing type-checks; when several do, the resolver warns (bundle/port-ambiguous) and asks for these. A name neither card declares is refused.",
     check: { codes: ["bundle/port-mismatch"], level: "error" },
   },
   {
@@ -63,7 +63,7 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   },
   {
     name: "ids, commas, comments",
-    what: "Whether the file runs under Attractor as it stands. DarkPrint's own parser accepts more than Attractor's grammar does, so a file can be readable here and refused there.",
+    what: "Whether Attractor's stricter grammar can read the file. DarkPrint accepts more Graphviz than Attractor does (a # comment, a hyphen in a node id, attributes separated by a semicolon or a space), so a file DarkPrint loads can still be refused by a runner. Parsing is not running: the file a runner takes is what `darkprint export --attractor` compiles out of the graph and its cards.",
     check: {
       codes: [
         "attractor/bad-node-id",
@@ -74,40 +74,79 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
     },
   },
   {
+    /* Both readings, because "compared against nothing" is true of DarkPrint and false of
+       the compiled file: Attractor matches the label to pick a branch and the exporter
+       writes it through. A row that stopped at the first reading would be true of this
+       page's subject and false of the artefact it tells the reader to compile. */
     name: '[label="acceptance criteria"]',
-    what: "What the author says an edge carries. It is shown on the blueprint page and compared against nothing; the two port types decide what actually travels.",
+    what: "What the author says the edge carries. DarkPrint compares it against nothing; the two port types decide what may travel. Attractor reads it a second way: the export copies the label into the compiled file, and Attractor spec §3.3 matches it, normalised, against the branch name a stage asks for, on edges that have no condition.",
   },
   {
-    name: "rankdir, style, shape",
-    what: "Graphviz layout. DarkPrint reads none of it, and the exporter writes its own shapes when it emits a runnable graph.",
+    name: '[condition="outcome=success"]',
+    what: "Attractor's condition on the edge, carried into the compiled file exactly as the author spelled it and parsed by nothing here. Spec §3.3 tries the conditional edges out of a node first: when any condition is true the run takes the one with the highest weight among them and never looks at the unconditional ones. Every computed score on this site counts a conditional edge as a path that can be taken.",
+  },
+  {
+    name: "[weight=10]",
+    what: "Numeric priority. Higher wins and the default is zero. Spec §3.3 reaches it fourth among the unconditional edges, after the conditions, the branch name the previous step asked for (if any) and the node ids it suggested, and it also ranks two conditions that are both true. DarkPrint carries the number and compares no two of them.",
+  },
+  {
+    /* Worth a row of its own: a fork with no condition on either edge is not a warning
+       anywhere, and an author who writes two bare edges out of one node and expects the
+       runner to ask has already lost. */
+    name: "a fork with neither",
+    what: "Deterministic, and rarely what the author meant. With no condition, no branch name asked for and no suggested id, spec §3.3 falls through to weight, and on equal weights it takes, as a last resort, the edge whose target node id comes first lexicographically. Two bare edges out of one node are a branch decided by the spelling of the node names.",
+  },
+  {
+    name: "rankdir, style",
+    what: "Graphviz layout. DarkPrint reads none of it, and none of it reaches the file a runner takes.",
+  },
+  {
+    /* No shape-to-handler table here on purpose: the mapping is `ATTRACTOR_TYPE_SHAPES` in
+       `lib/core/attractor/emit.ts`, and a copy transcribed into this table would go stale
+       without anything failing. This row says the rule and `/spec/attractor` renders the
+       table from the constant. */
+    name: "shape",
+    what: "The handler selector. Attractor spec §2.8 maps each shape to the handler that executes the node: a node with no shape is a box, which runs as an LLM step, and only an explicit type= outranks the shape. DarkPrint reads no shape out of a topology; the exporter writes each node's shape from its card's type.",
   },
 ];
 
 /**
+ * A card row: a check row that may also name the kind of term whose ids are its legal
+ * values. `/spec/card` prints those ids under the row, off the engine's own core view, so
+ * a field and the strings that go in it are read in one place.
+ */
+export interface CardRow extends CheckRow {
+  values?: TermKind;
+}
+
+/**
  * Layer 02. One node, fully described.
  *
- * ── The length pass, PROJECT.md §3.1 ──
- * `/spec/card` opens with the scroll-annotated card, whose nine annotations already
- * teach `id`/`type`/`phase`, `action`, `spec`, `model`, `tools`/`mcp`, `skill`, `inputs`,
- * `outputs` and `cannot` at length, from the same file. Every `what` below that restated one of them
- * was cut back to the part the annotation does not carry, and no row lost a claim: the
- * table's job here is the third column, which is the only place several of these
- * diagnostic codes are named anywhere on the site.
+ * One row per key in the file, in the order the file writes them, and the one rule that is
+ * not a key last. Each row is the field's one home on `/spec/card`: what it holds, the
+ * curated ids it may take, and the diagnostic beside it. The reach figure and the annotated
+ * card above the reference say what the same fields do on one real file, so a sentence
+ * that belongs to those is not repeated here.
  *
- * Two sentences moved rather than shrank, and both moved to a page whose subject they
- * are: "a stylesheet can override `model`" is annotation 02 and the `model` row below,
- * so the version-bump row no longer repeats it; "any number of them, including none" is
- * `/spec/ontology`, which owns the phase list.
+ * Every sentence is `lib/core/card/schema.ts`, `lib/core/card/validate.ts` or
+ * `lib/core/bundle/resolve.ts` read back.
  */
-export const CARD_ROWS: readonly CheckRow[] = [
+export const CARD_ROWS: readonly CardRow[] = [
   {
-    name: "id · version · ontology_version",
-    what: "A lowercase hyphenated id, optionally namespaced, and two semantic versions: the card's own and the vocabulary it was written against.",
+    name: "id · version",
+    what: "A lowercase hyphenated id, optionally namespaced, and the card's own semantic version. A graph pins a node to the pair as `id@version`.",
     check: { codes: ["card/bad-id", "card/bad-version"], level: "error" },
   },
   {
+    /* Optional, most cards leave `provenance` out, and leaving it out is not a defect: the
+       row says so rather than implying an absence. */
+    name: "name · action · agent · notes · author · provenance",
+    what: "Prose for whoever opens the card, carried into the download. `provenance` says where the card came from when its author says so, and most cards leave it out.",
+  },
+  {
     name: "type",
-    what: "One node-type term. A type under human-in-the-loop is what the autonomy reading asks about, so it has to resolve.",
+    values: "node-type",
+    what: "One node-type term, and the only field that says what kind of actor the node is. The autonomy reading asks two things of it: whether the type is a kind of `human-in-the-loop`, and whether it decides which other nodes run. The exporter draws the node's shape from it. A `shell-tool` with no command in `params.tool_command` is reported as `card/missing-field`, and the bundle still loads. Three of the curated values are categories: `human-in-the-loop`, `evaluative` and `orchestration`. The validator accepts a category, and the exporter has no shape for one and falls back to `box`, so write the concrete subtype.",
     check: {
       codes: ["card/unknown-term", "card/wrong-term-kind"],
       level: "error",
@@ -115,135 +154,97 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "phase",
-    what: "Which of the five lifecycle phases the node stands in, any number of them, and never a namespaced one.",
+    values: "phase",
+    what: "Where in the lifecycle the node stands: any number of the five. The key takes a single term or a sequence, because both spellings read naturally in YAML. The five are closed and nobody may add one, so a namespaced entry is refused. An empty list is a complete answer rather than a hole, because the phases describe the blueprint rather than every node in it. An intake, a retrieval step or a memory store stands in none of them. An empty list is shown as empty, never as missing.",
     check: {
       codes: ["card/unknown-phase", "card/namespaced-phase"],
       level: "error",
     },
   },
   {
-    name: "tools · risk_markers",
-    what: "Capability terms the node needs from its host, and the risks it declares. Both are vocabulary references rather than labels.",
-    check: { codes: ["card/unknown-term"], level: "error" },
+    name: "spec",
+    what: "The instruction handed to the agent when the graph runs.",
+    check: { codes: ["card/spec-too-thin"], level: "warning" },
   },
   {
-    name: "inputs · outputs",
-    // "This is what makes an edge checkable at all" was cut here by PROJECT.md §3.1's
-    // length pass as wording, and it is a claim: it is the reason typed ports exist and
-    // the premise the whole `cannot` demonstration rests on. Nothing else on the site
-    // said it — a grep for "checkable" over the built pages returned three hits, about
-    // the wiring being a file, about a score staying checkable, and about the card. Nine
-    // words, restored.
-    what: "The ports, each with a data-type term. This is what makes an edge checkable at all, and port names are unique within a side.",
+    /* The direction is the claim, and `rows.test.ts` holds it: Attractor spec §8.5 lists
+       the explicit node attribute first and says the stylesheet only sets properties the
+       node does not already have. §2.6's gloss "Overridable by stylesheet" names the field
+       and does not rank it. */
+    name: "model",
+    what: "Written the way the provider writes the identifier. A default rather than a binding: a graph's model_stylesheet sets the model for every node matching a shape. An explicit field here outranks the sheet (Attractor spec §8.5). Whoever runs the blueprint outranks both.",
+  },
+  {
+    name: "tools",
+    values: "tool",
+    what: "The capabilities the node is permitted to reach for, as tool terms rather than labels. `tools` says what the node may do and `mcp` says which process supplies it, and a node can carry either without the other.",
     check: {
-      codes: ["card/unknown-term", "card/duplicate-port"],
+      codes: ["card/unknown-term", "card/wrong-term-kind"],
       level: "error",
     },
   },
   {
+    name: "mcp",
+    what: "The MCP servers the node needs. The vocabulary has no term for a server and is not going to grow one, so every entry is free text.",
+  },
+  {
+    name: "skill",
+    what: "The path, inside the folder, of the document that defines the agent's behaviour.",
+  },
+  {
+    name: "inputs · outputs",
+    values: "data-type",
+    what: "The ports, each with a `name`, a `type`, a `description` and, on an input, `required`. The type is one data-type term, and it is the only part of a port the resolver pairs on. This is what makes an edge checkable at all: an edge holds when the source's output type is the target's input type or a narrower kind of it. The name is the end of an edge rather than a label. A DOT edge writes `[out=\"build\", in=\"brief\"]` to say which pair of ports it joins, so a name is unique within a side. The description is free text for whoever wires the graph, where a port says the part its type cannot. `required` is true unless the card says otherwise. On an output it describes nothing, and the validator reports it as `card/bad-type` against the exact path rather than dropping the key in silence. The bundle still loads.",
+    check: {
+      codes: ["card/unknown-term", "card/wrong-term-kind", "card/duplicate-port"],
+      level: "error",
+    },
+  },
+  {
+    /* The other direction is a warning under its own code, so it is named in the sentence
+       the way the topology table names `bundle/port-ambiguous`: one level per row, and the
+       row's level is the one that refuses. */
     name: "dependencies",
-    what: "Which cards this one receives from. Held both ways: a declared dependency needs an edge, and an edge wants a declaration.",
+    what: "Which cards this one receives from, checked both ways. A declared dependency with no edge into the node is refused. An edge from a card the node does not list is reported as `bundle/undeclared-dependency`, and the bundle still loads.",
     check: { codes: ["bundle/missing-dependency"], level: "error" },
   },
   {
     name: "cannot",
-    what: "What the node must never receive, enforced whenever the entry names a data type.",
-    check: { codes: ["bundle/prohibition-violated"], level: "error" },
-  },
-  {
-    name: "requires_human",
-    what: "Whether a person acts here. A human-in-the-loop type beside a flag saying otherwise describes two different nodes, and the analysis believes the flag.",
-    check: { codes: ["card/human-type-inconsistent"], level: "error" },
-  },
-  {
-    name: "params",
-    what: "Nested configuration, free in shape and required to survive a JSON round-trip: it is hashed as JSON into the digest.",
-    check: { codes: ["card/bad-type"], level: "error" },
-  },
-  {
-    /* The row is exact about when the check runs, because for a while it never did. The
-       rule needs a predecessor to compare against and a bundle supplies one only when it
-       carries two versions of the same card id, which is where `resolveBundle` now holds
-       it. The archive's own chains live in `content/cards/` and its loader checks them
-       there. Saying "the last published one" without saying where the last published one
-       comes from was how a row on this page described an error nothing could raise. */
-    name: "a second version of a card in one bundle",
-    what: "How far the version moved against the older one the bundle carries. Adding to cannot narrows the contract and is major; changing model is minor.",
-    check: { codes: ["card/version-bump-too-small"], level: "error" },
-  },
-  {
-    name: "spec",
-    what: "The instruction handed to the agent when the graph runs. Only its length is checked: under forty characters it is a placeholder.",
-    check: { codes: ["card/spec-too-thin"], level: "warning" },
-  },
-  {
-    name: "model",
-    what: "Written the way the provider writes the identifier, and overridable by a stylesheet on the graph.",
-  },
-  {
-    name: "mcp",
-    what: "The MCP servers this node needs, under the names the machine running the graph registers them with. The vocabulary names no such thing.",
-  },
-  {
-    name: "skill",
-    what: "A path inside the bundle. Nothing in the engine reads what it points at.",
-  },
-  {
-    name: "name · action · agent · notes · author",
-    what: "Prose for whoever reads the card. Carried into the download and checked by nothing.",
-  },
-  {
-    /* `provenance` was the one wire key this table did not list, which made "every field"
-       a claim it did not quite meet. It is optional, most cards leave it out, and leaving
-       it out is not a defect: the row says so rather than implying an absence. */
-    name: "provenance",
-    what: "Where the card came from, when its author says so. Optional, free text, and read by no analysis.",
-  },
-];
-
-/** Layer 03. The vocabulary, and what may be added to it from outside. */
-export const ONTOLOGY_ROWS: readonly CheckRow[] = [
-  {
-    name: "broader on a local term",
-    what: "Which core term subsumes yours. A namespaced term that reaches no curated term is ignored by every analysis, which is the worst outcome available.",
-    check: { codes: ["ontology/local-term-unrooted"], level: "error" },
-  },
-  {
-    name: "a local phase",
-    what: "Refused. The five phases are the one dimension a local namespace may not extend, because a sixth phase is a different definition of the thing being described.",
-    check: { codes: ["ontology/phase-not-extensible"], level: "error" },
-  },
-  {
-    name: "broader chains",
-    what: "The subsumption graph itself: every pointer resolves, and no term is its own ancestor.",
+    what: "Data types the node must never receive: the same data-type terms a port takes, and nothing else. Each entry is a prohibition the resolver enforces, held to the same rule that pairs an edge's ports. An incoming edge able to carry that type fails the whole blueprint. A sentence written here does not resolve, because the validator has no way to hold a graph to a sentence and this is the field it holds graphs to.",
     check: {
-      codes: ["ontology/dangling-pointer", "ontology/cyclic-broader"],
+      codes: ["card/unknown-term", "card/wrong-term-kind", "bundle/prohibition-violated"],
       level: "error",
     },
   },
   {
-    name: "defaultWeight on a local marker",
-    what: "What a locally coined risk marker costs. Leave it out and the marker counts zero; give it a negative one and it would hand points back, so that counts zero too.",
+    /* The row states what nothing checks and then names the one thing that is checked
+       about it. Leaving the check empty would put this row in the same visual class as a
+       field that is read and happens to be accepted, and the whole reason the field exists
+       is that a reader can see the difference. `honesty.test.ts` pins the two sentences
+       that say so. */
+    name: "will_not",
+    what: "The prohibitions the author states and the validator cannot check: “never opens a shell”, “does not edit the code under test”. Nothing reads them, and they are addressed to whoever runs the node and to the model that is handed the specification at run time. `cannot` holds the rules the validator enforces and `will_not` the ones it cannot. Both are legitimate. A reader has to be able to tell which is which without running anything. The one thing checked here is that no data type is written in it by mistake.",
+    check: { codes: ["card/prohibition-misfiled"], level: "warning" },
+  },
+  {
+    name: "risk_markers",
+    values: "risk-marker",
+    what: "What could go wrong if this step misbehaves, as risk-marker terms rather than sentences. Seven core markers carry a weight in DarkPrint's configuration, and Security subtracts each one it finds. A marker coined in a blueprint's own namespace sets its own weight. A marker with no weight, including the two category terms `execution-risk` and `isolation-breach`, is declared and never scored.",
     check: {
-      codes: [
-        "ontology/local-marker-unweighted",
-        "ontology/local-marker-bad-weight",
-      ],
-      level: "warning",
+      codes: ["card/unknown-term", "card/wrong-term-kind"],
+      level: "error",
     },
   },
   {
-    name: "a local id over a core one",
-    what: "An overlay term that reuses a curated id. It works, and it changes what that id means for everybody reading the bundle.",
-    check: { codes: ["bundle/ontology-mismatch"], level: "warning" },
+    name: "params",
+    what: "Nested configuration, free in shape, which must survive a JSON round trip. The card's digest is a hash of its JSON form, and a blueprint pins a card by that digest. A value that cannot be serialised is refused where it is written rather than later, when two digests disagree. Two keys are read: `max_iterations` is the iteration cap, and `tool_command` is the command a `shell-tool` runs.",
+    check: { codes: ["card/bad-type"], level: "error" },
   },
   {
-    name: "ontology_version",
-    what: "Which vocabulary the card and the bundle were written against, held against the one they are being read against.",
-    check: { codes: ["bundle/ontology-mismatch"], level: "warning" },
-  },
-  {
-    name: "label · description",
-    what: "What a term means, for the person choosing between two of them. Shown on the ontology page and read by no analyzer.",
+    /* Exact about when the check runs: the rule needs a predecessor to compare against, and
+       a blueprint supplies one only when it carries two versions of the same card id. */
+    name: "a second version of a card in one blueprint",
+    what: "When a blueprint carries two versions of one card, the newer one must bump its version at least as far as the change requires. Adding to `cannot` narrows what the node accepts, so it needs a major bump. Changing `model` needs a minor bump.",
+    check: { codes: ["card/version-bump-too-small"], level: "error" },
   },
 ];

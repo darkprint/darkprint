@@ -14,10 +14,7 @@
 
    The files, and why each one exists:
 
-     factory.dot    what Attractor runs. `emitAttractorDot`, so every
-                    node carries its card's `spec` as the `prompt`
-                    the agent receives (doc 1 §0.1.2).
-     blueprint.dot  the DarkPrint topology, verbatim. The card pin on
+     topology.dot   the DarkPrint topology, verbatim. The card pin on
                     every node is intact, which is what makes the
                     bundle digest recomputable off these bytes (§4).
      cards/*.yaml   the pinned cards, verbatim from the archive. Same
@@ -29,45 +26,77 @@
        .yaml        from it. A `risk_markers` entry the folder does
                     not define reads as `card/unknown-term` against
                     the core alone, the card is rejected with it, and
-                    the two scores the README quotes cannot be
-                    recomputed from the files that are supposed to
-                    have produced them.
+                    the scores the site prints cannot be recomputed
+                    from the files that are supposed to have produced
+                    them.
      README.md      product copy. Identity, digest, where execution
-                    happens, the command, and what DarkPrint does
-                    not do (doc 1 §0.1.3, doc 2 §2.5).
+                    happens, what the folder holds, and what a runner
+                    reads that no file here sets (doc 1 §0.1.3).
 
    PURE and deterministic: the same bundle always produces the same
    bytes in the same order.
+
+   ── `factory.dot` and `AGENTS.md`, removed (owner instruction, 2026-08-25) ──
+   A published folder used to also carry a compiled `factory.dot` (topology plus a
+   synthesised `__start`/`__exit` and every card's `spec` inlined as `prompt`, emitted by
+   `emitAttractorDot`) and a generated `AGENTS.md` (the same graph narrated for an agent
+   adapting it). Both are gone: the folder now hands over exactly what an author wrote —
+   the topology and the pinned cards — and stops shipping a second, compiled description
+   of the same graph next to the first. `emitAttractorDot` itself is untouched in
+   `lib/core`; it has callers outside this module (`emit.test.ts`) and stays there as a
+   general DOT-emission capability.
+
+   `FACTORY_DOT` outlived that removal for one reason and no longer has it: the two FROZEN
+   suites that imported the name were its only consumers, so the export existed to be
+   imported by a test. The owner authorised unfreezing both (2026-08-25 instruction,
+   re-stated in conversation), the pins came out, and the constant is DELETED. Nothing in
+   the product writes, serves or names that file any more; the suites that assert a bundle
+   never contains one spell it as a literal, which is the honest spelling for a name with
+   no definition behind it.
+
+   `BUNDLE_AGENTS` stays, and for a different and real reason: `components/upload/
+   BundleDropzone.tsx` reads it to recognise an `AGENTS.md` a reader drops from an older
+   download or writes by hand, so the wizard can say what the file is instead of calling it
+   an unreadable document. That is a live consumer in the product, not a test pin.
    ============================================================ */
 
 import {
-  emitAttractorDot,
+  type AttractorScope,
   type BlueprintAnalysis,
   type CardRef,
   type OntologyTerm,
-  type Port,
   type ResolvedBlueprint,
 } from "@/lib/core";
-import { autonomyStatement } from "@/lib/format";
+/* Deep import, and deliberately not through `@/lib/core`: the barrel publishes the union
+   `ATTRACTOR_UNEXPRESSED_ATTRIBUTES`, and the union is the shape that carried the false
+   sentence this section exists to keep out. `emit.ts` split it into the two groups because
+   "falls back to the runner's own default" is false for the names a handler reads bare, and
+   a README rendering the union would have to re-derive that split from a third copy of the
+   spec facts. Importing the split constants is what makes the folder and the emitted header
+   the same two lists rather than two readings of one list. */
+import {
+  ATTRACTOR_DEFAULTING_ATTRIBUTES,
+  ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
+} from "@/lib/core";
+import { SITE_ORIGIN } from "@/lib/site";
 import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-24) (cited at line 57): folded into SEAM-19; server-side compile on publish
-// TODO(SEAM-25) (cited at line 639): folded into SEAM-19; server-side generation on publish
 
 /* --------------------- the layout --------------------- */
 
-/** The Attractor-runnable pipeline. */
-export const FACTORY_DOT = "factory.dot";
-
 /** The DarkPrint topology, as the registry stores it. */
-export const TOPOLOGY_DOT = "blueprint.dot";
+export const TOPOLOGY_DOT = "topology.dot";
 
 export const BUNDLE_README = "README.md";
 
 /**
- * The agent-facing file. `README.md` addresses a person deciding whether to run this;
- * this addresses the agent being asked to fit the pattern into a codebase.
+ * The name an agent-facing file used to have in a published bundle.
+ *
+ * `exportBundle` no longer writes this file (owner instruction, 2026-08-25 — see the file
+ * banner), and no download has contained one since. It is still exported because
+ * `components/upload/BundleDropzone.tsx` recognises the name: a reader dropping an older
+ * download, or a folder they wrote by hand, gets told what the file is rather than being
+ * told it is not a `.dot`, `.yaml`, `.yml` or `.json` document. Naming that file needs
+ * this constant to exist even though nothing writes one.
  */
 export const BUNDLE_AGENTS = "AGENTS.md";
 
@@ -110,15 +139,11 @@ export function bundleHref(slug: string, file: string): string {
 }
 
 /**
- * Where this site is served from, with no trailing slash.
- *
- * It was a bare literal inside `bundleReadme`'s "Exported from" line, which was the only
- * place a bundle named its own origin. It is now also the origin printed in the download
- * command `components/blueprint/CloneMenu.tsx` hands a reader to paste into a terminal,
- * and those two must be the same host or the folder a reader fetches is not the folder
- * the README inside it claims to have come from.
+ * Where this site is served from, with no trailing slash. Re-exported from `lib/site` so
+ * the README's "Exported from" line and the download command a reader pastes print the
+ * same host, or the folder a reader fetches is not the folder its README claims.
  */
-export const SITE_ORIGIN = "https://darkprint.io";
+export { SITE_ORIGIN };
 
 /**
  * Where the card library's copies live under `public/`, relative to it.
@@ -170,8 +195,12 @@ export interface ExportedVocabulary {
 
 export interface BundleExportInput {
   blueprint: ResolvedBlueprint;
-  /** The two computed scores, quoted verbatim in the README (doc 1 §8.3). */
-  analysis: BlueprintAnalysis;
+  /**
+   * The scores the release was published with. No file the export writes reads them: the
+   * README describes the folder and leaves the reading to the site, so a caller that holds
+   * no scorecard hands over nothing here.
+   */
+  analysis?: BlueprintAnalysis;
   /**
    * Every card the archive holds for this bundle. Order is irrelevant and duplicates
    * are collapsed, so the caller may hand over its own read order untouched.
@@ -199,7 +228,7 @@ export interface BundleExportInput {
  * Throws when a node pins a card the input does not carry. The loader cannot produce
  * such a bundle — `resolveBundle` raises `bundle/missing-card` first and the archive
  * reader refuses to publish it — so reaching here with one means the caller assembled
- * the input wrongly, and shipping a folder whose `factory.dot` references a card that
+ * the input wrongly, and shipping a folder whose `topology.dot` references a card that
  * is not in it would be worse than failing the build.
  */
 export function exportBundle(input: BundleExportInput): readonly ExportedFile[] {
@@ -208,12 +237,10 @@ export function exportBundle(input: BundleExportInput): readonly ExportedFile[] 
 
   const files: ExportedFile[] = [
     { path: BUNDLE_README, text: bundleReadme(input) },
-    { path: BUNDLE_AGENTS, text: bundleAgents(input) },
-    // Verbatim, both of them. The digest is taken over this DOT source and these card
-    // digests, so any normalisation here would break the one claim the README makes
-    // that a reader can check on their own machine.
+    // Verbatim. The digest is taken over this DOT source and these card digests, so any
+    // normalisation here would break the one claim the README makes that a reader can
+    // check on their own machine.
     { path: TOPOLOGY_DOT, text: input.blueprint.dot },
-    { path: FACTORY_DOT, text: emitAttractorDot(input.blueprint) },
     ...cards.map((card) => ({ path: cardFilePath(card.ref), text: card.text })),
   ];
 
@@ -235,7 +262,7 @@ export function exportBundle(input: BundleExportInput): readonly ExportedFile[] 
  * thing that must never be true of that list is that it disagrees with what is on disk: a
  * command missing a file writes a folder that does not resolve, and a command naming a
  * file that is not there aborts partway through on `--fail-early` and leaves a half-written
- * folder behind. So the list is derived here, beside the writer, from the same four
+ * folder behind. So the list is derived here, beside the writer, from the same two
  * constants and the same `cardFilePath` — and `bundle-export.test.ts` holds it to
  * `exportBundle(input).map((f) => f.path)` over every bundle in the archive, which is the
  * assertion that makes "derived from the same values" a fact rather than an intention.
@@ -260,9 +287,7 @@ export function bundleFilePaths(input: {
 }): readonly string[] {
   const paths = [
     BUNDLE_README,
-    BUNDLE_AGENTS,
     TOPOLOGY_DOT,
-    FACTORY_DOT,
     ...[...new Set(input.cardRefs)].map(cardFilePath),
   ];
   if (input.vocabulary) paths.push(BUNDLE_VOCABULARY);
@@ -428,220 +453,19 @@ function pinnedCards(input: BundleExportInput): ExportedCard[] {
   return [...out.values()].sort((a, b) => (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0));
 }
 
-/* --------------------- the agent file --------------------- */
-
-/**
- * `AGENTS.md` — the bundle, addressed to the agent adapting it.
- *
- * `README.md` is for a person deciding whether to run this folder. This is for Claude
- * Code, Gemini, Codex or anything else being handed the folder and asked to fit the
- * pattern into a codebase that already exists.
- *
- * ── Generated, and only the generated half ──
- * Everything here is read off `blueprint.dot` and the cards. Nothing is typed, for the
- * reason `ScoringModel.tsx` states about numbers: a second description of the graph is a
- * second description that drifts from the first, and this one would drift silently
- * because no reader opens both.
- *
- * The half a generator cannot write — what problem this pattern solves, what to look for
- * in the codebase, when not to use it — is the uploader's, and there is no field for it
- * yet. So this file does not leave a heading for it. An empty "How to adapt this" section
- * is a promise the folder does not keep, and the file says plainly what it does not know
- * rather than implying somebody forgot to fill it in.
- *
- * ── Why the prohibitions lead ──
- * They are the one thing an agent adapting a pattern is most likely to get wrong, because
- * they are the part with no positive trace in the code: a connection nobody drew looks
- * exactly like a connection nobody thought of. Doc 2 §3's whole argument is that isolation
- * is a property of the topology, and the topology is what an agent is about to rewrite.
- *
- * ── Enforced against free text ──
- * `NodeCard.cannot` mixes two things. An entry naming an ontology `data-type` is a rule
- * `bundle/resolve.ts` checks and will fail the bundle over; an entry naming anything else
- * is a sentence addressed to a reader and checked by nothing. Collapsing them here would
- * tell an agent that "never opens a shell" is verifiable, and it is not. They are printed
- * under separate headings for that reason, and the free-text ones say so in the open.
- */
-export function bundleAgents(input: BundleExportInput): string {
-  const { blueprint } = input;
-  const { manifest } = blueprint;
-  const view = blueprint.ontology;
-
-  const out: string[] = [];
-  const push = (...lines: string[]): void => {
-    out.push(...lines);
-  };
-
-  push(`# ${manifest.title}, for an agent`, "");
-  push(
-    ...wrap(
-      `You are being handed a DarkPrint blueprint: a pattern for ${manifest.summary
-        .trim()
-        .replace(/\.$/, "")
-        .toLowerCase()}.`,
-    ),
-    "",
-  );
-  push(
-    ...wrap(
-      "Everything below is read off `blueprint.dot` and the cards in this folder. It describes " +
-        "the pattern and nothing else: it has not seen the codebase you are about to change, and " +
-        "it carries no instructions from whoever published it.",
-    ),
-    "",
-  );
-
-  /* ---- the prohibitions, first ---- */
-  const enforced: [string, string][] = [];
-  const freeText: [string, string][] = [];
-  for (const node of blueprint.nodes) {
-    for (const entry of node.card.cannot) {
-      const term = view.resolve(entry)?.term;
-      if (term !== undefined && term.kind === "data-type") enforced.push([node.nodeId, entry]);
-      else freeText.push([node.nodeId, entry]);
-    }
-  }
-
-  push("## What must never be connected", "");
-  if (enforced.length === 0 && freeText.length === 0) {
-    push(
-      ...wrap(
-        "No node in this blueprint declares a prohibition. Nothing here is an isolation rule, " +
-          "so the wiring below carries the whole of the design.",
-      ),
-      "",
-    );
-  }
-  if (enforced.length > 0) {
-    push(
-      ...wrap(
-        "These are enforced. Each names a data type the node must never be handed, and the " +
-          "resolver fails the bundle if an incoming edge could carry it. Rewiring this pattern " +
-          "in a way that breaks one of them does not produce a variant of the pattern; it " +
-          "produces a bundle that will not resolve.",
-      ),
-      "",
-    );
-    for (const [nodeId, entry] of enforced) {
-      push(`- \`${nodeId}\` must never receive \`${entry}\`.`);
-    }
-    push("");
-  }
-  if (freeText.length > 0) {
-    push("Stated by the author and checked by nothing. Read them; do not assume a tool will.", "");
-    for (const [nodeId, entry] of freeText) {
-      push(`- \`${nodeId}\`: ${entry}`);
-    }
-    push("");
-  }
-
-  /* ---- the nodes ---- */
-  push("## The nodes", "");
-  for (const node of blueprint.nodes) {
-    const card = node.card;
-    push(`### \`${node.nodeId}\` — ${card.name}`, "");
-    push(card.action.trim(), "");
-    const facts: string[] = [`type \`${card.type}\``];
-    if (card.phases.length > 0) facts.push(`phase ${card.phases.map((p) => `\`${p}\``).join(", ")}`);
-    if ((card.model ?? "").trim() !== "") facts.push(`model \`${card.model}\``);
-    if (card.tools.length > 0) facts.push(`tools ${card.tools.map((t) => `\`${t}\``).join(", ")}`);
-    if (card.requiresHuman) facts.push("**a person acts here**");
-    push(facts.join(" · "), "");
-    const ports = (label: string, list: readonly Port[]): void => {
-      if (list.length === 0) return;
-      push(
-        `${label}: ${list
-          .map((p) => `\`${p.name}\`: \`${p.type}\`${p.required === true ? " (required)" : ""}`)
-          .join(", ")}`,
-        "",
-      );
-    };
-    ports("Takes", card.inputs);
-    ports("Emits", card.outputs);
-  }
-
-  /* ---- the wiring ---- */
-  push("## The wiring", "");
-  if (blueprint.edges.length === 0) {
-    push("No edges. Every node in this graph stands alone.", "");
-  } else {
-    push("```");
-    for (const edge of blueprint.edges) {
-      const carried = edge.fromPort?.type ?? edge.toPort?.type;
-      push(`${edge.source} -> ${edge.target}${carried === undefined ? "" : `   ${carried}`}`);
-    }
-    push("```", "");
-    push(
-      ...wrap(
-        "An edge that is absent is as much a part of this pattern as one that is present. Before " +
-          "adding a connection the graph does not have, check it against the prohibitions above.",
-      ),
-      "",
-    );
-
-    /* The trap this exists to close: a node can declare an input that no edge feeds. On the
-       starter that is `builder`, whose brief arrives when the run is instantiated, and the
-       missing edge is the entire point of the pattern. An agent reading "Takes: brief" with
-       nothing pointing at the node is one step from drawing the edge that breaks it. */
-    const fed = new Set(blueprint.edges.map((edge) => edge.target));
-    const unfed = blueprint.nodes.filter(
-      (node) => node.card.inputs.length > 0 && !fed.has(node.nodeId),
-    );
-    if (unfed.length > 0) {
-      push(
-        ...wrap(
-          `${unfed.length === 1 ? "One node declares an input" : `${unfed.length} nodes declare inputs`} ` +
-            "that no edge in this graph feeds: " +
-            `${unfed.map((node) => `\`${node.nodeId}\``).join(", ")}. ` +
-            "That is not a gap to fill. What they take arrives when the run is instantiated, and " +
-            "on some patterns the absent edge is the design.",
-        ),
-        "",
-      );
-    }
-  }
-
-  /* ---- what this file does not know ---- */
-  push("## What this file does not tell you", "");
-  push(
-    ...wrap(
-      "Where this pattern belongs in the codebase, what to look for before wiring it in, and " +
-        "when not to use it at all. Those depend on the code, and nothing in this folder has " +
-        "seen it. Read the graph, read the cards, then read the code.",
-    ),
-    "",
-  );
-  push(
-    ...wrap(
-      `\`${BUNDLE_README}\` covers running the pattern as it stands, including the command and the ` +
-        "digest that confirms these files are the ones the registry read.",
-    ),
-    "",
-  );
-
-  return `${out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`;
-}
-
 /* --------------------- the README --------------------- */
 
 /**
  * The README, as product copy.
  *
- * Four things it has to say, from the item-10 contract: which blueprint this is and
- * what its content digest is; that execution happens on the reader's own machine (doc
- * 1 §0.1.3); the command that runs it; and that DarkPrint neither executes it nor
- * collects anything. Everything numeric in it comes from the engine, and the two
- * scores are quoted rather than paraphrased (doc 1 §8.3).
- *
- * Doc 2 §1.1 governs the score section. The autonomy class is a description of what
- * this factory automates and where a person stands in it, and it is a name rather than
- * an ordinal: "level" belongs to the security scale and to the 1-to-5 organisational
- * ladder, which are different scales about different subjects. The human nodes are named
- * because §8.3 requires the working to be visible, and named in the engine's own
- * neutral sentence.
+ * It says which blueprint this is and what its content digest is, that execution happens
+ * on the reader's own machine (doc 1 §0.1.3) and how the folder becomes a pipeline, what
+ * each file in the folder is, and what an Attractor runner reads that no file here sets.
+ * Everything numeric in it comes from the engine. One sentence per claim, and nothing the
+ * folder's own files already state.
  */
 export function bundleReadme(input: BundleExportInput): string {
-  const { blueprint, analysis } = input;
+  const { blueprint } = input;
   const { manifest } = blueprint;
   const cards = pinnedCards(input);
   const local = input.vocabulary === undefined ? [] : localTermsUsed(input);
@@ -657,7 +481,10 @@ export function bundleReadme(input: BundleExportInput): string {
   push("```");
   push(`blueprint      ${manifest.slug}`);
   push(`bundle digest  ${blueprint.digest}`);
-  push(`ontology       v${manifest.ontologyVersion}`);
+  /* There is no `ontology` line. It quoted a version of the core vocabulary, and the
+     vocabulary has none: DarkPrint's terms name what an Attractor node is, and that shape
+     is fixed by Attractor's spec. The `local terms` line below is the part a reader of
+     this folder can act on, because those terms travel in the folder. */
   push(`nodes          ${blueprint.nodes.length}`);
   push(`cards pinned   ${cards.length}`);
   if (local.length > 0) {
@@ -665,37 +492,44 @@ export function bundleReadme(input: BundleExportInput): string {
   }
   push("```", "");
   push(
-    "The digest is taken over `blueprint.dot` and the digest of every card version pinned in it.",
+    "The digest is taken over `topology.dot` and the digest of every card version pinned in it.",
     "Recompute it to confirm these files are the ones DarkPrint read. One changed byte gives a",
     "different digest.",
     "",
   );
 
-  /* ---- run it: doc 1 §0.1.3, and the command ---- */
+  /* ---- run it: doc 1 §0.1.3, and how the folder becomes a pipeline ---- */
   push("## Run it", "");
   push(
     "This runs on your machine. DarkPrint hands out the files and analyses them statically. It",
     "executes nothing and holds none of your provider keys.",
     "",
   );
-  push("```", `attractor run ${FACTORY_DOT}`, "```", "");
-  push("Check it first, without spending tokens:", "");
+  /* Two claims that were once one sentence and are kept apart on purpose: DarkPrint compiles
+     a pipeline when somebody asks for one, and executes nothing under any circumstances. The
+     execution half is doc 1 §0.1.3 and is pinned above, in its own paragraph, where a length
+     pass cannot take it out with a sentence about compilation. */
+  const disclosure = runnerDisclosureSection();
   push(
-    "```",
-    `attractor validate ${FACTORY_DOT}`,
-    `attractor run ${FACTORY_DOT} --simulate`,
-    "```",
-    "",
-  );
-  push(
-    `\`${FACTORY_DOT}\` is self-contained. Every node carries its card's \`spec\` as the \`prompt\` its`,
-    "agent receives, so the runner needs no other file from this folder. Flags vary between",
-    "Attractor runners; `attractor run --help` is authoritative on yours.",
+    ...wrap(
+      "This folder carries the topology and its pinned cards, nothing compiled. To compile them " +
+        "into a pipeline a graph runner takes, run `darkprint export <dir> --attractor`. It " +
+        "writes Attractor DOT to stdout, " +
+        /* The empty arm is the day the emitter writes every reserved name: there is then no
+           section to point at, and a sentence promising one would send a reader looking for a
+           heading that is not in the file. */
+        (disclosure.length === 0
+          ? "under a header naming what it read this from. "
+          : "and that file opens with the same two lists this README carries under " +
+            `*${README_RUNNER_SECTION.replace(/^#+ /, "")}*. `) +
+        "Adapting the result, or building the run yourself from these files instead, is your " +
+        "own harness's job.",
+    ),
     "",
   );
 
-  /* The command above spends tokens on somebody's account, so which model it spends them
-     on belongs beside it rather than three sections down. Written only when a card names
+  /* Which model a node runs on is visible without a compiled file: it is the card's own
+     `model` field, verbatim in the YAML this folder ships. Written only when a card names
      one: a folder where nothing does would be claiming a default it never set. */
   const modelled = blueprint.nodes.filter((node) => (node.card.model ?? "").trim() !== "");
   if (modelled.length > 0) {
@@ -703,12 +537,10 @@ export function bundleReadme(input: BundleExportInput): string {
       ...wrap(
         [
           modelled.length === 1
-            ? "One node in this blueprint names the model it runs on, and carries it as `llm_model`."
-            : `${modelled.length} of the ${blueprint.nodes.length} nodes name the model they run on, and carry it as \`llm_model\`.`,
-          "That is Attractor's own attribute for it, so the run uses those models as they stand and",
-          "your provider has to serve them. A node attribute outranks a graph-level",
-          "`model_stylesheet`, so edit the line to run a node on something else, and delete the",
-          "attribute to hand the choice back to your own configuration.",
+            ? "One node in this blueprint names the model it runs on, in its card's own `model` field."
+            : `${modelled.length} of the ${blueprint.nodes.length} nodes name the model they run on, in their card's own \`model\` field.`,
+          `Read it off \`${BUNDLE_CARDS_DIR}/<ref>.yaml\`; whether your harness honours it is yours to`,
+          "decide.",
         ].join(" "),
       ),
       "",
@@ -720,12 +552,11 @@ export function bundleReadme(input: BundleExportInput): string {
   // Laid out from the list rather than by hand-counted spaces, so a row whose name is
   // longer than the others moves the column instead of falling out of it.
   const folder: readonly (readonly [string, string])[] = [
-    [FACTORY_DOT, "the pipeline Attractor runs, each card's spec inlined as a prompt"],
+    [TOPOLOGY_DOT, "node ids, edges, and the card version pinned on each node"],
     [
-      TOPOLOGY_DOT,
-      "the DarkPrint topology: node ids, edges, the card version pinned on each node",
+      `${BUNDLE_CARDS_DIR}/`,
+      "the pinned cards, as the registry stores them; each carries the `spec` that becomes its node's prompt",
     ],
-    [`${BUNDLE_CARDS_DIR}/`, "the pinned cards, byte for byte as the registry stores them"],
     ...(local.length === 0
       ? []
       : [
@@ -735,19 +566,11 @@ export function bundleReadme(input: BundleExportInput): string {
           ] as const,
         ]),
     [BUNDLE_README, "this file"],
-    [BUNDLE_AGENTS, "the same folder addressed to an agent adapting it, generated from the cards"],
   ];
   const column = Math.max(...folder.map(([name]) => name.length)) + 3;
   push("```");
   for (const [name, note] of folder) push(`${name.padEnd(column)}${note}`);
   push("```", "");
-  push(
-    "Two DOT files, because they answer different questions. `blueprint.dot` is what the registry",
-    "stores and scores. `factory.dot` is that same graph prepared for a runner: a synthesised",
-    "`__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges",
-    "and you are back to the topology.",
-    "",
-  );
 
   /* ---- the pointers this folder does not resolve ---- */
   const skills = skillPointers(input);
@@ -759,9 +582,9 @@ export function bundleReadme(input: BundleExportInput): string {
             ? "One card in this bundle names a skill document."
             : `${skills.length} of the nodes in this bundle name a skill document.`,
           "There is no `skills/` directory above and there is not meant to be: DarkPrint stores the",
-          "pointer and reads nothing at the other end of it, so a skill document is never part of a",
-          "bundle. The paths are relative to the repository you run this blueprint from, and writing the",
-          "documents is yours to do.",
+          "pointer and reads nothing at the other end of it. The paths are relative to the repository",
+          "you run this blueprint from, and writing the documents is yours to do. Nothing here needs",
+          "them to run, because every card carries its own `spec` inline.",
         ].join(" "),
       ),
       "",
@@ -770,108 +593,140 @@ export function bundleReadme(input: BundleExportInput): string {
     push("```");
     for (const pointer of skills) push(`${pointer.nodeId.padEnd(skillColumn)}${pointer.skill}`);
     push("```", "");
-    push(
-      ...wrap(
-        [
-          "Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline",
-          "as the prompt its agent receives, so a runner given this folder and nothing else has the",
-          "whole instruction for every node. A skill document adds a capability to one agent; what the",
-          "blueprint decides is who is wired to whom.",
-        ].join(" "),
-      ),
-      "",
-    );
   }
 
-  /* ---- the node table ---- */
+  /* ---- what a runner reads and this folder cannot say ---- */
+  /* Next to the skill pointers on purpose: both sections are about what the folder does not
+     resolve, and a reader who has just been told that a `skill` path leads nowhere in here is
+     the reader who needs to know that a compiled copy of this graph is silent about a runner's
+     gates, timeouts and join policies too. Computed above, where the `darkprint export`
+     paragraph decides whether it may point at it. */
+  push(...disclosure);
+
+  /* ---- the node table: the pin, and nothing the card already says about itself ---- */
   push("## The nodes", "");
-  push("| node | card | phase |", "| --- | --- | --- |");
+  push("| node | card |", "| --- | --- |");
   for (const node of blueprint.nodes) {
-    const phase = node.card.phases.length === 0 ? "none declared" : node.card.phases.join(", ");
-    push(`| \`${cell(node.nodeId)}\` | \`${cell(node.ref)}\` | ${cell(phase)} |`);
+    push(`| \`${cell(node.nodeId)}\` | \`${cell(node.ref)}\` |`);
   }
   push("");
-
-  /* ---- the two computed scores, quoted ---- */
-  push("## What DarkPrint computed", "");
-  /* The class, and the engine's sentence without the band ordinal it ends on. The README
-     travels further than any page on the site — it is the file that stays behind in
-     somebody's repository — so doc 2 §1.1's rule about the ordinal holds here more than
-     anywhere, not less. The arithmetic survives, so the quote can still be checked
-     against a local re-run. */
-  push(`Autonomy: ${analysis.autonomy.label}.`, "");
-  push(`> ${autonomyStatement(analysis.autonomy.rationale)}`, "");
-
-  const humans = analysis.autonomy.contributions.filter((c) => c.requiresHuman);
-  if (humans.length > 0) {
-    push("Where a person acts:", "");
-    for (const contribution of humans) {
-      push(`- \`${contribution.nodeId}\` (${contribution.name}): ${contribution.explanation}`);
-    }
-    push("");
-  }
-
-  push(`Security level ${analysis.security.level}.`, "");
-  push(`> ${analysis.security.rationale}`, "");
-
-  if (analysis.security.findings.length > 0) {
-    push("What was charged:", "");
-    for (const finding of analysis.security.findings) {
-      push(`- ${finding.explanation}`);
-    }
-    push("");
-  }
-
-  if (local.length > 0) {
-    // The one thing that can make the claim below false: a marker whose weight lives in a
-    // file the folder does not carry. It carries it, and this says where to look.
-    push(
-      ...wrap(
-        [
-          `Both were read against ontology v${manifest.ontologyVersion} and the local terms these`,
-          `cards declare: ${local.map((term) => `\`${term.id}\``).join(", ")}.`,
-          `Their definitions and the weights that price them are in \`${BUNDLE_VOCABULARY}\`, in this`,
-          "folder. Score the folder without that file and those ids resolve against nothing, the",
-          "cards carrying them are rejected with them, and both numbers move.",
-        ].join(" "),
-      ),
-      "",
-    );
-  }
-  push(
-    "Both readings come from the topology and the cards, with nothing executed. These are the files",
-    "that produced them, so the same arithmetic on your side gives the same class and the same",
-    "security level.",
-    "",
-  );
-  // Doc 2 §1.1, stated where the reading is, in its own paragraph rather than as a
-  // qualifier tacked onto the arithmetic. "Level" is not written of autonomy anywhere in
-  // this file: the class is a name, and the one ordinal a reader meets on DarkPrint is
-  // the 1-to-5 organisational ladder, which describes an organisation and not a graph.
-  push(
-    "The autonomy class says what this blueprint automates and where a person stands in it.",
-    "Nothing here is a grade.",
-    "",
-  );
-
-  /* ---- what DarkPrint collects ---- */
-  push("## What gets reported back", "");
-  push(
-    "Nothing. No file in this folder calls home, and DarkPrint watches no run.",
-    "",
-  );
-  push(
-    "Cost and runtime on the blueprint page are labelled *reported* for that reason: whoever runs a",
-    "blueprint on their own hardware is the only party that can measure them. Sending a report",
-    "would be something you opt into. It is designed and not built, so there is no account, no",
-    "endpoint and no client for it in this bundle or on the site.",
-    "",
-  );
 
   push("---", "");
   push(`Exported from ${SITE_ORIGIN}/blueprints/${manifest.slug}`);
 
   return `${out.join("\n")}\n`;
+}
+
+/** The README heading the disclosure lives under, bound so the suite can find the section. */
+export const README_RUNNER_SECTION = "## What these files leave to the runner";
+
+/**
+ * The disclosure, as README prose: what an Attractor runner reads that this folder cannot say.
+ *
+ * ── why it is in the README at all ──
+ * `emitAttractorDot` prints the same two lists into the header of every file it compiles,
+ * which reaches exactly the readers who run `darkprint export`. That CLI is not published,
+ * so a reader who downloads this folder from the site meets none of it. The owner ruled
+ * (2026-09-04) that the disclosure travels in `README.md`, which the folder already carries,
+ * rather than in a fifth file: the 2026-08-25 instruction fixes a published folder at
+ * `topology.dot`, `cards/*.yaml`, `README.md` and `ontology/extensions.yaml`, and adding a
+ * document to carry one section would have broken it for a section this one can hold.
+ *
+ * ── why two lists ──
+ * Both come from `emit.ts` and neither is written here, so this section cannot fall behind
+ * what the emitter learns to write. The split is the whole point: one sentence over both
+ * groups says "the runner has a default for this" about names where the handler has none,
+ * which is reassurance aimed at precisely the attributes a reader needed warning about.
+ * `ATTRACTOR_REQUIRED_ATTRIBUTES` in `emit.ts` is where the spec facts behind the second
+ * group are, with the sections that state them.
+ *
+ * Returns nothing at all when both groups are empty, which is what a day when the emitter
+ * writes every reserved name looks like: a heading over two empty lists would read as a
+ * disclosure and disclose nothing.
+ */
+function runnerDisclosureSection(): string[] {
+  const scopes = Object.keys(ATTRACTOR_DEFAULTING_ATTRIBUTES) as AttractorScope[];
+  const defaulting = scopeLines(scopes, ATTRACTOR_DEFAULTING_ATTRIBUTES);
+  const needed = scopeLines(scopes, ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES);
+  if (defaulting.length === 0 && needed.length === 0) return [];
+
+  const out: string[] = [README_RUNNER_SECTION, ""];
+  out.push(
+    ...wrap(
+      "Attractor reads more attributes than a DarkPrint blueprint has fields to set. Compile " +
+        "these files into a pipeline, by the command above or by hand, and the names below are " +
+        "the ones nothing in this folder sets. Write them in where your run needs them, and " +
+        "expect a later export of this blueprint to overwrite the whole compiled file. Appendix " +
+        "A of the Attractor spec tabulates most of them; the rest are named by the retry rules " +
+        "in §3.5, by the handler pseudocode in §4, and by §9.7's tool call hooks.",
+    ),
+    "",
+  );
+
+  if (defaulting.length > 0) {
+    /* "A value or a behaviour", because Appendix A's Default column is not uniform: some rows
+       give a literal (`goal_gate` false, `manager.max_cycles` 1000 in §4.11), and some give
+       `unset`, `inherited` or `derived`, which is a stated behaviour and not a value. A
+       sentence promising a default for all of them would be checkable and wrong at `timeout`.
+       What holds across the whole group is that the spec says what absence does, and the
+       pipeline runs either way. */
+    out.push(
+      ...wrap(
+        "Left out, these fall to the runner and the pipeline still runs. The Attractor spec " +
+          "states a value or a behaviour for each one's absence, in Appendix A or in the " +
+          "handler pseudocode that reads it, so what you get is a choice nobody in this folder " +
+          "made:",
+      ),
+      "",
+      ...defaulting,
+      "",
+    );
+  }
+
+  if (needed.length > 0) {
+    /* Not a second "takes a default" sentence, which is the falsehood the split in `emit.ts`
+       was made to remove. §4.6 returns RETRY at a human gate that times out with nothing to
+       choose, and §4.11 hands whatever it read to `start_child_pipeline` without checking it,
+       so the empty string Appendix A tabulates for `stack.child_dotfile` is a value the
+       handler acts on rather than a fallback that works. Which names land here is derived, so
+       the sentence stays general: it has to hold for whichever names the split puts in this
+       group, and what every one of them has in common is that some handler reads it with no
+       default of its own. */
+    out.push(
+      ...wrap(
+        "Left out, these have nothing to fall to. The handler a node's shape selects reads " +
+          "each one directly, and with no value it refuses or goes round again while the rest " +
+          "of the compiled file reads as though the node would run. Read §4's handler section " +
+          "for the shape you are compiling before you leave one of these unset:",
+      ),
+      "",
+      ...needed,
+      "",
+    );
+  }
+
+  return out;
+}
+
+/**
+ * One bullet per scope that has names, `graph` before `node` before `edge`.
+ *
+ * A scope with nothing in it is dropped rather than printed empty: `edge` is already empty
+ * in the second group today, and "edge: none" is a line a reader has to read to learn
+ * nothing. Lazy continuation carries a wrapped bullet, so the long `node` row stays one
+ * list item at the column the rest of the file is wrapped to.
+ */
+function scopeLines(
+  scopes: readonly AttractorScope[],
+  by: Readonly<Record<AttractorScope, readonly string[]>>,
+): string[] {
+  const out: string[] = [];
+  for (const scope of scopes) {
+    const names = by[scope];
+    if (names.length === 0) continue;
+    out.push(...wrap(`- ${scope}: ${names.map((name) => `\`${name}\``).join(", ")}`));
+  }
+  return out;
 }
 
 /** One markdown table cell: the only character that can break a row is the separator. */

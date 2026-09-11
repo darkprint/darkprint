@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { cx, prettyDate } from "@/lib/format";
-import { contentHref } from "@/lib/href";
+import { blueprintRecordHref } from "@/lib/href";
 import type { AnyContent } from "@/lib/types";
 
 import { Avatar } from "./Avatar";
@@ -51,7 +51,7 @@ import { CoverageStrip } from "./PhaseCoverage";
    `lib/types.ts`, so the badge printed one word nine times and distinguished nothing. That
    is a type-level guarantee rather than an observation about today's archive.
 
-   `AutonomyMeter`: the shape line below says what it said, and it was checked against the
+   `AutonomyMeter` (deleted 2026-09-06): the shape line below says what it said, and it was checked against the
    built shelf rather than against its props. The meter can carry three readings — the class,
    how many nodes wait for a person, and how many have NO CARD in the bundle (`resolved:
    false`, which is a different fact from either). Read off all nine rows: seven say "No node
@@ -72,8 +72,9 @@ const THUMB = { width: 380, height: 132 } as const;
 
 /**
  * The three-zone grid, exported so a row for something other than a resolved `AnyContent`
- * (see `DraftRow` in `components/profile/OwnedBundles.tsx`) can sit in the same shelf as
- * one of these without copying the column widths and gap by hand. One constant, one place
+ * (see `SummaryRow` in `components/profile/OwnedBundles.tsx`, named `DraftRow` here until
+ * T280 renamed it) can sit in the same shelf as one of these without copying the column
+ * widths and gap by hand. One constant, one place
  * that answers "how wide is a row's zone" — the alternative was two files agreeing on
  * `380px_minmax(0,1fr)_236px` by coincidence.
  */
@@ -130,7 +131,7 @@ export function ContentRow({
 }) {
   /* Who waits for a person, by name.
      ------------------------------------------------------------
-     `requiresHuman` and not `total − autonomous`, which is the trap `AutonomyMeter`'s own
+     `requiresHuman` and not `total − autonomous`, which is the trap the deleted `AutonomyMeter`'s
      `partition` documents: a node whose card is missing from the bundle is neither
      unattended nor staffed (`resolved: false`), and subtracting would print a human gate
      where nobody is. Read the flag. */
@@ -155,7 +156,7 @@ export function ContentRow({
           for hit-testing, below the star at `z-20`, which is the one thing on the row that
           has to stay independently clickable. Unchanged from the tile, and the z ladder with
           it. */}
-      <Link href={contentHref(item)} className="absolute inset-0 z-10">
+      <Link href={blueprintRecordHref(item)} className="absolute inset-0 z-10">
         <span className="sr-only">{item.title}</span>
       </Link>
 
@@ -215,7 +216,7 @@ export function ContentRow({
             The class is `autonomy.label` from the engine's own `AUTONOMY_CLASS_LABELS` — a
             name, never a level, never a number, never a band (doc 2 §1.1).
 
-            `title` carries the human nodes BY NAME, which is the one thing `AutonomyMeter`
+            `title` carries the human nodes BY NAME, which is the one thing the deleted `AutonomyMeter`
             said that this line does not. See the note where it was removed. */}
         <span
           className="pt-0.5 font-mono text-[11px] text-dim"
@@ -226,10 +227,10 @@ export function ContentRow({
           {item.graph.edges.length} edge{item.graph.edges.length === 1 ? "" : "s"}
           {" · "}
           {humanNames.length === 0
-            ? "no human gate"
-            : `${humanNames.length} human gate${humanNames.length === 1 ? "" : "s"}`}
+            ? "nobody in the loop"
+            : `a person acts at ${humanNames.length} node${humanNames.length === 1 ? "" : "s"}`}
           {" · "}
-          {item.autonomy.label}
+          <span title={item.autonomy.blurb}>{item.autonomy.label}</span>
         </span>
       </div>
 
@@ -239,9 +240,11 @@ export function ContentRow({
           covered={item.analysis.phaseCoverage.covered}
           missing={item.analysis.phaseCoverage.missing}
         />
-        {/* The tile's own footer pair, moved under the strip: when it last changed, whether
-            it resolves, and how many published forks it has. The fork count states a fact
-            and orders nothing — doc 2 §1.1, and there is no `forks` sort. */}
+        {/* The tile's own footer pair, moved under the strip: when it last changed and how
+            many published forks it has. No resolution tick: every blueprint on this shelf
+            resolves or it would not be listed, so a tick per row states a fact about the
+            shelf. The fork count states a fact and orders nothing — doc 2 §1.1, and there
+            is no `forks` sort. */}
         <span className="font-mono text-[11px] text-dim">
           {prettyDate(item.updatedAt)}
           {forks > 0 && (
@@ -250,8 +253,6 @@ export function ContentRow({
               {forks} fork{forks === 1 ? "" : "s"}
             </>
           )}
-          {" · "}
-          <span className="text-emerald">✓ resolved</span>
         </span>
       </div>
     </article>

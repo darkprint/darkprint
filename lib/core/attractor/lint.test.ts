@@ -348,6 +348,156 @@ describe("rule 6 — the handler-override attribute", () => {
   });
 });
 
+describe("rule 7 — the edge guard's syntax", () => {
+  /* The code is not a member of `DiagnosticCode` yet; `lint.ts` carries the assertion and
+     the four cross-lane edits that remove it. Written once here so the day it joins the
+     union, this file needs no edit. */
+  const CONDITION_SYNTAX = "attractor/condition-syntax";
+
+  it("says nothing about an edge with no guard on it", () => {
+    expect(lint("digraph g { a -> b; }")).toEqual([]);
+  });
+
+  it("says nothing about a guard §10.2 admits", () => {
+    expect(lint('digraph g { a -> b [condition="outcome=success"]; }')).toEqual([]);
+    expect(
+      lint('digraph g { a -> b [condition="outcome=success && context.tests_passed=true"]; }'),
+    ).toEqual([]);
+  });
+
+  it("reports a guard that does not parse", () => {
+    const ds = lint('digraph g { a -> b [condition="attempts > 3"]; }');
+    expect(codes(ds)).toEqual([CONDITION_SYNTAX]);
+    expect(ds[0].message).toContain("a -> b");
+  });
+
+  it("reports the guard shape `bundle/types.ts` names as the cheapest way to fake a closed edge", () => {
+    // `condition="false"` is a bare literal, and §10.2 needs `Key Operator Literal`. The
+    // analyzers ignore the guard either way (that is `ResolvedEdge.condition`'s rule); this
+    // is the layer that tells the author the runner will not read it as they meant.
+    expect(codes(lint('digraph g { a -> b [condition="false"]; }'))).toEqual([CONDITION_SYNTAX]);
+  });
+
+  it("reports a guard that is present and empty, which §3.3 reads as no guard at all", () => {
+    const ds = lint('digraph g { a -> b [condition=""]; }');
+    expect(codes(ds)).toEqual([CONDITION_SYNTAX]);
+    expect(ds[0].hint).toContain("unconditional");
+  });
+
+  it("is a warning, like every other rule in this namespace", () => {
+    // The decision, asserted rather than left in the header: Attractor grades
+    // `condition_syntax` ERROR (§7.2) and DarkPrint does not, because `gate.ts` rule 4
+    // says a reading DarkPrint infers may never refuse anybody's bundle.
+    // The count first, because a `for` over a list this rule failed to produce is a cell
+    // that passes against a linter with no rule 7 in it at all. The permissive-parser
+    // mutation is what caught that: this cell was the one survivor of the eleven.
+    const ds = lint('digraph g { a -> b [condition="attempts > 3"]; }');
+    expect(ds).toHaveLength(1);
+    for (const d of ds) expect(d.severity).toBe("warning");
+  });
+
+  it("says what the runner does, so the warning is not read as cosmetic", () => {
+    const [d] = lint('digraph g { a -> b [condition="attempts > 3"]; }');
+    expect(d.hint).toContain("condition_syntax");
+    expect(d.hint).toContain("ERROR");
+  });
+
+  it("points at the edge statement", () => {
+    const ds = lint('digraph g {\n  a -> b [condition="x y"];\n}', "topology.dot");
+    expect(ds[0].location).toEqual({ file: "topology.dot", line: 2, column: 3 });
+  });
+
+  it("reports every broken guard in the file rather than the first", () => {
+    expect(
+      codes(
+        lint(
+          'digraph g { a -> b [condition="attempts > 3"]; b -> c [condition="verdict == x"]; }',
+        ),
+      ),
+    ).toEqual([CONDITION_SYNTAX, CONDITION_SYNTAX]);
+  });
+
+  it("reports both edges a chained statement puts the guard on", () => {
+    expect(codes(lint('digraph g { a -> b -> c [condition="false"]; }'))).toEqual([
+      CONDITION_SYNTAX,
+      CONDITION_SYNTAX,
+    ]);
+  });
+
+  it("does not report a `condition` on a node, where Attractor reserves nothing", () => {
+    expect(lint('digraph g { a [condition="nonsense here"]; a -> b; }')).toEqual([]);
+  });
+
+  /* ── relocated from `components/blueprint/attractor-compatibility.test.ts`, §11.0 Q30 ──
+     The panel was rule 7's only reader, so the cells that told this rule apart from the
+     nine above it were written against its rendered markup and would have been deleted
+     with it on 2026-09-05. They assert `lintAttractor` directly here.
+
+     Whole files rather than the one-line graphs above, and that is the point of keeping
+     them: every negative in this block so far is a file with NO findings, which a linter
+     that raised `attractor/condition-syntax` on any finding at all would still pass. The
+     discriminating fixture is a file the linter has plenty to say about and none of it
+     this. */
+  describe("what separates this rule from the nine spellings", () => {
+    /**
+     * A graph whose only fault is a guard Attractor cannot parse.
+     *
+     * `confidence >= 0.8` is illegal twice over under §10.2: `Key` is `outcome`,
+     * `preferred_label` or `context.` Path and `confidence` is none of them, and `Operator`
+     * is `=` or `!=` while §10.7 lists `>=` as a FUTURE extension implementations "should
+     * not add". It is the shape every guard in this repository's own corpus had before
+     * `condition.ts` existed, so it is the realistic case rather than an invented one.
+     */
+    const REFUSED = `digraph refused {
+  a [label="A"]
+  b [label="B"]
+  a -> b [label="ok", condition="confidence >= 0.8"]
+}
+`;
+
+    /**
+     * A graph whose findings are all spellings: a hyphenated node id
+     * (`attractor/bad-node-id`) and a node `type` attribute, which is Attractor's handler
+     * override (`attractor/reserved-attribute`). A runner reads this file, runs it, and
+     * reads two names differently from the author. Nothing here stops it.
+     */
+    const SPELLINGS = `digraph noted {
+  "my-node" [label="Mine", type="codergen"]
+  b [label="B"]
+  "my-node" -> b
+}
+`;
+
+    it("raises the code for a malformed guard, and nothing else on that file", () => {
+      expect(codes(lint(REFUSED, "topology.dot"))).toEqual([CONDITION_SYNTAX]);
+    });
+
+    it("does not raise it for a file whose findings are all spellings", () => {
+      const found = codes(lint(SPELLINGS, "topology.dot"));
+      // The premise: a fixture the linter had nothing to say about would make the
+      // assertion below pass against a linter with no rule 7 in it either.
+      expect(found).toContain("attractor/bad-node-id");
+      expect(found).toContain("attractor/reserved-attribute");
+      expect(found).not.toContain(CONDITION_SYNTAX);
+    });
+
+    /* The two halves of D-129 in one cell, because they only mean anything together: the
+       finding DarkPrint grades `warning` carries, in its hint, the ERROR grade Attractor's
+       own §7.2 gives the same rule. The severity is what `gate.ts` rule 4 pins — nothing
+       DarkPrint infers may refuse a bundle — and the hint is where the author who is about
+       to export learns that a runner will decline the file anyway. Drop the section number
+       and the reader cannot check the claim against the spec. */
+    it("carries Attractor's own ERROR grade in the hint of a warning", () => {
+      const [d] = lint(REFUSED, "topology.dot");
+      expect(d.severity).toBe("warning");
+      expect(d.hint).toContain("condition_syntax");
+      expect(d.hint).toContain("ERROR");
+      expect(d.hint).toContain("§7.2");
+      expect(d.hint).toContain("refuses to execute");
+    });
+  });
+});
+
 describe("the diagnostics themselves", () => {
   const messy = `strict graph g {
   # a hash comment
@@ -385,8 +535,8 @@ digraph second { z -> w; }`;
   });
 
   it("carry the file when one is given, and no file key when it is not", () => {
-    const withFile = lint("digraph g {\n  # x\n  a -> b;\n}", "blueprint.dot");
-    expect(withFile[0].location).toEqual({ file: "blueprint.dot", line: 2, column: 3 });
+    const withFile = lint("digraph g {\n  # x\n  a -> b;\n}", "topology.dot");
+    expect(withFile[0].location).toEqual({ file: "topology.dot", line: 2, column: 3 });
     const without = lint("digraph g {\n  # x\n  a -> b;\n}");
     expect(without[0].location).toEqual({ line: 2, column: 3 });
   });

@@ -1,90 +1,50 @@
 "use client";
 
 /* ============================================================
-   `blueprint.dot`, at full width, broken into blocks you can pick.
+   `topology.dot`, at full width, broken into blocks you can pick.
 
-   ── What the author asked for ──
-   "The panel in each blueprint representing the blueprint.dot is ok
-   but avoid the scrollable animation there. Just enable the click on
-   the right list and then it highlights the .dot parts corresponding
-   on the left." And: the same figure on `/spec/topology`, under
-   "One file, and the attribute DarkPrint adds".
+   Nothing is lit until a reader asks, and exactly the block they
+   asked for is lit when they do. The landing drives the same figure
+   from a scroll position through `walkTo`.
 
-   This DELIBERATELY REPLACES the scroll-linked walk this file
-   carried for one release. There is no flag and no preference: the
-   pin, the vh track, the sticky offset and `useScrollProgress` are
-   gone from here entirely. What is left is a figure that highlights
-   nothing until a reader asks it to, and highlights exactly the
-   block they asked for when they do.
+   ── Width ──
+   The band is `container-page` wide and the listing takes two thirds
+   of it: 727px of column at 1440 against the archive's longest line
+   of about 690px, so every line of every blueprint is on screen with
+   no reel and no window clip. Nothing here sets a height or a
+   transform at any width.
 
-   THE THREE THINGS THAT SURVIVED THE REWRITE, because they were
-   never about scrolling:
-
-   ── 1. Width, measured ──
-   The panel this replaces on both surfaces was a `SourcePanel` in a
-   half-grid: 564x320 of scroll box against a 690px longest line and
-   a 27-line file, so it hid 45% of the file down the page and 21% of
-   it across. This band is `container-page` wide, which is 1152px at
-   1440, and it gives the listing two thirds of that: 727px of column
-   against that 690px line, and every line of every blueprint in the
-   archive on screen at once. That is why there is still no reel and
-   no window clip — `CardWalk` slides a 52-line card through a 24-row
-   viewport because the card cannot fit; the longest `blueprint.dot`
-   in the archive is 27 lines, which is 558px of listing. Nothing
-   here sets a height or a transform at any width.
-
-   ── 2. Blue, and never copper, and never cyan ──
-   `app/globals.css` gives the copper pole one job: the node card.
-   The card figure and this one are two layers of the same spec and a
-   reader has to tell them apart at a glance, so this is the
-   cyanotype register.
-
-   Not cyan for the MARKING: cyan is interactive sitewide and a lit
-   line beside the page's cyan controls would read as "click me". The
-   two controls in the figcaption ARE clickable and so they are cyan
-   on hover, which is the rule applied rather than bent. Not amber:
-   amber is `ComingSoonBadge` and `.route-box` and nothing else.
-
-   Contrast, computed against the grounds this figure actually mixes
-   — `bg-surface-2/40` over `bg-void` for the listing (#0a0b14),
-   `bg-blueprint-line/10` over that for a picked row (#141c2b):
+   ── Blue, never copper, never cyan ──
+   Copper is the node card's register and a reader has to tell the two
+   layers apart at a glance. Cyan is interactive sitewide, so a lit
+   line in cyan beside the page's cyan controls would read as "click
+   me"; only the two figcaption controls take cyan, on hover. Contrast
+   on the grounds this figure mixes (`bg-surface-2/40` over `bg-void`,
+   `bg-blueprint-line/10` over that for a picked row):
 
      blueprint-line          9.09 : 1   /  7.91 : 1  on a picked row
-     blueprint-line at 80%   6.10 : 1   /  5.53 : 1  (the 11px step
-                                                      number, AA)
-     blueprint-line at 60%   3.87 : 1   /  3.70 : 1  (the rule, a
-                                                      non-text
-                                                      boundary, 3:1)
+     blueprint-line at 80%   6.10 : 1   /  5.53 : 1  (the 11px step number, AA)
+     blueprint-line at 60%   3.87 : 1   /  3.70 : 1  (the rule, a boundary, 3:1)
      blueprint-ink          14.95 : 1   / 13.01 : 1
      muted                   7.66 : 1   /  6.66 : 1
 
-   ── 3. The static layout is the finished drawing ──
-   Nothing here is emitted conditionally on a media query or on a
-   mount. `selected` is `null` on the server, on the first client
-   render and for every reader without script, and in that state
-   every block wears the marked register it wears today: the join in
-   blue on every node line, a rule down the margin per block, a step
-   number on each block's first line, and every step in the rail with
-   its body open. The highlight is strictly ADDITIVE — see
-   `PICK_*` below. A click never takes colour away from the blocks it
-   did not pick, because the figure's standing claim is that the join
-   is on EVERY node line and a click is not an argument against it.
+   ── The static layout is the finished drawing ──
+   `selected` is `null` on the server, on the first client render and
+   for every reader without script, and in that state every block
+   already wears the marked register: the join in blue on every node
+   line, a rule down the margin per block, a step number on each
+   block's first line, every rail body open. The highlight is strictly
+   additive (`PICK_*` below), because the figure's standing claim is
+   that the join is on every node line and a click is not an argument
+   against it.
 
    ── Why the rail is buttons and one tab stop ──
-   Each rail row is a real `<button type="button" aria-pressed>`: it
-   is operable with Enter and Space natively, it takes the site's
-   focus ring, and its state is a fact ARIA already has a word for.
-   The rows are wired through `./listbox.ts`'s `useRovingListbox`,
-   the same hook `SourcePane` uses, so the arrow keys walk the blocks
-   with selection following focus — which reproduces the walk this
-   figure used to perform on scroll, under the reader's own hand —
-   and the whole rail is ONE tab stop rather than six between the
-   file and whatever follows it.
-
-   The body of a step is a `<span class="block">` and not a `<p>`:
-   `<p>` is flow content and is invalid inside a button, and losing
-   the body out of the control would mean the thing a reader clicks
-   is not the thing they read.
+   Each row is a real `<button type="button" aria-pressed>`, operable
+   with Enter and Space, taking the site's focus ring, with a state
+   ARIA has a word for. `useRovingListbox` walks the rows with the
+   arrow keys so the rail is one tab stop rather than six. A step's
+   body is a `<span class="block">` because `<p>` is flow content and
+   invalid inside a button.
    ============================================================ */
 
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -238,7 +198,9 @@ function body(text: string): React.ReactNode[] {
  * gets words. The visible head keeps its glyphs; this is the same title, respelled.
  */
 function spoken(title: string): string {
-  return title.replace(/\s*⇄\s*/g, " and ").replace(/\s*→\s*/g, " to ");
+  // \u21c4 and \u2192 escaped so the pattern survives being read as non-UTF-8; the
+  // literal glyphs would stop matching without erroring.
+  return title.replace(/\s*\u21c4\s*/g, " and ").replace(/\s*\u2192\s*/g, " to ");
 }
 
 /**
@@ -280,49 +242,45 @@ export function DotBreakdown({
   title,
   downloadName,
   walkTo,
+  verbatim = false,
+  drawnAbove = false,
   className,
 }: {
-  /** The DOT document, verbatim, read off the archive by the server half. */
+  /** The DOT document as the caller wants it shown; the landing strips its comment lines first. */
   source: string;
-  /** `<slug>/blueprint.dot`, the name the file is stored and downloaded under. */
+  /** `<slug>/topology.dot`, the name the file is stored and downloaded under. */
   title: string;
   /**
    * Offer the file as a download, under this name.
    *
-   * Optional because the two surfaces differ on exactly this point. `/spec/topology`
-   * replaced a `SourcePanel` that had a download button, and dropping it would be a
-   * regression the reader did not ask for; a blueprint page carries the same file in its
-   * own `Download` disclosure a few hundred pixels below, and a second button for the same
-   * bytes is two answers to one question.
+   * Optional because `/spec/topology` replaced a panel that had a download button, and
+   * dropping it would be a regression the reader did not ask for.
    */
   downloadName?: string;
   /**
    * Drive the figure from outside, one block at a time.
    *
-   * `undefined` leaves it exactly as `/spec/topology` has it: nothing lit until a reader
-   * picks a block, and every note listed beside the file so the whole argument can be read
-   * at once. That is right for a page somebody is studying.
-   *
-   * A number turns it into a walk. The block is lit, and the notes column renders THAT NOTE
-   * ONLY. The author asked for this on the landing (2026-08-08): "while scrolling highlights
-   * the part of the code the right the identify and make the text elements appear when
-   * highlighting a given part and disappear when moving to the next".
-   *
-   * The vertical saving is the point. Five notes stacked run about three times the listing's
-   * height, so the landing's swap reserved a box sized for a column nobody was reading yet
-   * and left the drawing floating in the empty half of it. One note is shorter than the
-   * listing, so the figure is as tall as its own code.
+   * `undefined` leaves it as `/spec/topology` has it: nothing lit until a reader picks a
+   * block, every note open beside the file. A number turns it into a walk: that block is
+   * lit and the notes column shows that note only, so the figure is as tall as its own
+   * code rather than three times it.
    */
   walkTo?: number;
+  /**
+   * Whether `source` is the file byte for byte. Only then may the caption claim it: the
+   * landing hands in the file with its comment lines removed, so its count is of what is
+   * shown and nothing more.
+   */
+  verbatim?: boolean;
+  /** Whether a drawing of the graph sits directly above this listing. */
+  drawnAbove?: boolean;
   className?: string;
 }) {
-  /* `.trimEnd()`, the way `SectionNodeIsCard` trims the card before handing it to
-     `CardWalk`. Every file in `content/blueprints/` ends with a newline, and splitting on
-     it yields a final empty line: the starter drew 28 rows for a 27-line file and printed
-     "28 lines, as the archive stores them" under a file that has 27. */
+  /* Every file in `content/blueprints/` ends with a newline, and splitting on it yields a
+     final empty line: without the trim the starter drew 28 rows for a 27-line file. */
   const text = useMemo(() => source.trimEnd(), [source]);
   const lines = useMemo(() => tokenizeDot(text), [text]);
-  const steps = useMemo(() => resolveDotSteps(text), [text]);
+  const steps = useMemo(() => resolveDotSteps(text, { drawnAbove }), [text, drawnAbove]);
 
   /**
    * The whole of this figure's state: which block, or none.
@@ -380,7 +338,7 @@ export function DotBreakdown({
 
   /* Plain ground and one hairline, the frame `CardWalk` and `/what-a-blueprint-is`'s
      figures use. Not a `.panel`: this band is the page's one figure and a panel frame would
-     file it with `Tool scopes`. */
+     file it with `Tool capabilities`. */
   return (
     <figure
       className={cx(
@@ -404,7 +362,7 @@ export function DotBreakdown({
             under it. */}
         <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="whitespace-nowrap">
-            {lines.length} lines, as the archive stores them
+            {lines.length} lines{verbatim ? ", as the archive stores them" : ""}
           </span>
           {/* What the fade on the right edge means, said in words — and `xl:hidden`,
               because at `xl` there is nothing behind it and a hint that points at

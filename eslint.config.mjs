@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // `vercel build` writes its function bundles here; generated output, never source.
+    ".vercel/**",
+    // The distributable T270 bundles with esbuild (`packages/cli/build.mjs`), gitignored by
+    // `packages/mcp/.gitignore`. It is generated, minifiable, third-party code in part — it
+    // carries a bundled `yaml` — and linting it reports 33 problems nobody here can act on.
+    // Added when the build first produced output: before T270 nothing ever ran that build,
+    // so the directory did not exist and the glob had nothing to match.
+    "packages/*/dist/**",
     // `.claude/skills/**` was ignored here while two third-party skills were vendored in
     // it, on the grounds that somebody else's source ships its own lint config and running
     // ours over it reports warnings nobody here can act on. Both were deleted on
@@ -24,6 +32,29 @@ const eslintConfig = defineConfig([
     // built. Linting somebody else's bundled prototype reports React 17 idioms nobody here
     // is going to fix. Matched by prefix so the next hand-off needs no edit here.
     "design_handoff_*/**",
+    // The claude.ai/design import (`.design-sync/`, see its NOTES.md). Three generated
+    // trees, none of them anybody's source: `ds-bundle/` is the converter's output,
+    // `.ds-sync/` is the staged converter itself plus its own node_modules, and
+    // `.design-sync/.cache/` holds the emitted .d.ts and the compiled stylesheet. Linting
+    // them reported 396 errors against generated declarations and vendored scripts, none
+    // of which anybody here can act on. The hand-written half of `.design-sync/` — the
+    // shims, the previews, the overrides fork — is deliberately still linted.
+    "ds-bundle/**",
+    ".ds-sync/**",
+    ".design-sync/.cache/**",
+    // Third-party skills, vendored 2026-08-30 (`supabase/agent-skills`) and locked in
+    // `skills-lock.json` per CLAUDE.md. Somebody else's source ships its own lint config
+    // and running ours over it reports warnings nobody here can act on. Today the vendor
+    // is 40 markdown files and matches nothing; the globs are the standing rule rather
+    // than a reaction to a current error, which is what the note this line restores asked
+    // for. `.agents/` holds the content and `.claude/skills/` symlinks into it, so both
+    // want naming: the installer writes the pair, not either one alone.
+    ".agents/**",
+    ".claude/skills/**",
+    // Agent worktrees are whole checkouts of this repository nested under `.claude/`, each
+    // with its own copy of every file above; linting the parent would report each finding
+    // once per worktree and typecheck would follow every nested tsconfig.
+    ".claude/worktrees/**",
   ]),
 ]);
 

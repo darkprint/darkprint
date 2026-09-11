@@ -1,0 +1,22 @@
+// A `conditional` handler and the two guarded edges leaving it.
+// `condition` is a reserved edge attribute and Attractor gives it a whole expression
+// grammar. DarkPrint implements none of it and carries the string verbatim, which is
+// exactly what this file is here to hold it to.
+digraph conditional_routing {
+  goal="Route a ticket by how sure the classifier was.";
+  label="Conditional routing";
+
+  start    [label="start", shape=Mdiamond];
+  classify [label="Classify", shape=box, prompt="Read the ticket and score your confidence between 0 and 1."];
+  route    [label="Route", shape=diamond, prompt="Send the ticket down one branch."];
+  auto     [label="Auto-reply", shape=box, prompt="Draft the reply and send it."];
+  person   [label="Escalate", shape=hexagon, prompt="A person reads the ticket and decides what happens next."];
+  exit     [label="exit", shape=Msquare];
+
+  start -> classify;
+  classify -> route;
+  route -> auto   [label="confident", condition="context.confidence=high"];
+  route -> person [label="unsure",    condition="context.confidence!=high"];
+  auto -> exit;
+  person -> exit;
+}

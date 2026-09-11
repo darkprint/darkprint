@@ -7,16 +7,16 @@ import { cx } from "@/lib/format";
    The copy button, once.
 
    Four hand-rolled versions of this existed — `components/ui/SourcePanel.tsx`,
-   `components/panes/SourcePane.tsx`, `components/blueprint/BundlePanel.tsx` and
-   `components/blueprint/DownloadPanel.tsx` — all with the same three moving parts: a
+   `components/panes/SourcePane.tsx` and two blueprint-page panels that have since been
+   deleted — all with the same three moving parts: a
    `try`/`catch` around `navigator.clipboard.writeText`, a `copied` flag, and a 1400ms
    timer putting the label back. `CloneMenu` would have been the fifth, and the download
    command is the longest string on the site a reader is meant to run, so it is the worst
    one to have a subtly different failure behaviour from its neighbours.
 
    This is that block, extracted verbatim in behaviour — same 1400ms, same silent
-   catch — and `DownloadPanel` migrated onto it in the same pass so the two buttons that
-   sit in one panel are one component. The other three are left where they are: each is
+   catch — and the download panel migrated onto it in the same pass so the two buttons that
+   sat in one panel were one component. The other three are left where they are: each is
    wrapped in different chrome, and a component that is used by two call sites and copied
    by three is still better than five copies. They move the day one of them is open for
    another reason.
@@ -69,7 +69,7 @@ export function CopyButton({
     <button
       type="button"
       onClick={copy}
-      aria-label={copied ? `${ariaLabel} — copied to the clipboard` : ariaLabel}
+      aria-label={copied ? `${ariaLabel}, copied to the clipboard` : ariaLabel}
       className={cx(
         "shrink-0 rounded border border-line px-2 py-1 font-mono text-[11px] text-muted transition-colors hoverable:hover:border-cyan hoverable:hover:text-cyan",
         className,

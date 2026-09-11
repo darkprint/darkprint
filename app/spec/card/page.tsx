@@ -1,20 +1,34 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
 
+import type { OntologyTerm, OntologyView, TermKind } from "@/lib/core";
+import { CORE_ONTOLOGY, CORE_PHASE_IDS, ontologyView, partitionTerms } from "@/lib/core";
+import { getSharedDbClient } from "@/lib/db";
+import { openView } from "@/lib/server/ontology";
+import type { Actor } from "@/lib/server/policy";
+import { cards } from "@/lib/server/registry";
+import { searchTerms } from "@/lib/server/search";
 import { WhatACardReaches } from "@/components/explain/ConceptFigures";
 import { SectionNodeCard } from "@/components/home/SectionNodeCard";
-import { CheckLegend, CheckTable } from "@/components/spec/CheckTable";
+import { OntologyCatalog } from "@/components/ontology/OntologyCatalog";
+import { markerWeight, termUsageOver } from "@/components/ontology/TermTable";
+import {
+  VocabularyBrowser,
+  type VocabularyRow,
+} from "@/components/ontology/VocabularyBrowser";
+import { CheckCell, CheckLegend, prose } from "@/components/spec/CheckTable";
 import { Id, SpecLink } from "@/components/spec/parts";
-import { CARD_ROWS } from "@/components/spec/rows";
+import { CARD_ROWS, type CardRow } from "@/components/spec/rows";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SEVERITY_META } from "@/components/ui/severity";
-// Read-only import of the build-time derivation in `components/explain/starter-isolation`.
-// That module runs the analyzer over the starter bundle with one edge added and hands back
-// what the engine said; re-deriving it here would give the site two answers to one
-// question, and the answer this page needs is the exact `bundle/prohibition-violated`
-// sentence. It was written for `/what-it-isnt`, which drew both graphs; that page is gone
-// and this page and `components/panes/absences.ts` are what keep the module alive.
+import { cx } from "@/lib/format";
+import { termHref } from "@/lib/href";
+// `components/explain/starter-isolation` runs the validator over the starter with one edge
+// added and hands back what it said; re-deriving that here would give the site two answers
+// to one question, and the answer this page needs is the exact refusal sentence.
 import {
   errorsOf,
   isolationDemo,
@@ -23,300 +37,259 @@ import {
 import { getNodeCard } from "@/lib/content";
 
 /* ============================================================
-   /spec/card — layer 2 of the spec language.
+   /spec/card: the node card, and the vocabulary that fills it.
 
-   Redesign spec §4.1, on the author's reading of the single page:
-   "the spec language is ok, but you should reorganize the content
-   otherwise it is a very long single page that makes the user
-   leave." §4.1 asks each layer page to open with its figure, and
-   §3 says which figure this one gets: the annotated node card that
-   was the landing's centrepiece, moved to the page whose subject
-   it is.
+   Five bands, in the order a reader can follow: what a card reaches,
+   one real card annotated, every field once, what the validator
+   checks, and the whole vocabulary. The vocabulary has no page of its
+   own because every term in it exists to be a legal value of a card
+   field: `type` takes a node type, `phase` takes phases, `tools`
+   takes tool capabilities, `risk_markers` takes risk markers, and a
+   port's `type` and every entry of `cannot` take a data type. So the
+   curated ids are printed under the field that takes them, and the
+   whole listing closes the page.
 
-   ── The centrepiece is imported, and it still reads the archive ──
-   `SectionNodeCard` calls `cardSource("code-builder@1.0.0")` and
-   hands the bytes to the scene, which tokenises them in the
-   browser. So the listing a reader scrolls through is the file in
-   `content/cards/`, byte for byte, and the nine annotations are
-   resolved against that text rather than typed beside it
-   (`components/home/nodecard/annotations.ts`). Replacing it with a
-   transcription would have cost the one property it was built for,
-   and §3 says so directly: "it reads the real card through
-   `cardSource` and that must survive the move."
+   Each field has one home. `CARD_ROWS` carries what a field holds
+   and the diagnostic beside it, the chips under a row are the ids it
+   may take, and the reach figure and the annotated card above the
+   reference say what the same fields do on one real file. A fact
+   stated in one of those is not restated in another.
 
-   ── This pass: the figure stops scrolling and starts listening ──
-   The author, of this page: "in /spec/card avoid the effect on
-   scrolling of the card panel (keep it for the other pages). I
-   prefer here the approach adopted in /spec/topology for the panel
-   starter-software-factory/blueprint.dot."
+   The specification is static and the registry is not, and the page
+   is split on that line. The chips are the curated core, read off
+   `CORE_ONTOLOGY` while the page renders; the band at the foot is
+   the registry, every core term plus every term a published
+   blueprint declares in its own namespace, with a live usage count,
+   which needs a query. The enumeration is therefore an async child
+   behind a `Suspense` boundary and the default export stays
+   synchronous, which keeps the page renderable by
+   `renderToStaticMarkup` and keeps `components/site/honesty.test.ts`
+   collectible over the two sentences it pins here.
 
-   So `SectionNodeCard` mounts `CardBreakdown`, which is the node
-   card under the interaction `/spec/topology`'s DOT figure already
-   uses: nine real buttons in the rail, `useRovingListbox` from
-   `components/panes/listbox.ts` so the whole rail is one tab stop
-   with the arrow keys walking it, `aria-pressed` for the state and
-   a polite live region for the consequence. A click lights the
-   lines that part is about. Nothing on this page reads a scroll
-   position any more.
-
-   **"keep it for the other pages" is the load-bearing clause.**
-   `CardWalk` — the scroll walk this page used to mount — still
-   renders on the landing through
-   `components/home/SectionNodeIsCard.tsx`, and it is still guarded
-   there by the case in `nodecard.test.ts` that asserts its source
-   contains no `<button` and no `onClick`. That is why this is a
-   second component rather than a `mode` prop: a prop would have put
-   the buttons inside the walk's file and forced the guard that
-   keeps nine controls off the landing's beat to be loosened.
-   `CardBreakdown`'s header argues the whole split.
-
-   What went with the walk, on this page only: the 190vh track, the
-   sticky pin at `calc(50vh - 19.25rem)`, the 24-row window and the
-   reel that slid the card through it. What replaces the window is
-   nothing at all — the 52-line card is drawn WHOLE at every width,
-   1162px of listing the page scrolls past, which is what the phone
-   layout and the reduced-motion layout already showed. The two
-   traps written up in `CardWalk` are therefore not merely avoided
-   here, they are unreachable: there is no height to state beside
-   `overflow-x: auto` and no transform to write.
-
-   One thing the pick changed that the swap did not have to: the
-   listing no longer bands all nine runs at once. It brackets them,
-   with a rule down the margin and a two-digit step number at each
-   head, both unconditional and both in the prerendered HTML, and
-   spends the ground on the run a reader picked. That is
-   `DotBreakdown`'s rule, and it transfers because its premise does:
-   the nine annotations nearly tile this card, so nine bands is a lit
-   listing and a lit listing is the same as an unlit one.
-   `YamlListing`'s `Grounding` carries the argument and the
-   measurement. The landing still bands all nine, because a figure
-   nobody can pick has nothing else to point with.
-
-   Both columns end up about the same height by construction rather
-   than by luck: 1162px of listing against nine heads and nine open
-   reference bodies, which `nodecard.test.ts` caps at 300 characters
-   each. The page is shorter than it was, because 190vh of pinned
-   track is gone.
-
-   ── What this page carried and no longer does ──
-   The band titled "The split" is gone on the author's instruction.
-   It held the enforcement argument: a lead, `EnforcementFigure`,
-   two panels, and the resolver's own refusal quoted off the build.
-   Two sentences in it are pinned by `components/site/honesty.test.
-   ts`, which is the repository's first non-negotiable, so they were
-   REHOMED rather than dropped and both are still in the open:
-
-     · "both are legitimate, and a reader has to be able to tell
-       which is which without running anything" is now the last
-       sentence of the `cannot` entry below, which is the field it
-       was always about. It is half of this page's thesis — panel B
-       asserted that the free-text entry is legitimate, and without
-       this the symmetry has one side and an entry nothing checks
-       reads as an entry that failed.
-
-     · "error bundle/prohibition-violated", the severity in word
-       form beside the code, is the quoted diagnostic under the
-       field list. It is read off the engine's own `Diagnostic`
-       rather than typed, exactly as before.
-
-   `EnforcementFigure` loses its only page mount in this change.
-   `components/viz/scene-labels.test.ts` renders it directly, so
-   nothing fails; that is a figure the suite protects and no page
-   shows, and it wants a deliberate decision from whoever owns
-   `components/spec/`.
-
-   ── The reference is open, and it names the subfields ──
-   The field table used to sit behind `components/ui/More.tsx`. The
-   author: "It has to stay opened not collapsable. Here it is
-   important to describe the role of each subfield." So the
-   `<details>` is gone, and the list under the table is the part
-   §4.3's disclosure had been hiding the need for: `CARD_ROWS` is a
-   table of top-level wire keys, and several of those keys hold
-   structure the table has no column for — a port's four keys, the
-   two list fields that look alike and are not, the two kinds of
-   entry `cannot` accepts. No count is written into either the
-   docblock or the prose: the one that was there ("fifteen rows")
-   was already wrong about a table this page does not own. Every
-   claim in that list is
-   `lib/core/card/schema.ts` or `lib/core/card/validate.ts`, and
-   each one says what the subfield DOES rather than restating its
-   name.
-
-   Also removed, on instruction: "Read this card on its own page
-   for the resolved version and the file as it is stored, or browse
-   the library of 53 cards written against this schema."
-   `honesty.test.ts` does not pin it (checked, both directions:
-   nothing in `CLAIMS` carries either clause), and `/nodes` is two
-   clicks away in the header. Nothing else on the page linked
-   `/nodes/code-builder`, so the archive is now reached from the nav
-   rather than from here.
-
-   ── No route config ──
-   A static segment, so there is no `generateStaticParams` and no
-   `dynamicParams` to close (Next 16,
-   `docs/01-app/03-api-reference/03-file-conventions/page.md`). The
-   page is a server component and takes no props.
+   The boundary sits under the band's heading rather than around the
+   band, because `#every-term-heading` is a link target and an id that
+   arrives with the stream is one a hash navigation can scroll past.
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "The node card, in YAML",
+  title: "The node card (YAML)",
   description:
-    "Layer 2 of a DarkPrint blueprint: one YAML card per node, saying what it is, what instructs it, what arrives, what leaves and what must never arrive. With the field-by-field list of what the engine checks.",
+    "One YAML card per node in a DarkPrint blueprint: what the step is, the instruction it is handed, the model and tools it may use, what arrives and what must never arrive. Every field, the diagnostic that fires when it is wrong, and the vocabulary each field draws from.",
 };
 
 const HERE = "/spec/card";
 
 /**
- * The canonical h2, spelled the way `components/ui/SectionHeading.tsx` spells it.
+ * Per request, because `VocabularyList` below runs a registry query and Next prerenders a
+ * page it cannot see a request-time dependency in: without this line the segment comes out
+ * static, read from Postgres once at deploy and frozen there. A `Suspense` boundary does not
+ * make a segment dynamic on its own; the declaration is about the segment and the boundary
+ * about the order its parts arrive in.
  *
- * Every band below opens with a `.label-lead` and one of these. The sub-sections used to
- * draw at `text-2xl` (24px), which is neither of the two display steps the site has, and
- * carried no mono cue at all — so on a page whose `h1` and whose figure each spend a cyan
- * `.eyebrow`, the two sections after them were typographically indistinguishable.
- * `.label-lead` is the answer rather than a third eyebrow: the eyebrow names a page or a
- * full-bleed band, and this page has spent both.
+ * `connection()` is Next 16's request-time marker and would be the prettier spelling, but
+ * it throws when a page function is invoked directly, which is the only way a `node` test
+ * can render one. Next 16 removes `dynamic` once `cacheComponents` is enabled; that
+ * follow-up should replace this line with `connection()` on every route carrying it.
+ *
+ * The cost: `getNodeCard`, `isolationDemo()` and the core ontology view run per request.
+ * All three are pure functions over files that ship in the deployment and all three are
+ * memoised; the registry query is the expensive one and it is the one held behind the
+ * boundary.
+ */
+export const dynamic = "force-dynamic";
+
+/**
+ * Who is asking, and it is nobody. A local term inherits its blueprint's visibility, so the
+ * anonymous read is what keeps a private blueprint's vocabulary off this page, by never
+ * putting the blueprint in the universe rather than by a filter downstream.
+ */
+const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
+
+/**
+ * The canonical band `h2`, spelled the way `components/ui/SectionHeading.tsx` spells it.
+ * Composed with `cx` rather than in a template literal, because
+ * `components/ontology/full-width.test.ts` reads double-quoted class lists.
  */
 const BAND_H2 =
   "font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]";
 
 /**
- * The nested keys, and the entries of the list fields, that `CARD_ROWS` has no column for.
+ * The merged vocabulary: the curated core, with every local term a public blueprint's
+ * current release declares layered over it.
  *
- * The table answers "what holds it" per top-level wire key, which is the right shape for
- * a reference and the wrong shape for six of them: `inputs · outputs` is one
- * row over a structure with four keys in it, `tools · risk_markers` is one row over two
- * lists that answer different questions, and `cannot` is one row over a list whose entries
- * are read two different ways depending on what they say.
- *
- * Every sentence here is `lib/core/card/schema.ts` or `lib/core/card/validate.ts` read
- * back, and the point of each entry is the ROLE — what the subfield decides, and what
- * goes wrong when it is absent or wrong. A list that said "`type`: the port's type" would
- * be the table again at greater length.
- *
- * `cannot` is last on purpose: the quoted refusal under this list is the engine's answer
- * to its first kind of entry, and the two read as one argument in that order.
+ * One view for the whole band, which is the hazard `OntologyCatalog` records as the reason
+ * it takes a view as a prop: a band reading one source for its lead and another for its
+ * rows is free to print a total in a sentence and list a different one underneath. Two
+ * readers because there are two corpora and only one is in the database: the core is
+ * `CORE_ONTOLOGY`, and a local term travels with the release that declares it, so it
+ * arrives through `searchTerms`, which owns deciding whose releases may be read at all.
  */
-const SUBFIELDS: readonly { key: string; role: React.ReactNode }[] = [
-  {
-    key: "inputs[].name · outputs[].name",
-    role: (
-      <>
-        The end of an edge rather than a label. A DOT edge writes{" "}
-        <Id>{'[out="build", in="brief"]'}</Id> to say which pair of ports it joins, so a
-        port name is an address the topology layer spells out loud. Unique within a side:
-        two inputs both called <Id>brief</Id> leave the resolver no way to decide which one
-        an edge meant, and it raises <Id>card/duplicate-port</Id> rather than picking one.
-      </>
-    ),
-  },
-  {
-    key: "inputs[].type · outputs[].type",
-    role: (
-      <>
-        The only subfield the resolver pairs on. It names a <Id>data-type</Id>{" "}
-        term from the ontology, and an edge holds when the source&rsquo;s output type is
-        the target&rsquo;s input type or a narrower kind of it. Everything a card says about
-        what actually travels is carried by this one word; the rest of the port is written
-        for a person.
-      </>
-    ),
-  },
-  {
-    key: "inputs[].description · outputs[].description",
-    role: (
-      <>
-        Free text for whoever wires the graph, read by nothing. It is where a port says the
-        part its type cannot: that <Id>brief</Id> is the ordered build steps the run was
-        instantiated with, and the only thing this node ever sees.
-      </>
-    ),
-  },
-  {
-    key: "inputs[].required",
-    role: (
-      <>
-        Inputs only, and true unless the card says otherwise. On an output it describes
-        nothing, because an output is not something a node needs, and the validator reports{" "}
-        <Id>card/bad-type</Id> against the exact path rather than dropping the key in
-        silence. A flag that is quietly ignored reads as a flag that works.
-      </>
-    ),
-  },
-  {
-    key: "phase[]",
-    role: (
-      <>
-        Any number of the five lifecycle phases, and the wire key takes a single term or a
-        sequence because both spellings read naturally in YAML. An empty list is a complete
-        answer and never a hole: the five phases describe the factory, not every node in
-        it, and an intake, a retrieval step or a memory store stands in none of them.
-        Nothing that renders a card may draw the empty case as missing data.
-      </>
-    ),
-  },
-  {
-    key: "tools[] · mcp[]",
-    role: (
-      <>
-        Two lists that look alike and answer different questions. A <Id>tools</Id> entry is
-        a capability term from the vocabulary, so it either resolves or raises{" "}
-        <Id>card/unknown-term</Id>. An <Id>mcp</Id> entry is the name a concrete server is
-        registered under on the machine that runs the graph, which the vocabulary has no
-        term for and is not going to grow one. <Id>tools</Id> says what the node is
-        permitted to do and <Id>mcp</Id> says which process supplies it; a node can carry
-        either without the other, and merging them would lose the question each one
-        answers.
-      </>
-    ),
-  },
-  {
-    key: "risk_markers[]",
-    role: (
-      <>
-        Each entry names a <Id>risk-marker</Id> term, and what the marker costs is set by
-        the vocabulary rather than by the card. A locally coined marker with no{" "}
-        <Id>defaultWeight</Id> counts zero, so a card can declare a risk the scoring never
-        sees, which is the one outcome worth knowing about before you write one.
-      </>
-    ),
-  },
-  {
-    key: "params.*",
-    role: (
-      <>
-        Free in shape, and required to survive a JSON round-trip because the card is hashed
-        as JSON into its digest. A value that cannot be serialised cannot be hashed, and a
-        card that cannot be hashed cannot be pinned by a blueprint, so{" "}
-        <Id>card/bad-type</Id> is raised where the value is written rather than at the
-        point two digests disagree.
-      </>
-    ),
-  },
-  {
-    key: "cannot[]",
-    role: (
-      <>
-        Two kinds of entry in one list. An entry naming a <Id>data-type</Id> term is a
-        prohibition the resolver enforces: an incoming edge able to carry that type, or a
-        narrower kind of it, fails the bundle. An entry naming no term is read as free text
-        and checked by nothing, which is what the second line under <Id>cannot</Id> on the
-        card above is. Both are legitimate, and a reader has to be able to tell which is
-        which without running anything.
-      </>
-    ),
-  },
-];
+async function vocabularyView(
+  db: ReturnType<typeof getSharedDbClient>["db"],
+): Promise<OntologyView> {
+  const local = await searchTerms(db, ANONYMOUS, { origin: "local" });
+  return openView(local.hits.map((hit) => hit.item));
+}
 
+/**
+ * The terms a field will accept, printed as the ids a card has to spell rather than the
+ * labels: a reader at this point in the page is holding a field and needs the string that
+ * goes in it. The caption says curated because these come off `CORE_ONTOLOGY` and carry no
+ * local term; a reader who took the count for the whole set would be misled.
+ */
+function FieldTerms({ terms }: { terms: readonly OntologyTerm[] }) {
+  if (terms.length === 0) return null;
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <p className="font-mono text-[11px] tracking-[0.06em] text-dim">
+        {terms.length} curated {terms.length === 1 ? "value" : "values"}
+      </p>
+      <ul className="flex flex-wrap gap-1.5">
+        {terms.map((term) => (
+          <li key={term.id}>
+            <Link
+              href={termHref(term.id)}
+              className="block rounded-full border border-line px-2.5 py-0.5 font-mono text-[12px] text-fg transition-colors hoverable:hover:border-cyan hoverable:hover:text-cyan"
+            >
+              {term.id}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * One field of the card, read in one place: the key, what it holds, the curated ids it may
+ * take and what holds it. Three columns above `md` and a stack below, and the check cell is
+ * the one `/spec/topology`'s table draws, so the two layers read as one document. Never a
+ * `<details>`: folding the chips away puts the vocabulary one interaction further from the
+ * field that takes it.
+ */
+function FieldEntry({ row, terms }: { row: CardRow; terms: readonly OntologyTerm[] }) {
+  return (
+    <div className="grid gap-x-8 gap-y-3 border-t border-line py-5 md:grid-cols-[13rem_minmax(0,1fr)_14rem]">
+      <dt className="font-mono text-[12px] leading-relaxed text-fg">{row.name}</dt>
+      <dd className="min-w-0 text-sm leading-relaxed text-muted">
+        <p>{prose(row.what)}</p>
+        <FieldTerms terms={terms} />
+      </dd>
+      <dd className="min-w-0">
+        <CheckCell check={row.check} />
+      </dd>
+    </div>
+  );
+}
+
+/**
+ * The listing that closes the page: every term the registry publishes, in the browser.
+ *
+ * Async, and therefore only reachable inside the `Suspense` boundary the page wraps it in.
+ * It opens its own view because the page has none to give it: the shell reads the curated
+ * core, which is a constant, and this reads the registry, which is a query.
+ */
+async function VocabularyList() {
+  const { db } = getSharedDbClient();
+
+  const view = await vocabularyView(db);
+  const { terms } = view.ontology;
+  /* Only the namespaced half is needed here: the browser marks local rows and its origin
+     filter separates them. */
+  const localIds = new Set(partitionTerms(terms).local.map((term) => term.id));
+
+  /* Every published card version rather than the newest of each, which is `termUsageOver`'s
+     own rule: a term a card dropped between 1.0.0 and 1.1.0 still shows that card, because
+     the registry still carries the version that names it. The list is deduplicated by card
+     id afterwards. `usedIn` is spelled `owner/slug`, the identity a blueprint has. */
+  const usage = termUsageOver(
+    (await cards(db, ANONYMOUS)).map((card) => ({
+      id: card.id,
+      card: card.card,
+      usedIn: card.usedIn.map((key) => `${key.ownerHandle}/${key.slug}`),
+    })),
+  );
+
+  /* Flattened on the server so `VocabularyBrowser` never touches the engine: the usage count
+     is a registry fact and the weight comes through the engine's own lookup, and neither is
+     available to a client component. */
+  const rows: VocabularyRow[] = terms.map((term: OntologyTerm) => {
+    const row: VocabularyRow = {
+      id: term.id,
+      kind: term.kind,
+      label: term.label,
+      description: term.description,
+      local: localIds.has(term.id),
+      usedBy: usage.get(term.id)?.cards.length ?? 0,
+    };
+    if (term.broader !== undefined) row.broader = term.broader;
+    /* Through the engine's own lookup rather than off the term: the seven core weights live
+       in `DARKPRINT_CONFIG.security.weights`, so a core marker's own `defaultWeight` is
+       always unset. `markerWeight` reads configuration first, then the term's own value,
+       which survives for a locally namespaced marker. */
+    const weight = markerWeight(term);
+    if (weight !== undefined) row.weight = weight;
+    /* The successor and nothing else: the vocabulary is not versioned, so there is no
+       version a term was deprecated in. */
+    if (term.deprecated !== undefined) {
+      row.deprecated =
+        term.deprecated.replacedBy === undefined
+          ? {}
+          : { replacedBy: term.deprecated.replacedBy };
+    }
+    return row;
+  });
+
+  return (
+    <VocabularyBrowser terms={rows}>
+      <OntologyCatalog view={view} usage={usage} />
+    </VocabularyBrowser>
+  );
+}
+
+/**
+ * What stands in the listing's place while the query runs. `aria-hidden`, because a screen
+ * reader announcing "loading" for a region nobody navigated to is noise; the height holds
+ * the page still so the pager below does not jump when the listing lands.
+ */
+function VocabularyListSkeleton() {
+  return (
+    <div className="flex min-h-[240px] items-center" aria-hidden>
+      <span className="font-mono text-xs text-dim">Loading the vocabulary…</span>
+    </div>
+  );
+}
+
+/**
+ * The specification itself, which needs no database and is not held behind one.
+ * Synchronous on purpose; the header argues why the registry read is a child rather than
+ * an `await` here.
+ */
 export default function SpecCardPage() {
   const { page } = specNeighbours(HERE);
 
-  // The engine's own sentence about the prohibition the card above declares. Quoted
-  // rather than paraphrased, and guarded rather than indexed blindly: a page arguing that
-  // a declaration is enforced should drop the quotation rather than invent one if the
-  // demonstration ever stops being derivable.
+  /* The curated core, through the engine's own view rather than off `CORE_ONTOLOGY.terms`
+     directly: `byKind` is where the kind index and the sort live. No extensions passed,
+     which is what makes these chips a statement about the specification. */
+  const coreView: OntologyView = ontologyView(CORE_ONTOLOGY);
+
+  /* Lifecycle order rather than the alphabet: `byKind("phase")` sorts by id and would open
+     the five with `debugging`. */
+  const phases = CORE_PHASE_IDS.map((id) => coreView.get(id)).filter(
+    (term): term is OntologyTerm => term !== undefined,
+  );
+  const termsOf = (kind: TermKind | undefined): readonly OntologyTerm[] => {
+    if (kind === undefined) return [];
+    return kind === "phase" ? phases : coreView.byKind(kind);
+  };
+
   /* The same card `SectionNodeCard` annotates, parsed, for the reach panel above it. */
   const reachCard = getNodeCard("code-builder")?.card;
 
+  /* The validator's own sentence about the prohibition the card above declares, quoted
+     rather than paraphrased and guarded rather than indexed blindly: a page arguing that a
+     declaration is enforced should drop the quotation rather than invent one if the
+     demonstration ever stops being derivable. */
   const demo = isolationDemo();
   const refusal =
     demo === undefined
@@ -334,28 +307,14 @@ export default function SpecCardPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="The validator reads JSON on the same schema as the YAML. A published version is never edited in place, so a change means a new file and a new version number."
+            lead="One YAML file per node: what the step is, what it is told to do, which model and tools it may use, what arrives and what must never arrive. The validator accepts the same fields as JSON. A published version is never edited in place, so a change means a new file and a new version number."
           />
         </div>
       </header>
 
-      {/* ---------- what one card reaches, moved here 2026-08-08 ----------
-          The author asked this panel off `/what-a-blueprint-is` and onto this page, "just
-          below" the lead above.
-
-          It belongs here and it was the odd one out there. `/what-a-blueprint-is` answers
-          what a blueprint IS in three parts and a run; this figure is six named fields with
-          two paragraphs of fine print each, which is reference material about one file
-          format. This page is that file format, and the reader who arrives here has already
-          decided to study a card rather than to find out what one is.
-
-          Above `SectionNodeCard` rather than below it, because the annotated listing walks
-          nine parts of a real document and this names the six fields that decide a node's
-          reach. Fields, then the file.
-
-          Every value is read off `code-builder@1.0.0`, the card the rest of the site opens
-          with. A page explaining what `mcp` and `cannot` are, illustrated with invented
-          values, would be teaching a schema nobody ships. */}
+      {/* The seven fields that decide a node's reach, above the annotated card: fields, then
+          the file. Every value is read off `code-builder@1.0.0`, the card the rest of the
+          site opens with, so the figure cannot end up teaching a schema nobody ships. */}
       {reachCard !== undefined && (
         <section id="card-reach" className="scroll-mt-24 border-b border-line bg-void py-12 sm:py-16">
           <div className="container-page">
@@ -364,8 +323,16 @@ export default function SpecCardPage() {
               tools={reachCard.tools.length > 0 ? reachCard.tools.join(", ") : "none"}
               mcp={reachCard.mcp.length > 0 ? reachCard.mcp.join(", ") : "none"}
               skill={reachCard.skill ?? "none"}
+              /* Both fields are read rather than one being derived from the other by
+                 position: the archive's one enforced card happens to write them in that
+                 order, and a figure should not depend on it. */
               cannot={
-                reachCard.cannot.length > 0 ? (reachCard.cannot[0] ?? "") : "nothing declared"
+                reachCard.cannot.length > 0 ? (reachCard.cannot[0] ?? "") : "no type refused"
+              }
+              willNot={
+                reachCard.willNot.length > 0
+                  ? (reachCard.willNot[0] ?? "")
+                  : "nothing promised"
               }
               riskMarkers={
                 reachCard.riskMarkers.length > 0
@@ -377,18 +344,11 @@ export default function SpecCardPage() {
         </section>
       )}
 
-      {/* The figure this page opens with: the card the whole page is about, annotated
-          line by line, read straight out of `content/cards/`, and broken into nine parts
-          a reader picks rather than scrolls through. */}
+      {/* The card the whole page is about, annotated line by line, read straight out of
+          `content/cards/` and broken into nine parts a reader picks rather than scrolls
+          through. */}
       <SectionNodeCard />
 
-      {/* ---------- the reference, in the open ----------
-          A band, not a row in a flex stack. The seam is a `border-t` and a ground
-          change, the same device `/towards-a-dark-factory` marks its bands with, and it
-          is now the only seam on the page: the band that used to sit between this and
-          the figure is gone, so the figure's `bg-void` runs straight into this one's and
-          the rule is what divides them. The pager below is `bg-surface/40`, which is the
-          ground change that closes the page. */}
       <section
         className="border-t border-line bg-void py-16 sm:py-20"
         aria-labelledby="fields-heading"
@@ -396,79 +356,62 @@ export default function SpecCardPage() {
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
             <span className="label-lead">The reference</span>
-            <h2 id="fields-heading" className={`${BAND_H2} scroll-mt-24`}>
+            <h2 id="fields-heading" className={cx(BAND_H2, "scroll-mt-24")}>
               Every field, and what holds it
             </h2>
+            {/* No count in the sentence: a number typed beside a list somebody else owns
+                goes stale silently. Every id under a field comes out of `CORE_ONTOLOGY`
+                through the engine's own view, so a term renamed in the core is renamed
+                here and one removed disappears. */}
+            <p className="text-[15px] leading-relaxed text-muted">
+              The ids under a field are the curated core, spelled as a card has to spell
+              them.
+            </p>
           </div>
 
           <div className="flex flex-col gap-5">
-            {/* Uncapped this ran 187 characters a line, the widest prose on the page. */}
-            {/* No count in the sentence. The docblock this page shipped with said
-                "fifteen rows" over a `CARD_ROWS` that has sixteen, because `provenance`
-                was added and the prose was not: a number typed beside a list somebody
-                else owns goes stale silently, and there is nothing here worth spending a
-                render on `CARD_ROWS.length` for. */}
-            <p className="prose-lane text-sm text-muted">
-              One row per wire key, and the third column is the point: a diagnostic code is
-              greppable, it is what the build and{" "}
-              <SpecLink href="/upload">the upload check</SpecLink> print, and it is the
-              difference between a promise and a rule you can go and trip on purpose.
-            </p>
             <CheckLegend />
-            <CheckTable
-              rows={CARD_ROWS}
-              caption="What the engine checks on a node card, and what it leaves to the author"
-            />
-          </div>
-
-          <div className="flex flex-col gap-5">
-            <h3 className="label-lead">Inside the fields that hold structure</h3>
-            <p className="prose-lane text-sm text-muted">
-              Several rows above stand over more than one thing. What each nested key
-              decides, and what it costs to leave it out or to get it wrong.
-            </p>
-            {/* Two columns at `md`, because these are short definitions and one column of
-                nine at the reading measure is a screen of scrolling for a list a reader
-                scans rather than reads. 40px across and 20px down, both canonical tiers.
-
-                The term is spelled exactly as `CheckTable` spells its row heads —
-                `font-mono text-[12px] text-fg` — so the list reads as the table continued
-                rather than as a second, differently-typed reference. Deliberately NOT
-                copper: the register belongs to the figure above, where it marks the runs
-                of one real file, and spending it on a list of key names would say these
-                nine are lines of that card. */}
-            <dl className="grid gap-x-10 gap-y-5 md:grid-cols-2">
-              {SUBFIELDS.map((field) => (
-                <div key={field.key} className="flex flex-col gap-1.5">
-                  <dt className="font-mono text-[12px] text-fg">{field.key}</dt>
-                  <dd className="text-sm leading-relaxed text-muted">{field.role}</dd>
-                </div>
+            <dl className="flex flex-col border-b border-line">
+              {CARD_ROWS.map((row) => (
+                <FieldEntry key={row.name} row={row} terms={termsOf(row.values)} />
               ))}
             </dl>
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="border-t border-line bg-surface/40 py-16 sm:py-20"
+        aria-labelledby="checks-heading"
+      >
+        <div className="container-page flex flex-col gap-10">
+          <div className="flex flex-col gap-3">
+            <span className="label-lead">The checks</span>
+            <h2 id="checks-heading" className={cx(BAND_H2, "scroll-mt-24")}>
+              What the validator checks
+            </h2>
+            <p className="text-[15px] leading-relaxed text-muted">
+              Every code beside a field is a real diagnostic. The validator prints it on{" "}
+              <SpecLink href="/upload">the upload page</SpecLink> and in the build when the
+              rule is broken, so a code can be grepped for and tripped on purpose, which is
+              what separates a checked rule from a promise.
+            </p>
           </div>
 
           {refusal !== undefined && (
             <div className="flex flex-col gap-3">
-              {/* No `prose-lane`, on the author's instruction (2026-08-08). The 36rem
-                  measure is right for a run of body prose a reader settles into; this is a
-                  one-sentence caption for the panel directly under it, and the panel is
-                  full width. Held to 36rem it broke over three lines and ended a third of
-                  the way across, with an `<Id>` chip carrying a DOT statement wrapping
-                  inside it — a caption narrower than the thing it captions reads as a
-                  different column rather than as a label. */}
+              {/* No reading lane: this is a one-sentence caption for the panel directly under
+                  it, and the panel is full width. */}
               <p className="text-[15px] leading-relaxed text-muted">
-                The sentence below comes back from the resolver during the build rather
-                than from this page, run over the starter bundle with{" "}
-                <Id>{ADDED_DOT_LINE}</Id> inserted.
+                This message is the validator&rsquo;s own output rather than text written for
+                this page. It comes from adding one edge, <Id>{ADDED_DOT_LINE}</Id>, to the
+                starter blueprint.
               </p>
               <div className="rounded-lg border border-line bg-surface-2 p-4">
                 {/* The severity in word form, beside the code, from the same table the
-                    validator's own lists use. An earlier length pass deleted the sentence
-                    that carried "at error severity" and left the word only on a figure's
-                    `<svg>` plate; that figure is now off the page too, so this is the one
-                    place on `/spec/card` where the severity is a word a reader can find.
-                    Read off the diagnostic rather than typed, so it cannot drift from what
-                    the engine actually returned. `honesty.test.ts` pins the pair. */}
+                    validator's own lists use, and read off the diagnostic rather than typed.
+                    This is the one place on the page where the severity is a word a reader
+                    can find; `honesty.test.ts` pins the pair. */}
                 <p className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] uppercase tracking-[0.14em]">
                   <span style={{ color: SEVERITY_META[refusal.severity].color }}>
                     {SEVERITY_META[refusal.severity].word}
@@ -484,26 +427,50 @@ export default function SpecCardPage() {
                   </p>
                 )}
               </div>
-              {/* Pointed at the topology layer when `/what-it-isnt` was removed. The
-                  sentence had to change with the href, not just follow it: the old target
-                  drew the clean and leaked graphs side by side and quoted the analyzer on
-                  both, and nothing on the site does that now. What survives is the
-                  prohibition drawn as an edge the starter graph does not have. */}
-              {/* `.prose-lane`: uncapped, this sat at 182 characters a line. */}
-              <p className="prose-lane text-sm text-dim">
-                <SpecLink href="/spec/topology">The topology layer</SpecLink> draws the
-                same prohibition as an edge the starter graph does not have, beside the
-                card that declares it.
+              <p className="text-sm text-dim">
+                <SpecLink href="/spec/topology">The topology page</SpecLink> shows the same
+                prohibition from the other side: the starter&rsquo;s DOT file, where the
+                planner -&gt; builder edge is deliberately absent.
               </p>
             </div>
           )}
         </div>
       </section>
 
-      {/* The rail closes the page on the opposite ground, and with no `border-t` of its
-          own: `SpecPager` draws one at container width, and a full-bleed rule 64px above
-          an inset rule is two lines saying one thing. The ground change is the seam. */}
-      <section className="bg-surface/40 py-16 sm:py-20">
+      {/* The whole vocabulary, after the fields that consume it: the chips under a field
+          answer "what may I write here", and a reader who wants the set itself, with what
+          each term means and how many cards name it, gets it without leaving the page. The
+          catalog renders on the server and travels through the client boundary as
+          children, which is what lets it draw subsumption rails no serialisable row shape
+          could carry. */}
+      <section
+        className="border-t border-line bg-void py-16 sm:py-20"
+        aria-labelledby="every-term-heading"
+      >
+        <div className="container-page flex flex-col gap-10">
+          <div className="flex flex-col gap-3">
+            <span className="label-lead">Every term</span>
+            <h2 id="every-term-heading" className={cx(BAND_H2, "scroll-mt-24")}>
+              The whole vocabulary, and what names each term
+            </h2>
+            {/* No total here: the browser prints a live `results/total` in its own filter
+                bar, and a number typed in the half of the page that cannot see it would be
+                a second count of the same set. */}
+            <p className="text-[15px] leading-relaxed text-muted">
+              The {CORE_ONTOLOGY.terms.length} curated terms the fields draw on, and every
+              term a published blueprint declares in its own namespace, each with its parent
+              and how many cards name it.
+            </p>
+          </div>
+
+          <Suspense fallback={<VocabularyListSkeleton />}>
+            <VocabularyList />
+          </Suspense>
+        </div>
+      </section>
+
+      {/* No `border-t` of its own: `SpecPager` draws one at container width. */}
+      <section className="bg-void py-16 sm:py-20">
         <div className="container-page">
           <SpecPager href={HERE} />
         </div>
