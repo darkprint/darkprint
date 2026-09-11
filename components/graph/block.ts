@@ -86,7 +86,7 @@ export const BLOCK_TEXT_INSET = 13;
 
    - 61px  `ship` on `checkpoint-resume-runner` — a one-line name and its kind row, which is
            the least an `AgentNode` can be. That blueprint is at
-           `/blueprints/darkprint/checkpoint-resume-runner` now.
+           `/blueprints/autogen/checkpoint-resume-runner` now.
    - 157px `/build`'s `Python Script Factory Release Gate` — three wrapped lines, lit, with
            the badge row under the title. `lib/content/layout.ts`'s `rowGap` of 180 exists
            to clear exactly this one. The page that produced that name is gone and nothing

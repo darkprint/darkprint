@@ -490,7 +490,7 @@ registry is searched first for the same reason.
 2. **Search with the addition as the task.** `find_blueprints` with that sentence, or the
    anonymous GET from Phase 1. Show the top hits in the author's words, `ref`, `title` and
    `score`, and recommend one. When a live page is open, send them as `hits`. The tutorial's
-   case, observability on a node, is `darkprint/pipeline-observability`.
+   case, observability on a node, is `autogen/pipeline-observability`.
 3. **Fetch the one they chose.** `get_blueprint` with its owner and slug, or
    `GET https://www.darkprint.io/api/mcp/blueprints/<owner>/<slug>/bundle`. The answer lists
    the release's files by path, with the version and the digest that name those bytes.

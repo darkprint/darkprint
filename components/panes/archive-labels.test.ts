@@ -237,7 +237,7 @@ const WIDEST = [1920, 1456, 1279, 1200] as const;
  * reading and belongs in a different table from this one.
  *
  * ── How these twelve were taken, because a browser reading has a shape ──
- * On the dev server, on `/blueprints/darkprint/incident-commander`, 2026-09-06.
+ * On the dev server, on `/blueprints/autogen/incident-commander`, 2026-09-06.
  *
  * One UNFORCED reading first, and it is the one that matters: the window was innerWidth 1288,
  * clientWidth 1277, an 11px scrollbar, the rail VISIBLE at 256px. Container 1021, workspace

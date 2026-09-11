@@ -721,7 +721,7 @@ export function graphPaneHeightCss(extent: DrawnExtent): string {
      amount.
 
      Confirmed a second time, on a window that was not chosen for being wide: an UNFORCED
-     reading of `/blueprints/darkprint/incident-commander` at clientWidth 1277 — inside the
+     reading of `/blueprints/autogen/incident-commander` at clientWidth 1277 — inside the
      rail band, canvas 945 — measured `.rf-blueprint` at 375, where `graphPaneHeight` computes
      374. That is this pixel, in the wild, at a canvas nobody picked. It also happens to be the
      reading that catches the rail: the same window under the old chain would have been called

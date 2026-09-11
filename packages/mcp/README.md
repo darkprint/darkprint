@@ -12,7 +12,7 @@ session. One package, three things:
 ```bash
 npx -y darkprint skill install            # Claude Code
 npx -y darkprint skill install --codex    # Codex
-npx -y darkprint clone darkprint/starter-software-factory --out starter
+npx -y darkprint clone autogen/starter-software-factory --out starter
 npx -y darkprint clone spec-planner@1.0.0 # one card, as cards/spec-planner@1.0.0.yaml
 npx -y darkprint validate ./starter
 npx -y darkprint --help
