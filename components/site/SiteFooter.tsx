@@ -143,9 +143,20 @@ export function SiteFooter() {
           </div>
         ))}
       </div>
+      {/* The legal row sits under the rule rather than in a column: `nav.test.ts` holds every
+          footer column against the header's label for the same route, and these two have no
+          header row and want none. Google's consent screen needs the privacy link to resolve
+          on this domain, which is the other reason it is reachable from every page. */}
       <div className="border-t border-line/60">
-        <div className="container-page py-5 text-xs text-dim">
+        <div className="container-page flex flex-wrap items-center gap-x-4 gap-y-2 py-5 text-xs text-dim">
           <span>© 2026 DarkPrint · darkprint.io</span>
+          <span aria-hidden="true">·</span>
+          <Link href="/privacy" className="transition-colors hover:text-fg">
+            Privacy
+          </Link>
+          <Link href="/terms" className="transition-colors hover:text-fg">
+            Terms
+          </Link>
         </div>
       </div>
     </footer>

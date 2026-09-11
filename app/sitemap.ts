@@ -30,6 +30,8 @@ const STATIC_PATHS = [
   "/capabilities",
   "/mcp",
   "/skill",
+  "/privacy",
+  "/terms",
 ];
 
 const entry = (path: string): MetadataRoute.Sitemap[number] => ({ url: `${SITE_ORIGIN}${path}` });

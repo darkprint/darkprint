@@ -403,13 +403,20 @@ describe("the nav is a complete map of the routes", () => {
      for every reader who could click it, goes nowhere. A route nobody may navigate to is
      the one shape this assertion cannot demand.
 
-     This file is byte-frozen by `tests/server/t262/frozen.test.ts`. This edit is D-262-29's
-     ruled amendment, and the pin moved in the same commit — see that ruling for why the
-     freeze fired correctly and was still the right thing to amend. */
+     This file was byte-frozen for a while by a harness under `tests/server/t262`, which no
+     longer exists; nothing hashes this file today, so an edit here needs no pin moved with
+     it. The sentence saying otherwise stood after the harness went and would have sent a
+     reader looking for a pin to update. */
   /* `new` joined at T280 for the same reason `upload` is here: it is reached from the
      "New blueprint" controls on the profile shelf and the hero, not from the global nav —
      a creation form is a destination a button hands you, not a place a reader browses. */
-  const ELSEWHERE = new Set(["upload", "welcome", "new"]);
+  /* `privacy` and `terms` joined when sign-in went live. They are reached from the legal
+     row under the footer's rule, which every page carries, and a legal page is not
+     somewhere a reader browses to: it is somewhere they are sent when they want to check
+     one thing. A header row for either would spend a slot in the primary map of the
+     product on a document nobody opens twice. Google's OAuth consent screen also reads the
+     privacy link, which is why it has to resolve on this domain from every page. */
+  const ELSEWHERE = new Set(["upload", "welcome", "new", "privacy", "terms"]);
 
   /**
    * Decision 1 of the accounts pass, held from both ends, and rewritten three times. The

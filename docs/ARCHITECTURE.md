@@ -96,6 +96,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `/ontology/[...term]` | dynamic | one vocabulary term: its place in the lattice and its usage |
 | `/settings` | dynamic | handle, email, profile, default visibility, notifications, API keys, account deletion |
 | `/skill` | static | install the blueprint-writing skill for Claude Code or Codex |
+| `/privacy`, `/terms` | static | what the database stores about a person and how to remove it; what a reader may do here and what the site promises back. Linked from the footer's legal row on every page, which is also where Google's OAuth consent screen reads the privacy link from |
 | `/spec/attractor`, `/spec/topology` | static | the Attractor crosswalk; the DOT dialect |
 | `/spec/card` | dynamic | the node card format, with the vocabulary browser |
 | `/towards-a-dark-factory`, `/tutorial` | static | the essay on the phases of automation; the five-step walkthrough that has the reader write a blueprint in their own agent with the blueprint-writing skill, opens the live page the draft is posted to, and points at MCP and `/upload` |
