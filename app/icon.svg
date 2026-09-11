@@ -8,10 +8,11 @@
     browser fetches this file on its own, with no stylesheet and no :root, so a custom
     property here resolves to nothing and the mark paints blank.
 
-    So the four values below are copies, and a copy that can drift silently is exactly what
+    So the five values below are copies, and a copy that can drift silently is exactly what
     the rule exists to prevent. components/site/logo.test.ts reads this file and
     app/globals.css and fails if they stop agreeing.
 
+      #05060d  color-void             the ground
       #061c52  color-blueprint-deep   the flap
       #74b4ff  color-blueprint-line   the folder edge and the graph edge
       #7dd3fc  color-cyan-bright      the trigger node
@@ -24,12 +25,25 @@
     other icon in the head. It is a comment, so nothing type-checked it and no test that
     read the file as a string could see it. logo.test.ts parses it as XML now.
 
+    The ground is painted rather than left transparent. A browser composites this file
+    onto its own tab strip, which is light in most of them, and every colour below is drawn
+    for the void; on white the flap loses its edge and the two nodes float.
+
     No back plate and no tab at this rung: at 16px they are two grey pixels. Two solid
     discs and one edge, per the reduction ladder. The mark sheds nodes rather than
     shrinking them.
   -->
+  <rect width="64" height="64" fill="#05060d"/>
+  <!--
+    Lifted to centre the ink. The drawing inherits its y from the full mark, where the back
+    plate sits above the flap and holds the balance; this rung drops the plate, so on a
+    painted ground the flap reads 9 units low. The ink spans y 23.75 to 58.25 with the
+    stroke, so -9 puts its midpoint on 32.
+  -->
+  <g transform="translate(0 -9)">
   <path d="M8 26h46a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V28a2 2 0 0 1 2-2z" fill="#061c52" stroke="#74b4ff" stroke-width="4.5" stroke-linejoin="round"/>
   <path d="M30 41L36 41" fill="none" stroke="#74b4ff" stroke-width="3" stroke-linecap="round"/>
   <circle cx="24" cy="41" r="5" fill="#7dd3fc"/>
   <circle cx="42" cy="41" r="5" fill="#34d399"/>
+  </g>
 </svg>

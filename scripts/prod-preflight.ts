@@ -18,11 +18,27 @@
  *   release_embedding < releases or card_version_embedding < cards    `npm run db:reembed` has work to do
  */
 
+import { readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import pg from "pg";
 
 const { Pool } = pg;
 
-const MIGRATIONS_ON_DISK = ["0001_init", "0002_community", "0003_search", "0004_social", "0005_notifications", "0006_identities", "0007_drafts", "0008_embedding_input", "0009_drop_ontology_versioning", "0010_key_scope"];
+/**
+ * Read off the directory rather than listed here, because a hand-kept list silently
+ * under-reports: this stood as a literal ending at `0010_key_scope` while
+ * `0011_tutorial_live` sat beside it on disk, so the line below claimed nothing was
+ * pending that the operator still had to run. `lib/db/migrate.ts` owns the same
+ * convention and is deliberately not imported: this script has to answer about a database
+ * BEHIND the code, so it pulls in no schema.
+ */
+const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "lib", "db", "migrations");
+const MIGRATIONS_ON_DISK = readdirSync(MIGRATIONS_DIR)
+  .filter((file) => file.endsWith(".up.sql"))
+  .map((file) => file.slice(0, -".up.sql".length))
+  .sort();
 
 const TABLES = [
   "account",

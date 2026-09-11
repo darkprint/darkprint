@@ -15,7 +15,7 @@
 
    **The favicon.** `app/icon.svg` is fetched by the browser with no
    stylesheet behind it, so it cannot use the theme variables every
-   other surface reads. It carries four hexes, and a copy that can
+   other surface reads. It carries five hexes, and a copy that can
    drift is exactly what "never write a hex" exists to prevent. This
    reads both files and fails when they stop agreeing.
    ============================================================ */
@@ -280,6 +280,7 @@ describe("the favicon and the theme agree", () => {
 
   /** Each hex in the icon, against the token it is a copy of. */
   const COPIES: [token: string, hex: string][] = [
+    ["--color-void", "#05060d"],
     ["--color-blueprint-deep", "#061c52"],
     ["--color-blueprint-line", "#74b4ff"],
     ["--color-cyan-bright", "#7dd3fc"],
@@ -292,7 +293,7 @@ describe("the favicon and the theme agree", () => {
     for (const hex of hexes) {
       expect(
         COPIES.some(([, known]) => known === hex),
-        `app/icon.svg paints ${hex}, which is not one of the four tokens it copies`,
+        `app/icon.svg paints ${hex}, which is not one of the ${COPIES.length} tokens it copies`,
       ).toBe(true);
     }
   });
