@@ -1,0 +1,19 @@
+This commit also carries a change its message does not mention, swept in by `git add -A`.
+
+REMOVED, on the owner's instruction: the /towards-a-dark-factory essay, its entry
+in the Learn sequence, and the dark-factory filter on /blueprints.
+
+- app/towards-a-dark-factory/page.tsx is deleted.
+- components/spec/sequence.ts drops the stop, which removes BOTH the footer link
+  under 'In practice' and the header's Learn entry, since both are derived from
+  SPEC_SEQUENCE rather than hand-written. The practice run renumbers 04, 05.
+- next.config.ts goes from sixteen redirect rules to seventeen: the four that
+  pointed at the essay now point at /what-a-blueprint-is, and the essay's own path
+  joins them as a source. Every one was in the published sitemap and so has been
+  crawled, and a crawled URL answering 404 is what that file's own header calls
+  worse than a redirect.
+- components/gallery/GalleryBrowser.tsx loses the ?df=1 control. The isDarkFactory
+  CLASSIFICATION is untouched: blueprint pages still show it, lib/core is not
+  changed, and the server's searchBlueprints still accepts the key.
+
+The dark-factory CONCEPT stays. Only the essay, its links, and the shelf filter go.
