@@ -282,9 +282,18 @@ describe("the three GET routes", () => {
       get(`/api/mcp/blueprints/${w.handle}/${w.publicA.slug}/bundle?harness=claude-code&digest=${w.publicA.digest}`),
       params({ owner: w.handle, slug: w.publicA.slug }),
     );
-    const shapedBody = (await shaped.json()) as { instantiate: { harness: string; steps: string[] } };
+    const shapedBody = (await shaped.json()) as {
+      instantiate: { harness: string; steps: string[] };
+      run: string[];
+    };
     expect(shapedBody.instantiate.harness).toBe("claude-code");
-    expect(shapedBody.instantiate.steps.some((step) => step.includes("subagent"))).toBe(true);
+    /* The harness reaches the wording of the notes and nothing else. What it used to reach
+       was the two sentences about isolating a node and stopping at a human gate, which meant
+       the default answer was the least safe one; those are `run`'s now, and `run` is the same
+       list whichever harness is named. */
+    expect(shapedBody.instantiate.steps.some((step) => step.includes("claude-code"))).toBe(true);
+    expect(shapedBody.run).toEqual((body as unknown as { run: string[] }).run);
+    expect(shapedBody.run.join(" ")).toContain("own context");
 
     const unknownHarness = await bundleRoute(
       get(`/api/mcp/blueprints/${w.handle}/${w.publicA.slug}/bundle?harness=emacs`),

@@ -15,7 +15,7 @@ import type { Actor } from "@/lib/server/policy";
 import { blueprint } from "@/lib/server/registry";
 import { readableBundle } from "./bundle";
 import { McpRefusedError } from "./errors";
-import { instantiationSteps } from "./guidance";
+import { instantiationSteps, runContract } from "./guidance";
 import { mcpProvenance } from "./provenance";
 import { withMcpStore } from "./store";
 import type { McpBlueprint, McpHarness, McpScorecard } from "./types";
@@ -57,6 +57,16 @@ export async function mcpGetBlueprint(
     const scorecard = scorecardOf(release);
     const harness = options.harness ?? "generic";
 
+    /* One input for both, so the notes and the contract cannot disagree about which nodes
+       wait for a person. */
+    const guidance = {
+      harness,
+      owner: provenance.publishedBy,
+      slug: bundle.slug,
+      digest,
+      files,
+      ...(scorecard === undefined ? {} : { humanGates: scorecard.autonomy.humanGates }),
+    };
     const out: McpBlueprint = {
       owner: provenance.publishedBy,
       slug: bundle.slug,
@@ -66,17 +76,8 @@ export async function mcpGetBlueprint(
       manifest: manifestOf(release),
       files,
       provenance,
-      instantiate: {
-        harness,
-        steps: instantiationSteps({
-          harness,
-          owner: provenance.publishedBy,
-          slug: bundle.slug,
-          digest,
-          files,
-          ...(scorecard === undefined ? {} : { humanGates: scorecard.autonomy.humanGates }),
-        }),
-      },
+      instantiate: { harness, steps: instantiationSteps(guidance) },
+      run: runContract(guidance),
     };
     if (scorecard !== undefined) out.scorecard = scorecard;
     return out;

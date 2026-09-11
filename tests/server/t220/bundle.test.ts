@@ -104,7 +104,12 @@ describe("get a blueprint", () => {
     for (const file of generic.files) expect(steps[0]).toContain(file.path);
     expect(steps.some((s) => s.includes(TOPOLOGY_DOT))).toBe(true);
     expect(steps.some((s) => s.includes("export_pipeline") && s.includes(generic.digest))).toBe(true);
+    /* The notes are about files. How to RUN moved to `run`, because these two were the
+       sentences the default answer used to omit. */
     expect(steps.some((s) => s.includes("subagent"))).toBe(false);
+    expect(generic.run.join(" "), "the default answer omits the run contract again").toContain(
+      "own context",
+    );
     const readme = generic.files.find((f) => f.path === "README.md");
     const sectionTitle = README_RUNNER_SECTION.replace(/^#+ /, "");
     expect(steps.some((s) => s.includes(sectionTitle))).toBe(readme?.text.includes(README_RUNNER_SECTION) === true);
@@ -115,9 +120,14 @@ describe("get a blueprint", () => {
       })) as Blueprint;
       expect(shaped.instantiate.harness).toBe(harness);
       expect(shaped.files, "the harness filters nothing").toEqual(generic.files);
-      expect(shaped.instantiate.steps.some((s) => s.includes("subagent"))).toBe(true);
-      expect(shaped.instantiate.steps.some((s) => s.toLowerCase().includes("human"))).toBe(true);
       expect(shaped.instantiate.steps.some((s) => s.includes(harness))).toBe(true);
+      /* The assertion that matters, and it is an EQUALITY rather than a presence: naming a
+         harness used to ADD the isolation and human-gate sentences, so a caller who named
+         none got the least safe answer. The contract is the format's, not the harness's. */
+      expect(
+        shaped.run,
+        "the run contract varies by harness again, so the default caller is told less",
+      ).toEqual(generic.run);
     }
   });
 

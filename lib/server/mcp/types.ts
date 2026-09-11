@@ -104,6 +104,12 @@ export interface McpBlueprint {
   scorecard?: McpScorecard;
   provenance: Provenance;
   instantiate: { harness: McpHarness; steps: readonly string[] };
+  /**
+   * How to run the graph, which is a different question from where to put it and is NOT
+   * shaped by `harness`. A card's ports, prohibitions and retry bound mean the same thing
+   * whoever executes them, so every caller gets this, including one that named no harness.
+   */
+  run: readonly string[];
 }
 
 /**

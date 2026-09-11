@@ -28,8 +28,9 @@ const HARNESS = {
   type: "string",
   enum: [...HARNESSES],
   description:
-    "Shapes the instantiation notes only. It filters nothing: the files are the same whichever " +
-    "you name, and `generic` is the default.",
+    "Shapes the instantiation notes only. It filters nothing, it is never required, and the " +
+    "`run` contract does not vary by it: the files and the contract are the same whichever you " +
+    "name, and `generic` is the default.",
 };
 const LIMIT = {
   type: "integer",
@@ -95,8 +96,12 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
       "terms), its manifest, its scorecard, its provenance, and numbered notes for " +
       "instantiating it under the harness you name. Without `digest` you get the current " +
       "release; with one you get exactly those bytes, and they keep answering after a newer " +
-      "release is cut. Call this once `find_blueprints` has found the blueprint you want. With " +
-      "an API key sent as a bearer token, your own private blueprints are reachable here too.",
+      "release is cut. The answer also carries `run`: the contract for executing the graph, " +
+      "which every caller gets whether or not they name a harness, because a card's ports, " +
+      "prohibitions and retry bound mean the same thing whoever runs them. Show the graph and " +
+      "the scorecard to your user and get their agreement before running any of it. Call this " +
+      "once `find_blueprints` has found the blueprint you want. With an API key sent as a " +
+      "bearer token, your own private blueprints are reachable here too.",
     inputSchema: {
       type: "object",
       properties: { owner: OWNER, slug: SLUG, digest: DIGEST, harness: HARNESS },

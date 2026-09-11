@@ -109,12 +109,19 @@ const INTENTS: readonly {
     intent: "Run one",
     how: (
       <span className="text-muted">
-        nothing here runs a blueprint: <Verb name="export" />, then your own runner
+        nothing here runs a blueprint: your own harness does, and{" "}
+        <code className="font-mono text-blueprint-ink">get_blueprint</code> returns the
+        contract for running it
       </span>
     ),
     status: "by design",
     because:
-      "The site executes nothing, which `/upload` and `/mcp` both state in the open. The verb " +
+      "The site executes nothing, which `/upload` and `/mcp` both state in the open. What it " +
+      "hands an agent instead is the `run` block on `get_blueprint`: approve the shape with " +
+      "the person first, one node per context with only its declared inputs, `will_not` and " +
+      "`cannot` honoured, loops bounded by `max_retries`, and a stop at every human gate. It " +
+      "does not vary by the `harness` parameter and is returned whether or not one is named. " +
+      "The verb " +
       "that gets you a runnable file is a CLI verb, and `export_pipeline` returns the same file " +
       "over MCP; the running is the reader's runner's.",
   },

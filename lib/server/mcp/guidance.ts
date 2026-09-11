@@ -57,14 +57,6 @@ export function instantiationSteps(input: GuidanceInput): string[] {
       "outputs, so read them before running and hold each node to them yourself.",
   );
 
-  if (harness !== "generic") {
-    steps.push(
-      "Run one node at a time: start a subagent per node, hand it the card's spec verbatim, " +
-        "and allow it only the tools and mcp servers the card lists.",
-    );
-    steps.push(gateStep(input.humanGates));
-  }
-
   steps.push(
     `For a pipeline Attractor can run, call export_pipeline with owner "${owner}", slug "${slug}" ` +
       `and digest "${digest}", or run darkprint validate ${folder} and darkprint export ${folder} ` +
@@ -78,11 +70,47 @@ export function instantiationSteps(input: GuidanceInput): string[] {
 
   steps.push(
     harness === "generic"
-      ? "These notes are the generic ones. The files are identical whichever harness you name."
-      : `These notes are shaped for ${harness}. The files are identical whichever harness you name.`,
+      ? "These notes are the generic ones, and `run` below holds whoever executes this. The " +
+          "files are identical whichever harness you name."
+      : `These notes are shaped for ${harness}, and \`run\` below holds whoever executes this. ` +
+          "The files are identical whichever harness you name.",
   );
 
   return steps;
+}
+
+/**
+ * How to RUN the graph, as opposed to where to put it, and why it is not shaped by `harness`.
+ *
+ * These four sentences were two, and both were emitted only when the caller named a harness
+ * other than `generic`. `generic` is the default, so the ordinary call — owner and slug and
+ * nothing else — received neither the instruction to isolate a node nor the instruction to
+ * stop at a human gate. A caller who never learned the parameter existed got the least safe
+ * answer, which is the wrong way round for the one instruction that mentions irreversible
+ * work.
+ *
+ * The contract does not vary by harness because it is a property of the FORMAT: a card
+ * declares its ports, its prohibitions and its retry bound, and those mean the same thing
+ * whoever executes them. What a harness changes is the vocabulary for a subagent, which is
+ * the instantiation notes' business above.
+ */
+export function runContract(input: GuidanceInput): string[] {
+  const { humanGates } = input;
+  return [
+    "Show the graph and the scorecard to the person who asked for this, and get their " +
+      "agreement, before running anything. They are approving a shape, not a command: the " +
+      "scorecard names the security level, the risk markers and where a person is expected " +
+      "to act, and those are what they are agreeing to.",
+    "Run one node at a time, each in its own context, and hand it ONLY what its card's " +
+      "inputs declare. The card's spec is that node's whole prompt. One context cannot run " +
+      "this faithfully: a node that must not see a value it has already been told is not " +
+      "isolated by intending to forget it.",
+    "Hold every node to its own card. `will_not` and `cannot` are refusals the author " +
+      "declared and nothing downstream enforces; a node's `tools` and `mcp` are the whole " +
+      "list it may reach for. A loop is bounded by the `max_retries` on the card it returns " +
+      "to, and running past it is a different graph.",
+    gateStep(humanGates),
+  ];
 }
 
 function gateStep(humanGates: readonly string[] | undefined): string {
