@@ -3,7 +3,7 @@
 
    `lib/core/attractor/import.ts` has been complete and tested for
    several releases and had exactly one non-test caller: a CLI whose
-   npm package is unpublished. So a person holding a pipeline had no
+   npm package was not published then. So a person holding a pipeline had no
    way into the registry through this site, and dropping their `.dot`
    here gave them one `bundle/missing-card` per node plus advice
    about DarkPrint's own authoring format. This module is the door.

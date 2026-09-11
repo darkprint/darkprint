@@ -2,7 +2,6 @@
 
 import { useCallback, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "@/lib/format";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/ui/menu-group";
 
@@ -13,8 +12,8 @@ import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/u
    `npx -y darkprint clone <owner>/<name>@<version>` line with a copy button. The panel is a
    native `<details>` for the reasons `components/bundle/CodeMenu.tsx` gives: keyboard
    operable with no code, findable in page, and wholly in the prerendered HTML whether open
-   or shut, which is what lets `components/site/honesty.test.ts` hold the sentence under
-   Clone in place.
+   or shut, which is what lets `components/site/honesty.test.ts` read this panel's sentences
+   off a static render.
 
    There is no repository behind a card. The word "git" is not rendered by this component,
    and the panel says in words what Download and Clone each hand over.
@@ -24,7 +23,7 @@ import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/u
    neighbour.
    ============================================================ */
 
-/** Which page this renders on, so the trigger and the fence name the right thing. */
+/** Which page this renders on, so the trigger and the prose under it name the right thing. */
 type CloneKind = "blueprint" | "node";
 
 /**
@@ -145,11 +144,6 @@ export function CloneMenu({
 /**
  * The two items, Download then Clone, and one sentence under them saying what each hands
  * over. Download first because it needs nothing installed.
- *
- * Amber also carries the card's whole accent register (see `TRIGGER`), so the fence under
- * Clone cannot rely on hue alone to say "this half is not built". It relies on shape: a
- * filled ground, a heavy leading rule, a badge and the refusal in words. Nothing in the
- * register around it carries a fill or a leading rule.
  */
 function CloneBody({
   kind,
@@ -185,18 +179,6 @@ function CloneBody({
             <code>{cloneCommand}</code>
           </pre>
           <CopyButton text={cloneCommand} ariaLabel="Copy the clone command" />
-        </div>
-
-        {/* The fence: a filled ground under a heavy leading rule, a badge and the limit in
-            words. `border-l-2` after the `border` shorthand, which is the order Tailwind
-            emits them in, so the leading edge wins. The verb clones either kind by name;
-            what neither kind has yet is a package on npm for npx to fetch. */}
-        <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
-          <ComingSoonBadge className="self-start" />
-          <p className="text-xs leading-relaxed text-muted">
-            Not installable yet: the darkprint package is not published to npm, so npx finds
-            nothing to run. The verb itself runs from a build of the repository.
-          </p>
         </div>
       </div>
 

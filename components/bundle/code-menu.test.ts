@@ -140,35 +140,9 @@ describe("the panel a reader gets before any script runs", () => {
   it("offers the clone line to the clipboard", () => {
     expect(HTML).toContain('aria-label="Copy the clone command"');
   });
-
-  /**
-   * The badge sits under the clone line and not over the download. A reader who has just
-   * been handed a working file reads the next code block as another working thing unless
-   * the panel says otherwise beside it, and the only thing here that does not run on a
-   * stranger's machine is the command.
-   */
-  it("fences the clone line, not the download, with the badge", () => {
-    const text = plainText(HTML);
-    const download = text.indexOf(DOWNLOAD.name);
-    const clone = text.indexOf(CLONE);
-    const badge = text.indexOf("Coming soon");
-    expect(badge, "the badge is missing").toBeGreaterThan(-1);
-    expect(badge, "the badge sits before the download").toBeGreaterThan(download);
-    expect(badge, "the badge sits before the clone line it qualifies").toBeGreaterThan(clone);
-  });
 });
 
 describe("claims this panel may not stop making", () => {
-  /**
-   * `darkprint clone` is implemented in `packages/cli/src/clone.ts`, and the package that
-   * would put it on a machine that has never seen this repository is not published. A panel
-   * printing a command with a copy button says "run this", and a reader who runs it gets a
-   * 404 from npm unless this sentence is beside it.
-   */
-  it("says the package is not published to npm", () => {
-    expect(plainText(HTML).toLowerCase()).toContain("not published to npm");
-  });
-
   /**
    * What the two items are, and what neither is. There is no repository behind a release
    * and no history, so Download hands over the files as they stand and Clone fetches the

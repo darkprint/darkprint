@@ -19,7 +19,7 @@ import CapabilitiesPage, { metadata } from "@/app/capabilities/page";
 import { MCP_CLIENTS } from "@/components/mcp/clients";
 import { QUESTIONS } from "@/components/skill/SkillSetup";
 import { plainText } from "@/components/ui/visible-text";
-import { SKILL_INSTALL_COMMAND } from "@/lib/skill";
+import { SKILL_INSTALL_COMMAND, SKILL_PACKAGE } from "@/lib/skill";
 import { CLI_ENV, CLI_INVOCATION, CLI_VERBS, NPX_INVOCATION } from "@/packages/cli/src/index";
 import { TOOL_DEFINITIONS } from "@/packages/mcp/src/definitions";
 
@@ -239,65 +239,51 @@ describe("nothing on the page is a retyped copy", () => {
 });
 
 /* ============================================================
-   What the page owes a reader beside a command it prints
+   What a reader is owed beside a command this page prints
 
-   `npm view darkprint` answers 404. Every npx line on this site is
-   printed under the sentence saying so, and this page prints two of
-   them, on two different tabs. A reader sees one panel at a time, so
-   the limit is held per panel: a page-wide `toContain` is met by a
-   sentence on a panel nobody has opened.
-
-   These come off in the one commit that follows `npm publish`,
-   with the sentence itself on the other surfaces.
+   All three panels print an npx line, and the two that print a whole
+   command say what the first run pulls down and from where. A reader sees one panel at a
+   time, so both are held per panel: a page-wide `toContain` is met
+   by a sentence on a tab nobody has opened.
    ============================================================ */
 
-describe("the limit every printed npx line is under", () => {
+describe("every printed npx line says what the first run fetches", () => {
   it("rendered three distinct panels, so no cell below reads the wrong one", () => {
     const texts = PANELS.map(panel);
     for (const [index, text] of texts.entries()) {
       expect(text.length, `the ${PANELS[index]} panel`).toBeGreaterThan(400);
     }
     expect(new Set(texts).size).toBe(PANELS.length);
-    /* Three different lengths would satisfy the line above. What the two cells below need is
-       that a panel stops where the next one starts, so the CLI panel is held to NOT carrying
-       the DarkPrint skill panel's sentence. */
-    expect(panel("cli")).not.toContain("the line above finds nothing to run");
+    /* Three different lengths would satisfy the line above. What the cells below need is that
+       a panel stops where the next one starts, so one sentence is read from both sides: it is
+       on the DarkPrint skill panel and the CLI panel does not reach it. */
+    expect(panel("skill")).toContain("copy the DarkPrint skill it carries");
+    expect(panel("cli")).not.toContain("copy the DarkPrint skill it carries");
   });
 
-  it("says it on the CLI panel, which is where the npx invocation is printed", () => {
+  it("prints the npx grammar and the package it pulls on the CLI panel", () => {
+    const cli = panel("cli");
     expect(
-      panel("cli"),
-      "the panel prints a command for every verb and the package behind them is not on npm",
-    ).toContain("The package is not published to npm yet, so npx finds nothing to run today.");
-  });
-
-  it("says it on the DarkPrint skill panel, which prints a whole install line", () => {
+      cli,
+      "the table below the framing is a command per verb, and this is the shape they share",
+    ).toContain(`${NPX_INVOCATION} <verb>`);
     expect(
-      panel("skill"),
-      "the panel prints the install command under a copy button, on its own tab",
-    ).toContain("The package is not published to npm yet, so the line above finds nothing to run");
+      cli,
+      "a reader pasting one is owed what lands on the machine, and where it comes from",
+    ).toContain(`npx fetch the ${SKILL_PACKAGE} package from npm`);
   });
 
-  it("says it above the intent list, which prints six npx lines before any panel", () => {
-    /* The intent list renders ahead of the three panels, so a reader meets `npx -y darkprint
-       <verb>` in six rows before reaching the panel that states the limit. Cut at the tab
-       section rather than read off the whole page, since every panel below says it too. */
-    const at = MARKUP.indexOf('id="intent-title"');
-    const end = MARKUP.indexOf('id="cli"');
-    expect(at, "no section is marked intent-title").toBeGreaterThan(-1);
-    expect(end, "the intent list no longer renders before the CLI panel").toBeGreaterThan(at);
-    expect(
-      squeeze(plainText(MARKUP.slice(at, end))),
-      "the rows answer with a command the reader cannot run yet, and this is where that is said",
-    ).toContain("is not published to npm");
+  it("prints the whole install line on the DarkPrint skill panel, under its copy button", () => {
+    /* Against that panel and not the page: the three surfaces are tabs, so the command a
+       reader copies has to be on the tab the copy button is on. */
+    expect(panel("skill")).toContain(squeeze(SKILL_INSTALL_COMMAND));
+    expect(panel("skill")).toContain(`npx fetch the ${SKILL_PACKAGE} package from npm`);
   });
 
-  it("says it in the description a shared link carries", () => {
-    const description = metadata.description ?? "";
-    /* `components/mcp/honesty.test.ts` holds this description to `install from npm`, so the
-       provenance stays and the limit is stated after it rather than in place of it. */
-    expect(description).toContain("install from npm");
-    expect(description).toContain("not published to npm yet");
+  it("names where the package comes from in the description a shared link carries", () => {
+    /* `components/mcp/honesty.test.ts` holds this description to the same phrase: a link
+       preview is where a reader learns that the first command downloads something. */
+    expect(metadata.description ?? "").toContain("install from npm");
   });
 });
 

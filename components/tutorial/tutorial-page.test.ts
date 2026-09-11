@@ -43,7 +43,7 @@ import {
 } from "@/components/tutorial/prompts";
 import { openText, plainText } from "@/components/ui/visible-text";
 import { LIVE_TOKEN_PATTERN } from "@/lib/core/tutorial/live";
-import { SKILL_INSTALL_COMMAND, SKILL_INSTALL_COMMAND_CODEX } from "@/lib/skill";
+import { SKILL_INSTALL_COMMAND, SKILL_INSTALL_COMMAND_CODEX, SKILL_PACKAGE } from "@/lib/skill";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -179,29 +179,22 @@ describe("every command a reader pastes is the one its module defines", () => {
   });
 
   /**
-   * The two lines above this sentence fetch a package `npm view darkprint` answers 404 for,
-   * and this is the page a first-time reader is sent to before any other. The limit is held
-   * inside step 1 rather than over the whole page: a sentence about npm printed down beside
-   * the account step qualifies nothing, and a reader copies the command before reading on.
-   *
-   * `openText`, because the thing it qualifies is printed in the open beside it. Verbatim,
-   * because the same sentence stands on six other surfaces and all seven come off together
-   * in the one commit that follows `npm publish`.
+   * Both rows inside step 1, which is the section a reader copies from before reading on.
+   * A whole-page `toContain` is equally happy with an install line printed down beside the
+   * account step, and it is held in the open because a folded command is one a reader who
+   * never opens the disclosure does not have.
    */
-  it("says the install lines fetch a package npm does not have, inside step 1", () => {
+  it("prints both install rows in the open inside step 1, with the package named", () => {
     const step = MARKUP.slice(MARKUP.indexOf('id="install"'), MARKUP.indexOf('id="open-live"'));
     expect(step.length, "step 1 is not the first section of the page").toBeGreaterThan(500);
     const open = squeeze(openText(step));
-    expect(
-      open,
-      "the tutorial prints two npx lines and the package behind them is not published",
-    ).toContain(
-      "Not installable yet: the darkprint package is not published to npm, so npx finds " +
-        "nothing to run.",
+    expect(open, "the Claude Code line is not in step 1's open text").toContain(
+      SKILL_INSTALL_COMMAND,
     );
-    expect(open, "the limit carries the badge the other six surfaces carry").toContain(
-      "Coming soon",
+    expect(open, "the Codex line is not in step 1's open text").toContain(
+      SKILL_INSTALL_COMMAND_CODEX,
     );
+    expect(open, "step 1 never names the package the lines fetch").toContain(SKILL_PACKAGE);
   });
 
   it.each(["claude-code", "codex"])(

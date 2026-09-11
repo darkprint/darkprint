@@ -79,10 +79,9 @@ const STARTER = canvas("starter-software-factory");
 
 /**
  * The two "Get" menus, exactly as the two header bands mount them: `CodeMenu` on a blueprint
- * page and `CloneMenu` on a card page. Each offers a Download that works beside a `darkprint`
- * clone line that does not run on a stranger's machine, and a reader who has just been
- * handed a working file reads the next code block as another working thing unless the panel
- * says otherwise. Both are native `<details>`, so the whole panel is in the static markup
+ * page and `CloneMenu` on a card page. Each offers a Download beside a `darkprint` clone
+ * line, and the sentence under both is the only place a reader is told that neither hands
+ * over a repository. Both are native `<details>`, so the whole panel is in the static markup
  * whether it is open or shut; `present` is enough because nothing they qualify is in the
  * open.
  */
@@ -169,19 +168,7 @@ const CLAIMS: Claim[] = [
     html: UPLOAD_PAGE,
   },
 
-  /* ---- the "Get" menus ----
-     The blueprint menu used to be held to "not built yet: a darkprint cli that clones a
-     blueprint by name". That sentence became false in the other direction: `darkprint clone`
-     is implemented. What is still true, and what the panel now says, is that the package is
-     not published to npm, so the printed line runs on nobody's machine and the verb itself
-     runs from a build of the repository. */
-  {
-    surface: "/blueprints/<owner>/<slug> · Get blueprint",
-    why: "the panel prints a `darkprint clone` line with a copy button under a Download that really works, and a code block beside a working item reads as runnable. This is the sentence saying the CLI line does not run on a machine that has never seen the repository",
-    says: "the darkprint package is not published to npm",
-    where: "present",
-    html: CODE_MENU,
-  },
+  /* ---- the "Get" menus ---- */
   {
     surface: "/blueprints/<owner>/<slug> · Get blueprint",
     why: "what the two items are, and what neither is. An item named Clone promises a repository to a reader who knows the word; there is none behind a release and no history, so Download hands over the files as they stand and Clone fetches the same files by name",
@@ -191,8 +178,8 @@ const CLAIMS: Claim[] = [
   },
   {
     surface: "/nodes/<id> · Get card",
-    why: "the same limit on the card page's own menu, so a reader who only ever opens a card still meets it. `darkprint clone <ref>` writes the card's YAML, so the verb is not what is missing; the package the line fetches is",
-    says: "the darkprint package is not published to npm",
+    why: "the card menu's own copy of the no-repository limit, so a reader who only ever opens a card still meets it. Clone fetches the card's YAML by name, and a reader who knows the word expects a remote to pull from later",
+    says: "there is no repository and no history behind a card",
     where: "present",
     html: CLONE_NODE,
   },

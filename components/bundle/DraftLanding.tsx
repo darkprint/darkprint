@@ -40,7 +40,7 @@ export interface DraftLandingBundle {
   createdAt: string;
 }
 
-/* The CLI's own grammar. The package is not on npm, and the note under the line says so. */
+/* The CLI's own grammar, spelled once so the printed line and the copy button cannot drift. */
 const cloneCommand = (owner: string, slug: string) => `npx -y darkprint clone ${owner}/${slug}`;
 
 export function DraftLanding({
@@ -130,13 +130,6 @@ export function DraftLanding({
                 </code>
                 <CopyButton text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the DarkPrint skill install command" />
               </div>
-              {/* The same limit the clone paragraph below states, said here too, because
-                  this line fetches the same unpublished package and a reader copies one
-                  block without reading the other. */}
-              <p className="mt-2 text-xs leading-relaxed text-dim">
-                Not installable yet: the darkprint package is not published to npm, so npx
-                finds nothing to run. The DarkPrint skill is served on this site, file by file.
-              </p>
             </div>
 
             <div className="border-t border-line pt-5">
@@ -153,10 +146,8 @@ export function DraftLanding({
                 />
               </div>
               <p className="mt-2 text-xs leading-relaxed text-dim">
-                Not installable yet: the darkprint package is not published to npm, so npx
-                finds nothing to run. The verb itself runs from a build of the private
-                repository. There is no release yet either, so it has nothing to fetch until
-                you publish one.
+                There is no release yet, so the command has nothing to fetch until you
+                publish one.
               </p>
             </div>
           </section>

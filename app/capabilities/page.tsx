@@ -37,7 +37,7 @@ import { TOOL_DEFINITIONS } from "@/packages/mcp/src/definitions";
 export const metadata: Metadata = {
   title: "What you can do",
   description:
-    "Every operation DarkPrint offers, from the command line, from a remote MCP server your coding agent connects to with nothing to install, and from the DarkPrint blueprint-writing skill. The CLI and the DarkPrint skill install from npm with one npx line. The darkprint package is not published to npm yet.",
+    "Every operation DarkPrint offers, from the command line, from a remote MCP server your coding agent connects to with nothing to install, and from the DarkPrint blueprint-writing skill. The CLI and the DarkPrint skill install from npm with one npx line.",
 };
 
 /**
@@ -45,8 +45,8 @@ export const metadata: Metadata = {
  *
  * Ordered by how early somebody meets it rather than by surface: finding a blueprint comes
  * before cloning one, and both come before cutting a version of your own. `how` is prose
- * when the answer is not a command, because a row that prints a command a reader cannot
- * run is worse than a row that says so in words.
+ * when the answer is not one command: a tutorial to follow or a browser step has no line
+ * to paste, and writing one anyway would send a reader to a shell for something a page does.
  */
 const INTENTS: readonly {
   readonly intent: string;
@@ -95,15 +95,15 @@ const INTENTS: readonly {
     status: "live",
     because:
       "The MCP tool hands an agent every file of a release; the CLI verb fetches the same " +
-      "bytes on any machine with Node once npx can pull the package, which is not on npm yet.",
+      "bytes on any machine with Node, since npx pulls the package from npm.",
   },
   {
     intent: "Check a folder is valid",
     how: <Verb name="validate" />,
     status: "live",
     because:
-      "A CLI verb, and the npx line for it finds nothing until the package is on npm. `/upload` " +
-      "runs the same engine in the tab with no install at all, which is why this row is `live`.",
+      "A CLI verb, fetched by npx from npm. `/upload` runs the same engine in the tab with no " +
+      "install at all, so this row is `live` for a reader with no terminal as well.",
   },
   {
     intent: "Run one",
@@ -123,8 +123,8 @@ const INTENTS: readonly {
     how: <Verb name="import" />,
     status: "live",
     because:
-      "A CLI verb, reachable today only from a checkout of this repository: the npx line " +
-      "answers 404 until the package is published.",
+      "A CLI verb, fetched by npx from npm. `/upload` reads a dropped Attractor pipeline " +
+      "through the same `lib/core` import, so a reader with no terminal has a way in too.",
   },
   {
     intent: "Write one from nothing",
@@ -149,9 +149,9 @@ const INTENTS: readonly {
     status: "live",
     because:
       "`SKILL_INSTALL_COMMAND` has npx fetch the package from npm and copy the DarkPrint skill " +
-      "into the agent's skills folder. That command answers 404 today, and the skill itself is " +
-      "served here file by file, which is what the `Assisted Design` panel says and why this " +
-      "row is `live`. `lib/skill.ts` forbids the bare phrase `the skill`, hence the qualifier.",
+      "into the agent's skills folder. The same skill is served here file by file, which is " +
+      "what the `Assisted Design` panel says. `lib/skill.ts` forbids the bare phrase `the " +
+      "skill`, hence the qualifier.",
   },
   {
     intent: "Check a version bump matches the change",
@@ -322,19 +322,15 @@ export default function CapabilitiesPage() {
       <h2 id="cli-title" className="sr-only">
         The command-line surface
       </h2>
-      {/* The limit sits in this framing rather than at the top of the page, because this is
-          the panel that prints the npx invocation and a reader on either of the other two
-          tabs never sees this one. The status column stays `live` on every verb: the verbs
-          and the engine under them work, and it is the delivery that does not exist yet. */}
+      {/* The status column is written here rather than read off a row: `CLI_VERBS` carries
+          no status field, and every verb in it works as printed. */}
       <Framing>
         Every verb below runs as{" "}
         <code className="font-mono text-blueprint-ink">{NPX_INVOCATION} &lt;verb&gt;</code> on
         any machine with Node. The first run has npx fetch the{" "}
         <code className="font-mono text-blueprint-ink">{SKILL_PACKAGE}</code> package from npm
-        and keep it in its own cache, so nothing lands in your project. The package is not
-        published to npm yet, so npx finds nothing to run today. The verbs below exist; the
-        delivery does not. The table below is what each command takes. Exit code 0 on success,
-        1 on anything else.
+        and keep it in its own cache, so nothing lands in your project. The table below is what
+        each command takes. Exit code 0 on success, 1 on anything else.
       </Framing>
       <TableShell>
         <thead>
@@ -507,15 +503,14 @@ export default function CapabilitiesPage() {
           ariaLabel="Copy the command that installs the DarkPrint skill"
         />
       </div>
-      {/* Said again on this panel, and not only on the CLI one: the three surfaces are tabs,
-          so a reader here sees no sentence written over there, and this panel prints a whole
-          command under a copy button. */}
+      {/* The package name is named again here, and not only on the CLI panel: the three
+          surfaces are tabs, so a reader on this one sees no sentence written over there, and
+          this panel prints a whole command under a copy button. */}
       <p className="text-sm leading-relaxed text-dim">
         The line has npx fetch the{" "}
         <code className="font-mono text-blueprint-ink">{SKILL_PACKAGE}</code> package from npm
         and copy the DarkPrint skill it carries into your agent&rsquo;s skills folder; nothing
-        else is installed and no account is created. The package is not published to npm yet,
-        so the line above finds nothing to run today. The DarkPrint skill is served on this
+        else is installed and no account is created. The DarkPrint skill is also served on this
         site, file by file.{" "}
         <Link href={SKILL_ROUTE}>Assisted Design</Link> explains it and gives the Codex form, and{" "}
         <Link href="/tutorial">the tutorial</Link> walks a first blueprint through it, with a
@@ -600,17 +595,6 @@ export default function CapabilitiesPage() {
         <h2 id="intent-title" className="label scroll-mt-24">
           By intent
         </h2>
-        {/* Six rows below answer with an `npx -y darkprint <verb>` line, and this list sits
-            above the three panels, so a reader meets those commands before any panel that
-            states the limit. Said once here rather than in each row, which would print the
-            same sentence six times down one column. */}
-        <p className="text-sm leading-relaxed text-dim">
-          Rows answering with a{" "}
-          <code className="font-mono text-blueprint-ink">{NPX_INVOCATION}</code> line describe a
-          verb that is built and cannot be fetched yet: the{" "}
-          <code className="font-mono text-blueprint-ink">{SKILL_PACKAGE}</code> package is not
-          published to npm. Everything answered by an address or by this site works today.
-        </p>
         <KeyValueList>
           {INTENTS.map((row) => (
             <KeyValueRow

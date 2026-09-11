@@ -380,7 +380,7 @@ The stdio server is `darkprint mcp` in `packages/mcp` (newline-delimited JSON-RP
 stdin and stdout); it calls the GET routes at `DARKPRINT_URL` (default `https://www.darkprint.io`)
 with `DARKPRINT_API_KEY` as a bearer when set. The package is named `darkprint`, bin
 `dist/cli.js`, built with `npm run build` inside `packages/mcp` (esbuild through
-`packages/cli/build.mjs`, then a copy of `skills/darkprint`). It is not published to npm yet; `npm publish` from `packages/mcp` is what puts a build there, and it is step 16 of the deploy runbook.
+`packages/cli/build.mjs`, then a copy of `skills/darkprint`). `npm publish` from `packages/mcp` puts a build on npm; `prepack` runs the build and copies the skill in, so the published tarball carries both.
 
 ## 10. CLI
 
@@ -639,23 +639,13 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
 16. Publish the CLI package, which is what every `npx -y darkprint` line on the site fetches:
     `cd packages/mcp && npm publish` (its `prepack` builds `dist/cli.js` and copies the skill
     in). Check with `npm view darkprint version`, then `npx -y darkprint skill install` in a
-    scratch `HOME`. Until this runs, every printed `npx -y darkprint` line carries the same
-    "not published to npm" sentence beside it, on seven surfaces:
-    `components/skill/SkillSetup.tsx` (the install step, with the badge),
-    `app/tutorial/page.tsx` (the install step, with the badge),
-    `components/bundle/DraftLanding.tsx` (twice, the skill line and the clone line),
-    `components/bundle/CodeMenu.tsx`, `components/blueprint/CloneMenu.tsx`,
-    `app/mcp/page.tsx`, and `app/capabilities/page.tsx` in four places: the page
-    `description`, the line above the intent list, the CLI panel's framing and the Assisted
-    Design panel. Those sentences, the `ComingSoonBadge` mounts and the cells that pin them
-    come off in one commit after the package is up, and not before, or the site claims
-    something untrue. The cells to move are the two install rows in
-    `components/skill/SkillSetup.test.ts`, whose no-amber cell also goes back to measuring
-    the whole page, the four rows of "the limit every printed npx line is under" in
-    `app/capabilities/honesty.test.ts`, the install row in
-    `components/tutorial/tutorial-page.test.ts`, and the honesty rows in
-    `components/site/honesty.test.ts` and `components/mcp/honesty.test.ts`. Four `because`
-    strings in that page's `INTENTS` also describe the unpublished state.
+    scratch `HOME`. This has run: `darkprint` is on npm, so no surface states the old limit
+    any more. Every printed `npx -y darkprint` line used to carry a sentence saying the
+    package was absent; those came off with the publish, and what stands in their place is
+    the positive claim, that each surface naming an `npx` line also names the package the
+    first run pulls down. `app/capabilities/honesty.test.ts` pins that per panel. Do not add
+    a cell forbidding the old sentence: one shaped that way held the site to a command that
+    answered 404 once the fact changed underneath it.
 
 Rollback while the old code is still promoted: `psql "$D" -v ON_ERROR_STOP=1 -f rb-prod.sql`,
 then `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres --check-manifest
@@ -674,9 +664,6 @@ row id and refreshed by step 14.
   embedding provider (Vercel AI Gateway, `openai/text-embedding-3-small` at 384 dimensions, which
   keeps the `vector(384)` columns), or the Pro plan, where a build made on Vercel's machines with
   the x64 binaries is not subject to the 12-function cap.
-- The `darkprint` npm package is unpublished; `npx -y darkprint` answers 404. The package is
-  ready to publish from `packages/mcp` and every install line on the site is written for the
-  published state, with the limit stated beside it until step 16 of the runbook has run.
 - The `write` bucket is spent by nothing, and `upload` only by `POST /api/cards`; the key-based
   bundle publish and run-report paths have no rate limit.
 - `darkprint report` still refuses `DARKPRINT_API_KEY` although the runs route accepts a

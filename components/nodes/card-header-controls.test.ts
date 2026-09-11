@@ -388,28 +388,25 @@ describe("the download control is amber, and the blueprint's is not", () => {
   });
 
   /**
-   * THE PRICE OF THE RULING, HELD SO IT CANNOT BE PAID QUIETLY.
+   * THE AMBER REGISTER STAYS LINE WORK, SO A CLAIM CAN STILL OUTRANK IT.
    *
-   * This panel now holds two amber things that mean opposite kinds of thing: a trigger that
-   * downloads a card that really exists, and a fence around a CLI that does not, with a
-   * `ComingSoonBadge` inside it. CLAUDE.md forbids weakening an honesty disclaimer, and
-   * camouflage is weakening — a "not built yet" claim that reads as one more accent in the
-   * register around it has stopped making its claim.
+   * Amber is the card pages' whole accent register, and it is also the hue `app/globals.css`
+   * reserves for a claim that something is not built. Hue alone therefore cannot separate
+   * them, and FORM has to: a claim is a FILLED amber block under a heavy leading rule, and
+   * the trigger is line work on nothing, taking an amber ground only under a pointer.
    *
-   * Hue cannot separate them any more, so FORM does, and these are the two halves of that:
+   * This once held both halves. The other half required a `ComingSoonBadge` inside a filled
+   * fence, which this panel carried while `npx -y darkprint` fetched nothing; the package is
+   * published, so the fence and the claim it made are gone and that half had no subject
+   * left. The half below is the one that still has one, and it is the load-bearing
+   * direction: if the trigger ever takes a filled ground, the next claim fenced into this
+   * panel cannot outrank the register around it.
    *
-   *   1. the fence is a FILLED amber block with a heavy rule down its leading edge, which
-   *      is the shape `app/globals.css` gives a leaves-the-page box and the shape it now
-   *      says must carry the difference;
-   *   2. the trigger is line work on nothing — border, label, caret — and takes an amber
-   *      ground only under a pointer, transiently, never beside the badge it would be
-   *      confused with.
-   *
-   * Delete either half and this cell reds. The `bg-amber` check strips the hover classes
-   * first, because a hover tint is not a rest state and asserting over the raw string would
-   * forbid the one amber ground that is allowed.
+   * The `bg-amber` check strips the hover classes first, because a hover tint is not a rest
+   * state and asserting over the raw string would forbid the one amber ground that is
+   * allowed.
    */
-  it("keeps the not-built-yet claim readable inside a register of its own colour", () => {
+  it("keeps the amber register line work, so a fenced claim can outrank it", () => {
     const menu = DOWNLOAD();
     const summary = menu.slice(menu.indexOf("<summary"), menu.indexOf("</summary>"));
     expect(summary.length, "no <summary> in the rendered menu").toBeGreaterThan(100);
@@ -420,30 +417,10 @@ describe("the download control is amber, and the blueprint's is not", () => {
     );
     expect(
       summary.replace(/hoverable:hover:[^\s"]+/g, ""),
-      "the card's download sits on a filled amber ground at rest, which is the shape " +
-        "`ComingSoonBadge` uses to say something is not built. Line work only.",
+      "the card's download sits on a filled amber ground at rest, which is the shape a " +
+        "claim that something is not built wears. The register is line work only.",
     ).not.toMatch(/\bbg-amber/);
 
-    // 1. the fence: still filled, and now carrying the heavy leading rule as well.
-    const badge = menu.indexOf("Coming soon");
-    expect(badge, "the not-built-yet badge is gone from the panel").toBeGreaterThan(-1);
-    // The fence's OWN opening tag and nothing else. Slicing to the badge's text instead
-    // swallowed `ComingSoonBadge`'s own `bg-amber/10`, and the filled-ground assertion below
-    // then passed off the badge no matter what the fence around it wore — verified by
-    // emptying the fence's background and watching this cell stay green.
-    const open = menu.lastIndexOf("<div", badge);
-    const fence = menu.slice(open, menu.indexOf(">", open));
-    expect(fence, "no fence tag found before the badge").toContain("class");
-    expect(
-      fence,
-      "the unbuilt half lost its filled ground, so nothing but hue separates it from the " +
-        "register it sits in",
-    ).toMatch(/\bbg-amber\//);
-    expect(
-      fence,
-      "the unbuilt half lost the heavy leading rule that makes it read as a claim rather " +
-        "than as one more amber accent on an amber page",
-    ).toContain("border-l-2");
   });
 
   it("leaves the blueprint's trigger in the neutral register", () => {

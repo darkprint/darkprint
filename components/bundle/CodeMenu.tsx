@@ -1,5 +1,4 @@
 import { cx } from "@/lib/format";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 
 /* ============================================================
@@ -12,10 +11,7 @@ import { CopyButton } from "@/components/ui/CopyButton";
    HTML whether it is open or shut, which is what lets `code-menu.test.ts` hold the sentences
    below in place.
 
-   Download comes first because it is the item that needs nothing installed. Clone sits
-   under a badge because the package that would carry the command to a stranger's machine is
-   not published to npm; the copy button stays, since the line is the CLI's own grammar and
-   the verb runs from a build of the repository.
+   Download comes first because it is the item that needs nothing installed.
 
    The word "git" is not rendered. There is no repository behind a blueprint, no history and
    nothing to pull.
@@ -36,8 +32,8 @@ interface CodeMenuDownload {
  * card is amber, so a reader can tell at a glance which of the two they are on.
  *
  * The amber trigger carries no amber ground at rest, only its border, its label and a hover
- * tint: a filled amber slab is the shape an honesty claim wears (the badge below, the box
- * that leaves the page), and the register must not borrow it.
+ * tint: a filled amber slab is the shape an honesty claim wears on this site (the box that
+ * leaves the page), and the register must not borrow it.
  *
  * Contrast, `--color-amber` #ffb020 on `--color-surface` #0a0c16: 10.66:1 for the label; the
  * 50% border composites to 3.36:1, past the 3:1 floor for a non-text boundary.
@@ -137,16 +133,6 @@ export function CodeMenu({
               <code>{cloneCommand}</code>
             </pre>
             <CopyButton text={cloneCommand} ariaLabel="Copy the clone command" />
-          </div>
-          {/* Fenced in the honesty shape: a filled ground under a heavy leading rule, a badge
-              and the limit in words, so the claim stays readable beside an amber register. */}
-          <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
-            <ComingSoonBadge className="self-start" />
-            <p className="text-xs leading-relaxed text-muted">
-              Not installable yet: the darkprint package is not published to npm, so npx
-              finds nothing to run. The verb itself runs from a build of the private
-              repository.
-            </p>
           </div>
         </div>
 

@@ -103,25 +103,18 @@ describe("the install commands", () => {
   });
 
   /**
-   * `npx -y darkprint skill install` fetches a package `npm view darkprint` answers 404 for,
-   * so every surface printing the line owes the reader the limit beside it. These two cells
-   * held the opposite until now — they asserted the page must NOT say the package is off
-   * npm — on the premise that publishing had happened. It has not, and a page that prints a
-   * failing command in silence is the site making a claim that is not true.
+   * The two surfaces that print the line to be copied. The draft panel is the one nothing
+   * else here pins: its own cell above reads that panel's prose and the destination, not
+   * the command it prints.
    *
-   * The landing band is not a row here: it prints two links and no command, and
+   * The landing band is not a row: it prints two links and no command, and
    * `components/hero/Wordmark.test.ts` holds it to that.
-   *
-   * Both rows come off in the one commit that follows `npm publish` (runbook step 16),
-   * together with the sentence itself on all four surfaces.
    */
   it.each([
     ["/skill · the whole route", PAGE],
     ["a draft bundle · the quick-setup panel", DRAFT],
-  ] as const)("%s prints the install line and the limit that line is under", (_name, html) => {
-    const text = openText(html).toLowerCase();
-    expect(text).toContain(SKILL_INSTALL_COMMAND.toLowerCase());
-    expect(text).toContain("not published to npm");
+  ] as const)("%s prints the install line", (_name, html) => {
+    expect(openText(html)).toContain(SKILL_INSTALL_COMMAND);
   });
 });
 
@@ -198,20 +191,14 @@ describe("the route", () => {
   });
 
   /**
-   * No amber over what the DarkPrint skill DOES. Every capability the tutorial and the
-   * closing section point at exists, and a "coming soon" marker over a design statement
-   * would read as an unbuilt feature.
-   *
-   * The install step is deliberately outside this: the command it prints fetches a package
-   * that is not on npm, so its amber marks a command that fails and not a feature nobody
-   * wrote. Measured from the second step onward for that reason, and the whole cell goes
-   * back to the whole page when runbook step 16 takes the marker off.
+   * No amber on this page. Every capability the tutorial and the closing section point at
+   * exists, and a "coming soon" marker over a design statement would read as an unbuilt
+   * feature.
    */
-  it("carries no coming-soon marker and no not-built rule after the install step", () => {
-    const from = plainText(PAGE).indexOf("Answer its questions");
-    expect(from, "the second step is no longer where the install step ends").toBeGreaterThan(-1);
-    const rest = plainText(PAGE).slice(from).toLowerCase();
-    expect(rest).not.toContain("coming soon");
-    expect(rest).not.toContain("not built yet");
+  it("carries no coming-soon marker and no not-built rule", () => {
+    const text = plainText(PAGE);
+    expect(text.length, "a negative over an empty render passes").toBeGreaterThan(2000);
+    expect(text.toLowerCase()).not.toContain("coming soon");
+    expect(text.toLowerCase()).not.toContain("not built yet");
   });
 });

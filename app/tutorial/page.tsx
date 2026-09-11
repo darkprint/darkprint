@@ -4,7 +4,6 @@ import Link from "next/link";
 import { MCP_CLIENTS } from "@/components/mcp/clients";
 import { SpecPager } from "@/components/spec/SpecPager";
 import { LivePrompt, StartLive } from "@/components/tutorial/StartLive";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 import {
@@ -126,20 +125,6 @@ export default function TutorialPage() {
                   command={SKILL_INSTALL_COMMAND_CODEX}
                   ariaLabel="Copy the command that installs the DarkPrint skill for Codex"
                 />
-                {/* Both lines fetch a package that is not on npm yet, so both answer 404
-                    today. This is the first step of the first page a new reader is sent to,
-                    and the limit sits under the two commands rather than at the top of the
-                    page because the commands are what a reader copies. It comes off with the
-                    same sentence on the six other surfaces printing an npx line, in the one
-                    commit that follows `npm publish`. */}
-                <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
-                  <ComingSoonBadge className="self-start" />
-                  <p className="text-xs leading-relaxed text-muted">
-                    Not installable yet: the darkprint package is not published to npm, so npx
-                    finds nothing to run. The DarkPrint skill is served on this site, file by
-                    file.
-                  </p>
-                </div>
               </div>
               <div className="flex flex-col gap-3">
                 <p className={P}>

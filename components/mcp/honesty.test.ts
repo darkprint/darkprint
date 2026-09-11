@@ -51,12 +51,6 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     surface: "/mcp",
-    why: "the stdio form is printed beside the remote one, and it fails today because the package is not on npm; the sentence has to say so next to the command",
-    says: "not published to npm",
-    text: MCP_PAGE,
-  },
-  {
-    surface: "/mcp",
     why: "a ranked list reads as a verdict; the page has to say the number is a similarity between the task and a document and nothing about how good the blueprint is",
     says: "says nothing about quality",
     text: MCP_PAGE,
@@ -126,7 +120,7 @@ describe("the connection command", () => {
     expect(MCP_ENDPOINT_URL).toBe(`${DEFAULT_BASE_URL}/api/mcp`);
   });
 
-  it("puts the HTTP transport first and the stdio form after it, marked as unpublished", () => {
+  it("puts the HTTP transport first and the stdio form after it", () => {
     const remote = MCP_PAGE.indexOf(MCP_ENDPOINT_URL.toLowerCase());
     const stdio = MCP_PAGE.indexOf("npx -y darkprint mcp");
     expect(remote).toBeGreaterThan(-1);

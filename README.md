@@ -105,11 +105,14 @@ plus word coverage, with the model vendored under `models/`. Seven MCP tools ser
 HTTP at `/api/mcp`, which Claude Code, Codex, Cursor, VS Code and Gemini CLI connect to with
 nothing installed. The DarkPrint skill's tree, served file by file with a manifest of hashes.
 
-Not real yet: **the `darkprint` package is not published to npm**, so every `npx -y darkprint`
-line answers 404. The package is ready to publish from `packages/mcp`, and every install line
-on the site carries that limit beside it until it is. Nothing here runs a blueprint, runs a
-node, or calls a model on anyone's behalf. The seeded community numbers that remain are
-labelled as seeded where they render. No mail is sent.
+The `darkprint` package is on npm, built from `packages/mcp`: `npx -y darkprint` runs the CLI
+and the stdio MCP server, and `npx -y darkprint skill install` copies the blueprint-writing
+skill it carries into the agent's skills folder.
+
+Not real: nothing here runs a blueprint, runs a node, or calls a model on anyone's behalf.
+Search on the deployed site ranks by words, because the sentence encoder does not load there
+yet. The seeded community numbers that remain are labelled as seeded where they render. No
+mail is sent.
 
 ## Getting started
 

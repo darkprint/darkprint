@@ -120,8 +120,7 @@ export default function McpPage() {
         <p className="text-sm leading-relaxed text-dim">
           The same server also runs on your own machine over stdio, as{" "}
           <code className="font-mono text-[13px] text-blueprint-ink">{NPX_INVOCATION} mcp</code>,
-          once the darkprint package is on npm. It is not published to npm yet, so use the
-          remote address above.
+          for a client that cannot reach the remote address above.
         </p>
         <p className="text-sm leading-relaxed text-dim">
           The server can only read. Without a key every call reads as anonymous and sees public
