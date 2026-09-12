@@ -186,6 +186,7 @@ function nodeSummaryForOwned(row: CardSummary, author: Author | undefined): Node
   const ontology = getOntologyView();
   const { card } = row;
   return {
+    createdAt: row.createdAt,
     id: row.id,
     version: row.version,
     ref: row.ref,

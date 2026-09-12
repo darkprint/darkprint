@@ -38,6 +38,19 @@ export interface NodeSummary {
   /** `tool` term ids, as the card writes them. */
   tools: string[];
   /**
+   * When this version was published, ISO, off `card_version.created_at`.
+   *
+   * A card version is immutable, so the row's own timestamp is the only date it has and is
+   * what "newest" means on this shelf. Not rendered on the tile — it exists so the browser
+   * can order by it.
+   *
+   * OPTIONAL, and the absent case is real rather than defensive: a tile built from the
+   * build-time content registry is built from FILES, which carry no publish timestamp at
+   * all. Those sort last under `Newest`, which is the only honest place for a card whose
+   * date is not a later date but no date.
+   */
+  createdAt?: string;
+  /**
    * Whether a person acts at this node.
    *
    * DERIVED, and resolved on the server before a tile is built: the card carries a `type`

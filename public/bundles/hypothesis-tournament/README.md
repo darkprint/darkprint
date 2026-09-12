@@ -4,7 +4,7 @@ A generate, review and rank loop under a manager node, where the bar a hypothesi
 
 ```
 blueprint      hypothesis-tournament
-bundle digest  sha256:5bd87f8b17ecb8b3da47d0a0a0074ac75cd2b1e88d7f8e4a1d83021020e78e7d
+bundle digest  sha256:3009c149421682d7641b67dc26c6e508dc9eed17ccd28ecca1d42e84de3146ff
 nodes          11
 cards pinned   11
 ```
@@ -86,7 +86,7 @@ before you leave one of these unset:
 | `cluster` | `proximity-clusterer@1.0.0` |
 | `meta` | `meta-reviewer@1.0.0` |
 | `safety` | `hypothesis-safety-screen@1.0.0` |
-| `deliver` | `research-report-delivery@1.0.0` |
+| `deliver` | `findings-delivery@1.0.0` |
 
 ---
 

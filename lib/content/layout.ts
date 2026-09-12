@@ -63,11 +63,24 @@ export interface LayoutResult {
    the node under it at the old gap. That is precisely the condition the last sentence of
    this comment named, so the gap moves.
 
-   180 clears the tallest measured case with 23px to spare and gives the ordinary one 77px.
-   `layerGap` stays at 200, which now clears the block's own 150 by 50 — the width an edge
-   and its label are drawn in. Raise this, never lower it, if a node ever grows another
-   row. */
-const DEFAULTS = { layerGap: 200, rowGap: 180, originX: 0, originY: 0 } as const;
+   180 cleared the tallest measured case with 23px to spare and gives the ordinary one 77px.
+
+   200 is where it stands, and the reason is a different axis from every paragraph above.
+   Those are all about 1:1: does a lit block reach the one under it in the drawing's own
+   units. This one is about what survives the ZOOM. A schematic is fitted to the pane, so a
+   wide graph is drawn small, and the row gap shrinks with it: at eleven nodes
+   `hypothesis-tournament` is 1750 units across, fits a 735px canvas at 0.397, and 180's
+   20-unit gap arrived as 7.9 CSS px — under `MIN_CLEARANCE`, which is the point where two
+   rows stop reading as two. 200 makes that gap 40 units and 15.9px, and the archive's worst
+   case over every pinned width moves from 7.9 to 15.9.
+
+   The asymmetry it removes is the tell: `layerGap` clears the block's own 150 by 50, and
+   180 cleared 160 by 20. Rows were always the axis that would collide first.
+
+   Raise this, never lower it, if a node grows another row or a wider graph joins the
+   archive. `components/panes/archive-labels.test.ts` holds the per-blueprint numbers this
+   moves, and is the place to re-measure from. */
+const DEFAULTS = { layerGap: 200, rowGap: 200, originX: 0, originY: 0 } as const;
 
 /** DFS colours. `grey` means "on the current stack", which is what makes an edge a back-edge. */
 const WHITE = 0;

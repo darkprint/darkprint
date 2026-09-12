@@ -422,7 +422,33 @@ function edgeTitle(edges: readonly Edge[]): string {
   // rail's head is one line at 371px and a fourth id wraps it.
   if (targets.length === 1 && sources.length <= 3) return `${sources.join(", ")} → ${targets[0]}`;
   if (sources.length === 1 && targets.length <= 3) return `${sources[0]} → ${targets.join(", ")}`;
+  const run = runThrough(edges);
+  if (run !== undefined) return run;
   return `${edges.length} edges`;
+}
+
+/**
+ * `plan → execute → monitor` for a block whose edges are one run, `rank → … → safety` when
+ * the run is longer than the head has room for.
+ *
+ * A count alone is not a title: two blocks of the same size get the same head, which is two
+ * steps a reader cannot tell apart, and a run is the commonest shape that falls past every
+ * branch above — multiple sources AND multiple targets, because each node is both.
+ *
+ * A repeated id means the edges close a loop rather than run through, so it is NOT a run:
+ * the ids would read as a path the graph does not have. Those keep the count, which is
+ * honest about saying little.
+ */
+function runThrough(edges: readonly Edge[]): string | undefined {
+  const ids = [edges[0].from];
+  for (const edge of edges) {
+    if (edge.from !== ids[ids.length - 1]) return undefined;
+    ids.push(edge.to);
+  }
+  if (new Set(ids).size !== ids.length) return undefined;
+  // Three ids is where a head stops being a title, which is the same bound the joined
+  // lists above take, so a longer run names its two ends and elides the middle.
+  return ids.length <= 3 ? ids.join(" → ") : `${ids[0]} → … → ${ids[ids.length - 1]}`;
 }
 
 /**

@@ -313,6 +313,9 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
           // row here is its own owner, for whom the distinction is moot. Carried anyway
           // so `CardSummary.visibility` is not a field only `cardsOwnedBy` bothers to fill.
           visibility: row.visibility,
+          /* The row's own timestamp, as a string: a card version is immutable, so when its
+             row was written IS when it was published, and nothing else on the card dates it. */
+          createdAt: row.createdAt.toISOString(),
         })];
       })
       .sort(cmpCards),

@@ -46,6 +46,7 @@ export function GraphPane({
   focus,
   graphId,
   height = 280,
+  fill = false,
   onSelectNode,
   className,
 }: {
@@ -65,6 +66,14 @@ export function GraphPane({
    * answer for a caller that has no graph geometry to hand.
    */
   height?: number | string;
+  /**
+   * Fill the height the caller's layout gives this pane, with `height` as the floor.
+   *
+   * The blueprint page puts this in a grid row beside a taller column, and a pane sized only
+   * by its own drawing left the reader a band of nothing between it and the file list below.
+   * The drawing grows into the extra room rather than sitting in dead space.
+   */
+  fill?: boolean;
   onSelectNode: (nodeId: string) => void;
   className?: string;
 }) {
@@ -126,12 +135,22 @@ export function GraphPane({
           a `cqw` expression measured against it — see `graphPaneHeightCss`. It is what lets
           one expression size this pane in the blueprint page's two-thirds column and in
           `/upload`'s full-width preview without either caller knowing which it is in. */}
-      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="@container p-3">
+      {/* The className stays ONE LITERAL: `components/panes/archive-labels.test.ts` reads this
+          attribute out of the source to recover the wrapper's padding, which is a link in its
+          viewport-to-canvas chain, and it throws rather than guess when the attribute is not a
+          literal. The flex classes are unconditional for the same reason — in an auto-height
+          section they size to content, so they cost the non-filling caller nothing. */}
+      <div
+        onClick={onGraphClick}
+        onKeyDown={onGraphKeyDown}
+        className="@container flex min-h-0 flex-1 flex-col p-3"
+      >
         <BlueprintGraph
           graph={drawn}
           id={graphId}
           highlighted={focus.graphNodeId}
           height={height}
+          fill={fill}
           className="rounded-md"
         />
       </div>

@@ -1388,22 +1388,22 @@ describe("the archive frames with the canvas this guard reads", () => {
       ]),
     );
     expect(heights).toEqual({
-      "adversarial-consensus-line": 292,
-      "budget-aware-router": 312,
-      "checkpoint-resume-runner": 282,
-      "delegation-broker": 299,
-      "frontline-triage": 312,
-      "grounded-research-desk": 421,
+      "adversarial-consensus-line": 303,
+      "budget-aware-router": 324,
+      "checkpoint-resume-runner": 292,
+      "delegation-broker": 311,
+      "frontline-triage": 324,
+      "grounded-research-desk": 445,
       "guarded-assistant-line": 240,
       "guarded-merge-bot": 240,
-      "hypothesis-tournament": 242,
-      "incident-commander": 312,
-      "nightly-data-janitor": 312,
-      "objective-tracker": 285,
+      "hypothesis-tournament": 249,
+      "incident-commander": 324,
+      "nightly-data-janitor": 324,
+      "objective-tracker": 295,
       "pipeline-observability": 255,
-      "producer-critic-refinery": 484,
-      "schema-forge-etl": 312,
-      "starter-software-factory": 484,
+      "producer-critic-refinery": 507,
+      "schema-forge-etl": 324,
+      "starter-software-factory": 507,
     });
     /* AND ONE OF THEM IS ON THE FLOOR AGAIN, which is the whole reason this cell asserts a
        set of numbers and then asks a question about them.
@@ -1442,25 +1442,26 @@ describe("the archive frames with the canvas this guard reads", () => {
       ]),
     );
     expect(atDesign).toEqual({
-      "adversarial-consensus-line": 289,
-      "budget-aware-router": 309,
-      "checkpoint-resume-runner": 279,
-      "delegation-broker": 296,
-      "frontline-triage": 309,
-      "grounded-research-desk": 416,
+      "adversarial-consensus-line": 300,
+      "budget-aware-router": 321,
+      "checkpoint-resume-runner": 289,
+      "delegation-broker": 307,
+      "frontline-triage": 321,
+      "grounded-research-desk": 440,
       "guarded-assistant-line": 240,
       "guarded-merge-bot": 240,
-      /* Eleven nodes, and on the floor at this canvas where it is 242 at the widest one: the
-         drawing is wide rather than tall, so the narrower canvas zooms it down into the
-         floor. What that zoom does to the row clearance is the clearance cells' business. */
-      "hypothesis-tournament": 240,
-      "incident-commander": 309,
-      "nightly-data-janitor": 309,
-      "objective-tracker": 282,
+      /* Eleven nodes and the widest drawing in the archive at 1750 units, so it is the one
+         the fit zooms furthest down — 249 at the widest canvas and 247 here, a few px off
+         `PANE_MIN_HEIGHT` rather than on it. What that zoom does to the row clearance is the
+         clearance cells' business, and it is why `rowGap` is 200. */
+      "hypothesis-tournament": 247,
+      "incident-commander": 321,
+      "nightly-data-janitor": 321,
+      "objective-tracker": 292,
       "pipeline-observability": 252,
-      "producer-critic-refinery": 478,
-      "schema-forge-etl": 309,
-      "starter-software-factory": 478,
+      "producer-critic-refinery": 500,
+      "schema-forge-etl": 321,
+      "starter-software-factory": 500,
     });
   });
 });

@@ -156,6 +156,7 @@ const STORED_COLUMNS = {
   body: schema.cardVersion.body,
   ownerId: schema.cardVersion.ownerId,
   visibility: schema.cardVersion.visibility,
+  createdAt: schema.cardVersion.createdAt,
 };
 
 interface StoredRow {
@@ -165,6 +166,7 @@ interface StoredRow {
   body: unknown;
   ownerId: string;
   visibility: "public" | "private";
+  createdAt: Date;
 }
 
 /** Rows into summaries in `cards()` order, with the published join read off the snapshot per exact version. */
@@ -192,6 +194,7 @@ function summarised(rows: readonly StoredRow[], snapshot: RegistrySnapshot): rea
           // an owner's own private cards (D-132-04 C-C), so a caller needs to tell them
           // apart from the public rows in the same array.
           visibility: row.visibility,
+          createdAt: row.createdAt.toISOString(),
         })];
       })
       .sort(cmpCards),

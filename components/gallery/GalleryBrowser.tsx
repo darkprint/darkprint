@@ -72,6 +72,17 @@ const controlClass = CONTROL_CLASS;
  */
 const STARTER_SLUG = "starter-software-factory";
 
+/** What the shelf may be ordered by. `newest` is what it has always done. */
+type GallerySort = "newest" | "oldest" | "title";
+
+const SORT_OPTIONS: { value: GallerySort; label: string }[] = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "title", label: "Title A–Z" },
+];
+
+const DEFAULT_GALLERY_SORT: GallerySort = "newest";
+
 export function GalleryBrowser({
   blueprints,
   categories,
@@ -92,6 +103,14 @@ export function GalleryBrowser({
   const phase = params.get("phase");
   const rawAutonomy = params.get("autonomy");
   const autonomy = (rawAutonomy as AutonomyClass | null) ?? null;
+
+  /* The shelf has always ordered newest-first and never said so, which is fine until the
+     archive is big enough that a reader wants the other end of it. A value outside the three
+     falls back to the default rather than ordering by nothing. */
+  const rawSort = params.get("sort");
+  const sort: GallerySort = SORT_OPTIONS.some((o) => o.value === rawSort)
+    ? (rawSort as GallerySort)
+    : DEFAULT_GALLERY_SORT;
 
   /* The search box is the one control that does not write on every keystroke: `draft`
      is what has been typed since the last write, `null` means "follow the URL", and the
@@ -194,12 +213,22 @@ export function GalleryBrowser({
 
     const sorted = [...filtered];
     sorted.sort((a, b) => {
+      if (sort === "title") return a.title.localeCompare(b.title);
       const at = a.updatedAt || a.createdAt;
       const bt = b.updatedAt || b.createdAt;
-      return bt.localeCompare(at) || a.title.localeCompare(b.title);
+      /* A manifest may carry neither date, and `''` then sorts LAST under `newest` — which
+         is where a blueprint with no date belongs — and FIRST under `oldest`, which is where
+         it does not. So the empty case is answered before the direction is applied, and it
+         lands last either way. */
+      if (at === "" || bt === "") {
+        if (at !== bt) return at === "" ? 1 : -1;
+        return a.title.localeCompare(b.title);
+      }
+      const byDate = sort === "oldest" ? at.localeCompare(bt) : bt.localeCompare(at);
+      return byDate || a.title.localeCompare(b.title);
     });
     return sorted;
-  }, [blueprints, search, tag, category, phase, autonomy]);
+  }, [blueprints, search, tag, category, phase, autonomy, sort]);
 
   const hasFilters =
     search.trim() !== "" ||
@@ -232,13 +261,25 @@ export function GalleryBrowser({
    * search, no category, no facet — and, one step stricter than the brief, only under the
    * default recency sort. Picking `Most downloaded` is an instruction about order, and a
    * featured cell jumping that queue would contradict the control the reader just used.
-   * Under recency the starter is already first (it is the most recently updated of the
-   * nine), so in the state that shows it, the lead cell reorders nothing at all — it only
-   * widens what was already tile 1.
+   * THE SORT GATE IS NOW WIRED, and it was not. This paragraph named "Most downloaded" as
+   * the instruction a lead cell must not jump, from a control that had since been removed —
+   * so the gate was prose with nothing reading it, and the cell led the shelf under every
+   * order. Adding `Oldest first` made that visible: the starter sat at the top of a list the
+   * reader had just asked to be shown the other way round. `sort === DEFAULT_GALLERY_SORT`
+   * is that sentence, wired.
+   *
+   * ── What is no longer true, and is left as a decision rather than fixed here ──
+   * "Under recency the starter is already first, so the lead cell reorders nothing at all."
+   * That held at nine blueprints. The archive carries sixteen and six of them are dated
+   * after the starter's 2026-07-28, so under `Newest first` the lead cell now LIFTS it over
+   * newer work rather than widening what was already tile 1. It stays because the starter is
+   * what every argument on the site points at, which is the other half of the case above —
+   * but it is now an editorial choice with a cost, where it used to be free.
    */
-  const leadBlueprint = !hasFilters
-    ? (results.find((bp) => bp.slug === STARTER_SLUG) ?? null)
-    : null;
+  const leadBlueprint =
+    !hasFilters && sort === DEFAULT_GALLERY_SORT
+      ? (results.find((bp) => bp.slug === STARTER_SLUG) ?? null)
+      : null;
   const gridBlueprints =
     leadBlueprint === null ? results : results.filter((bp) => bp !== leadBlueprint);
 
@@ -314,6 +355,27 @@ export function GalleryBrowser({
               {phases.map((id) => (
                 <option key={id} value={id}>
                   Covers {phaseLabel(id).toLowerCase()}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* The one control here that ORDERS rather than filters, so it does not join the
+              `Clear filters` set below: clearing a filter is about what is on the shelf, and
+              an order is about the shelf itself. */}
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Order the blueprints</span>
+            <select
+              value={sort}
+              onChange={(e) =>
+                setParam("sort", e.target.value === DEFAULT_GALLERY_SORT ? null : e.target.value)
+              }
+              aria-label="Order the blueprints"
+              className={controlClass}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>

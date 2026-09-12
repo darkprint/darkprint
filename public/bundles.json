@@ -65,7 +65,7 @@
   },
   {
     "slug": "hypothesis-tournament",
-    "digest": "sha256:5bd87f8b17ecb8b3da47d0a0a0074ac75cd2b1e88d7f8e4a1d83021020e78e7d",
+    "digest": "sha256:3009c149421682d7641b67dc26c6e508dc9eed17ccd28ecca1d42e84de3146ff",
     "autonomyClass": "closed-loop",
     "autonomyStatement": "11 of 11 nodes run unattended, none have a person in the loop. 4 of 4 control points run unattended. 1.00 > 0.90 → Closed-loop.",
     "securityLevel": 1,

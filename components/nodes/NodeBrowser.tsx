@@ -12,9 +12,12 @@ import {
 import { PHASE_ORDER } from "@/components/ui/PhaseCoverage";
 import { NodeCardSummary, type NodeSummary } from "./NodeCardSummary";
 
-type SortKey = "used" | "name" | "type" | "phase";
+type SortKey = "used" | "name" | "type" | "phase" | "newest";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  /* First, because "what arrived since I last looked" is the question a shelf that grows
+     gets asked most, and it is the only one of these the reader cannot answer by scanning. */
+  { value: "newest", label: "Newest first" },
   { value: "used", label: "Most used" },
   { value: "name", label: "Name A–Z" },
   /* "By card type", not "By node type", on the author's instruction 2026-08-08 and for the
@@ -59,6 +62,22 @@ const SPINE_CLEARANCE = 124;
    placeholder-contrast fix was made here and never brought across. Aliased because
    `controlClass` is this file's own word for it. */
 const controlClass = CONTROL_CLASS;
+
+/**
+ * Newest published version first, and a card with NO date last.
+ *
+ * A tile built from the content registry carries no `createdAt` — those are read off files,
+ * which have no publish timestamp — so the comparison has to answer for an absent date rather
+ * than coerce one. Absent sorts after every real date, in both directions of the pair, which
+ * is what keeps the order total: returning 0 for two absent dates hands them to the name
+ * tiebreak instead of leaving them in whatever order they arrived.
+ */
+function byNewest(a: NodeSummary, b: NodeSummary): number {
+  if (a.createdAt === b.createdAt) return 0;
+  if (a.createdAt === undefined) return 1;
+  if (b.createdAt === undefined) return -1;
+  return b.createdAt.localeCompare(a.createdAt);
+}
 
 /** Code-unit order, so the grid reads the same wherever it is rendered. */
 function byText(a: string, b: string): number {
@@ -453,6 +472,8 @@ export function NodeBrowser({
     const sorted = [...filtered];
     sorted.sort((a, b) => {
       switch (sort) {
+        case "newest":
+          return byNewest(a, b) || byText(a.name, b.name);
         case "used":
           return b.usedIn - a.usedIn || byText(a.name, b.name);
         case "type":

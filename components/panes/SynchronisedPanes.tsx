@@ -197,6 +197,13 @@ export function SynchronisedPanes({
           Two thirds for the drawing and one third for the node index with the skeleton under
           it, which costs the drawing width; `components/graph/framing.ts` carries the chain. */}
       <div className="grid gap-4 lg:grid-cols-3">
+        {/* `fill`, and the grid row is what it fills: this column and the one beside it are
+            stretched to the taller of the two, and the index plus the card skeleton is
+            almost always taller. Sized by its own drawing alone, the pane left a band of
+            nothing between it and the file list below — measured at 259px on
+            `pipeline-observability` at a 2033px viewport. `graphPaneHeightCss` stays the
+            FLOOR rather than the height: it is the figure every framing guard measures
+            against, and a drawing given more room than it asked for only ever gets bigger. */}
         <div className="min-w-0 lg:col-span-2">
           <GraphPane
             paneNumber={1}
@@ -207,6 +214,8 @@ export function SynchronisedPanes({
             height={graphPaneHeightCss(
               drawnExtent(graph, BLOCK_WIDTH, BLOCK_MAX_HEIGHT),
             )}
+            fill
+            className="h-full"
             onSelectNode={selectNode}
           />
         </div>

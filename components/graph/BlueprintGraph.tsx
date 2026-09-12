@@ -510,6 +510,7 @@ export function BlueprintGraph({
   highlighted,
   id,
   className,
+  fill = false,
   height = 460,
 }: {
   graph: BlueprintGraphData;
@@ -536,6 +537,16 @@ export function BlueprintGraph({
    * height was ever hardcoded, which is why only the height has a prop.
    */
   height?: number | string;
+  /**
+   * Treat `height` as a FLOOR and let the box grow to whatever its parent gives it.
+   *
+   * A pane sharing a grid row with a taller column leaves dead space under the drawing
+   * otherwise. Growing is always safe for the fit: `frameSchematic` binds on whichever axis
+   * runs out first, and more height can only move that axis further away — a drawing never
+   * gets smaller for having more room. So the computed height stays the worst case every
+   * guard measures against, and the rendered box is that or better.
+   */
+  fill?: boolean;
 }) {
   const nodes: AgentFlowNode[] = useMemo(
     () =>
@@ -652,8 +663,10 @@ export function BlueprintGraph({
 
   return (
     <div
-      className={`rf-blueprint overflow-hidden rounded-lg border border-line bg-surface/60 ${className ?? ""}`}
-      style={{ height }}
+      className={`rf-blueprint overflow-hidden rounded-lg border border-line bg-surface/60 ${
+        fill ? "min-h-0 flex-1 " : ""
+      }${className ?? ""}`}
+      style={fill ? { minHeight: height } : { height }}
     >
       <ReactFlow
         id={id}

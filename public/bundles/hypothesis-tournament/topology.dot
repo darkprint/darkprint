@@ -12,7 +12,7 @@ digraph hypothesis_tournament {
   cluster    [card="proximity-clusterer@1.0.0"];
   meta       [card="meta-reviewer@1.0.0"];
   safety     [card="hypothesis-safety-screen@1.0.0"];
-  deliver    [card="research-report-delivery@1.0.0"];
+  deliver    [card="findings-delivery@1.0.0"];
 
   question -> supervisor [label="question", out="question", in="question"];
   supervisor -> generate [label="agenda", out="agenda", in="agenda"];

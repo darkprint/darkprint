@@ -61,6 +61,15 @@ export interface CardSummary {
    * `OwnedBundleSummary.visibility` already does for a bundle.
    */
   visibility: "public" | "private";
+  /**
+   * `card_version.created_at` as an ISO string — when this VERSION was published.
+   *
+   * A card has no `createdAt` of its own the way a manifest does: the document is immutable
+   * per `(id, version)`, so the row's own timestamp is the only date there is, and it is the
+   * one a reader means by "newest". Carried as a string because it crosses to a client
+   * component, where a `Date` does not survive serialisation.
+   */
+  createdAt: string;
 }
 
 /**

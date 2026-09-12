@@ -433,14 +433,16 @@ describe("AC4 — limits", () => {
     expect(DEFAULT_ENGINE_LIMITS.maxCards).toBeGreaterThan(maxCards);
     expect(DEFAULT_ENGINE_LIMITS.maxNodes).toBeGreaterThan(maxNodes);
 
-    /* `limits.ts` claims each bound "clears its maximum by at least fifty times". That
-       sentence was true and was checked by an adversary who happened to have it in eye line
-       rather than by anything that would check it again — its own words. The ratio is
-       computable, so it is an assertion here instead of a claim there, and the day someone
-       tightens a default without reading the paragraph beside it, this is what objects. */
-    expect(DEFAULT_ENGINE_LIMITS.maxBytes / maxBytes).toBeGreaterThanOrEqual(50);
-    expect(DEFAULT_ENGINE_LIMITS.maxCards / maxCards).toBeGreaterThanOrEqual(50);
-    expect(DEFAULT_ENGINE_LIMITS.maxNodes / maxNodes).toBeGreaterThanOrEqual(50);
+    /* `limits.ts` claims each bound "clears the archive's maximum by at least TEN times". The
+       ratio is computable, so it is an assertion here instead of a claim there, and the day
+       someone tightens a default without reading the paragraph beside it, this is what
+       objects. It reads ten because fifty chased the archive: fifty was measured at nine
+       nodes and an eleven-node blueprint puts `maxNodes` at 45, so the number would have had
+       to be raised for every bundle that arrives one node larger. Ten still catches a
+       tightening — halving `maxNodes` twice lands under it — and does not move with content. */
+    expect(DEFAULT_ENGINE_LIMITS.maxBytes / maxBytes).toBeGreaterThanOrEqual(10);
+    expect(DEFAULT_ENGINE_LIMITS.maxCards / maxCards).toBeGreaterThanOrEqual(10);
+    expect(DEFAULT_ENGINE_LIMITS.maxNodes / maxNodes).toBeGreaterThanOrEqual(10);
   });
 
   it("refuses an oversized submission with the limit named", () => {

@@ -166,6 +166,7 @@ export default async function NodesPage() {
       requiresHuman: ontology !== undefined && requiresHuman(ontology, card.type),
       riskMarkers: card.riskMarkers.map((marker) => labelOf(marker, "risk-marker")),
       usedIn: usedIn.get(record.id) ?? 0,
+      createdAt: record.createdAt,
       /* Resolved here rather than in the tile, and left `undefined` when no account holds
          the handle. The tile turns this into a link to `/u/<username>`, so an unresolved
          author has to fall out before it reaches the markup. Same lookup a profile page

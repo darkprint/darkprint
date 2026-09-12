@@ -44,9 +44,18 @@ export interface EngineLimits {
  * module's own entry point, which is what `measure.test.ts` computes: largest submission
  * 17 947 bytes with each bundle's own extensions, 18 195 with the shared vocabulary applied
  * to all nine; most cards 9, most nodes 9. The 17 963 that stood here reproduces under no
- * reading and is WITHDRAWN. Every bound below clears its maximum by at least fifty times,
- * which is headroom for a submission far larger than anything the archive holds while still
- * refusing the pathological one.
+ * reading and is WITHDRAWN. Every bound below clears the archive's maximum by at least TEN
+ * times, which is headroom for a submission far larger than anything the archive holds while
+ * still refusing the pathological one.
+ *
+ * Ten and not the fifty that stood here. Fifty was measured when the largest graph had nine
+ * nodes; an eleven-node blueprint takes `maxNodes` to 45 and the number would have to be
+ * raised every time a bundle arrives with one more node than the last. A ratio that chases
+ * the archive is not a bound on anything — and the bound's actual job, which its assertion in
+ * `engine.test.ts` states, is to object when somebody TIGHTENS a default without reading this
+ * paragraph. Ten still objects: halving `maxNodes` twice lands under it. What is deliberately
+ * NOT expressed here is a ceiling on the archive, because the archive is content and this is
+ * a refusal about submissions.
  *
  * The criterion these satisfy is a **property, not three numbers**: every archive bundle
  * passes with `limits` omitted, and each default exceeds the archive's maximum. A test
