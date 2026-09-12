@@ -7,6 +7,9 @@
    model reads) and a request fault (an RPC error it never sees).
    ============================================================ */
 
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import { TOOL_NAMES } from "./definitions";
@@ -39,6 +42,26 @@ describe("initialize", () => {
     expect(result.protocolVersion).toBe("2025-03-26");
     expect(result.capabilities).toEqual({ tools: {} });
     expect(result.serverInfo).toEqual(SERVER_INFO);
+  });
+
+  /**
+   * The cell above compares the handshake to the constant it is built from, so it holds the
+   * wiring and can say nothing about the value. `SERVER_INFO.version` is a copy of the
+   * published package's, and it sat at 0.1.0 through 0.1.1 and 0.1.2: every client that
+   * logged a server version logged the wrong one, and nothing red.
+   *
+   * Read off `package.json` rather than a literal, or this is the same tautology one level
+   * further out.
+   */
+  it("names the version the package actually publishes", () => {
+    const manifest = JSON.parse(
+      readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
+    ) as { version: string };
+    expect(
+      SERVER_INFO.version,
+      "the handshake advertises a version the package does not publish, so a client that " +
+        "records which server answered records a release that was never cut",
+    ).toBe(manifest.version);
   });
 });
 

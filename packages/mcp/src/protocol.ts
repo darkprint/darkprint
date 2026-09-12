@@ -25,7 +25,16 @@ export const SUPPORTED_PROTOCOL_VERSIONS: readonly string[] = [
   "2024-11-05",
 ];
 
-export const SERVER_INFO = { name: "darkprint", title: "DarkPrint registry", version: "0.1.0" };
+/**
+ * What the server calls itself in the initialize handshake.
+ *
+ * `version` is the published package's, written here rather than imported from
+ * `package.json`: this module is bundled into the one file `npx -y darkprint` runs, and an
+ * import would carry the whole manifest, scripts and all, into a published artefact. The
+ * copy is held to the manifest by `protocol.test.ts`, which reads both, because it had
+ * already drifted two releases behind before anything looked.
+ */
+export const SERVER_INFO = { name: "darkprint", title: "DarkPrint registry", version: "0.1.3" };
 
 /** Runs one named tool with its arguments and answers the text the model reads. */
 export type ToolExecutor = (name: string, args: Record<string, unknown>) => Promise<string>;
