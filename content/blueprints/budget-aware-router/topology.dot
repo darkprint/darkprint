@@ -1,0 +1,37 @@
+digraph budget_aware_router {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  ask      [card="question-intake@1.0.0"];
+  classify [card="complexity-router@1.0.0"];
+  cheap    [card="flash-answerer@1.0.0"];
+  deep     [card="deep-reasoner@1.0.0"];
+  critic   [card="route-critic@1.0.0"];
+  budget   [card="budget-gate@1.0.0"];
+  deliver  [card="answer-delivery@1.0.0"];
+
+  ask -> classify [label="question", out="question", in="question"];
+
+  // `classify` pins a `decision` card, which runs as a no-op that returns SUCCESS and
+  // writes no preferred label, so neither `outcome` nor a label can separate these arms.
+  // The key the fork reads is one the classifier's own spec puts in `context_updates`.
+  // A missing key reads back as the empty string, so the negation arm is the one a silent
+  // run takes: it is `deep` deliberately, because an unrouted question should cost too
+  // much rather than be answered badly.
+  classify -> deep  [label="deep lane",   out="routed", in="question", condition="context.tier!=simple"];
+  classify -> cheap [label="simple lane", out="routed", in="question", condition="context.tier=simple"];
+
+  cheap -> critic [label="answer", out="answer", in="answer"];
+  deep  -> critic [label="answer", out="answer", in="answer"];
+
+  // The critic completes whichever way it grades, so its exits are guarded on
+  // `preferred_label`. Its rework arm goes to the capable model only: sending a rejected
+  // answer back to the lane that produced it is how a cheap answer gets rewritten cheaply
+  // and rejected again. `params.max_retries` on the critic bounds that loop.
+  critic -> deep   [label="rework", style=dashed, out="rework", in="rework", condition="preferred_label!=accepted"];
+  critic -> budget [label="accepted answer", out="accepted", in="accepted", condition="preferred_label=accepted"];
+
+  // The budget gate is the one node here whose own run fails when it refuses: a blown cap
+  // is a failure and not a verdict, so this guard reads `outcome` and is correct to.
+  budget -> deliver [label="released answer", out="released", in="released", condition="outcome=success"];
+}

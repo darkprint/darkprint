@@ -1,0 +1,41 @@
+id: rubric-author
+name: Rubric Author
+type: agent
+phase: planning
+
+action: >-
+  Turn the brief the run was instantiated with into an ordered, checkable list of criteria, and
+  emit nothing else.
+spec: >-
+  A brief arrives with the run. Read it once and write the conditions a finished piece of work
+  would have to meet to satisfy it. Emit them on `rubric` as an ordered list, one condition per
+  entry, each phrased so that a reader holding only the work and the entry can answer yes or no
+  without consulting you. Write no example, no draft sentence and no partial answer: anything
+  that reads as the work itself rather than as a condition on it belongs in neither this node nor
+  this port. Do not soften a condition because it looks hard to meet, and do not add one the brief
+  does not support. The number of conditions is whatever the brief implies; do not pad the list to
+  a round figure and do not merge two conditions to shorten it.
+agent: Rubric author
+tools: []
+mcp: []
+params: {}
+
+inputs: []
+outputs:
+  - name: rubric
+    type: acceptance-criteria
+    description: The ordered conditions the finished work is judged against, as this node wrote them.
+dependencies: []
+cannot: []
+will_not:
+  - write any part of the work it sets conditions for
+  - weaken a condition to make it easier to meet
+
+risk_markers: []
+notes: >-
+  This node is a root: the brief reaches it with the run rather than across an edge, which is what
+  keeps the criteria out of the graph the writing nodes sit in. It is the only node here that
+  produces an `acceptance-criteria` port, and the leak check has nothing to trace without it.
+
+version: 1.0.0
+author: autogen

@@ -97,9 +97,9 @@ describe("D-260-24: a publish writes a scorecard `scoresOf` accepts", () => {
      wrong about. The premise it also carried, that `runImport` publishes nine releases, is
      kept below where the embedding counts state it. */
 
-  it("publishes all ten bundles, so the cells here read a full world", async () => {
+  it("publishes every bundle, so the cells here read a full world", async () => {
     const rows = await db.select({ id: schema.release.id }).from(schema.release);
-    expect(rows.length, "`runImport` publishes the whole archive; a short world is a broken fixture").toBe(10);
+    expect(rows.length, "`runImport` publishes the whole archive; a short world is a broken fixture").toBe(16);
   });
 });
 
@@ -117,7 +117,7 @@ describe("D-300-06 F4.2: a publish triggers re-embedding", () => {
     const [cards] = await db
       .select({ n: sql<number>`count(*)::int` })
       .from(schema.cardVersionEmbedding);
-    expect(releases?.n, "release_embedding is empty: the reembedRelease wiring did not run").toBe(10);
-    expect(cards?.n).toBe(61);
+    expect(releases?.n, "release_embedding is empty: the reembedRelease wiring did not run").toBe(16);
+    expect(cards?.n).toBe(103);
   });
 });

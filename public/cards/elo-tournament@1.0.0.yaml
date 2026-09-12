@@ -1,0 +1,42 @@
+id: elo-tournament
+name: Elo Tournament
+type: validation
+phase: testing
+
+action: >-
+  Order the admitted hypotheses by pairwise comparison rather than by a score assigned to each one
+  alone.
+spec: >-
+  You are handed the hypotheses that cleared review. Compare them in pairs and order them by which
+  of the two is the stronger answer to the question, running enough pairings that the order is not
+  an artefact of which comparisons happened to be drawn. Emit the ordered list on `ranked`, each
+  entry carrying the hypothesis unchanged and the record of what it was compared against and how
+  it fared. Do not assign an absolute score, the point of pairwise comparison is that it does not
+  require one. Do not drop a hypothesis from the list because it ranked last, and do not merge two
+  that seem similar, clustering happens downstream and merging here would hide a distinction the
+  next node exists to find.
+agent: Ranker
+tools: []
+mcp: []
+params:
+  min_pairings_per_hypothesis: 3
+
+inputs:
+  - name: reviewed
+    type: json
+    description: The hypotheses that cleared the bar, in no particular order.
+outputs:
+  - name: ranked
+    type: json
+    description: The same hypotheses ordered by pairwise comparison, each with its comparison record.
+dependencies:
+  - hypothesis-reviewer
+cannot: []
+will_not:
+  - drop a hypothesis because it ranked last
+  - merge two hypotheses that seem similar
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

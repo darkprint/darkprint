@@ -1,0 +1,30 @@
+slug: guarded-assistant-line
+title: Guarded Assistant Line
+summary: >-
+  Four checks in front of an assistant and one behind it, with every failed guard landing on the
+  same person rather than on the customer.
+description: |-
+  Text arrives from outside and is not trusted until a node says it is. `sanitize` screens it,
+  `screen` puts it past an external policy service, `assist` answers within its constraints, and
+  `filter` reads the answer before anyone else does. Each of those four has exactly two exits and
+  the failing one goes to `gate`, where a person is.
+
+  The isolation here is declared rather than merely drawn. Inbound text is typed
+  `autogen/untrusted-text`, a narrowing of `text` that this bundle adds, and `constrained-assistant`
+  refuses it by name. The sanitiser's output is plain `text`, so the working arm passes and a
+  direct wire from the intake to the assistant does not. `cannot: [text]` could not express that
+  distinction, because it would block both.
+
+  The assistant holds no tools and no servers. That is the tool restriction stated where the
+  engine can see it, rather than in an instruction the model may or may not follow.
+
+  This blueprint was generated automatically as an example for the registry.
+category: Safety
+tags:
+  - guardrails
+  - sanitisation
+  - escalation
+  - isolation
+author: autogen
+createdAt: "2026-09-11"
+updatedAt: "2026-09-11"

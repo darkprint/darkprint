@@ -1,0 +1,29 @@
+slug: objective-tracker
+title: Objective Tracker
+summary: >-
+  A person states the objective, a second person states how it will be measured, and the node doing
+  the work is wired to the first and not the second.
+description: |-
+  Two roots, both human. `goal` is where the objective enters the graph and `metric` is where the
+  measure does, and they are separate nodes because they reach different places: the objective goes
+  to the planner and the measure goes only to the monitor.
+
+  That split is the blueprint. An executor that can read the measure hits the measure, which is a
+  different thing from reaching the objective and is frequently easier. `objective-executor` and
+  `course-corrector` both refuse `acceptance-criteria` outright, so the separation survives someone
+  later deciding it would be convenient to wire the measure through.
+
+  The two entry nodes are `human-input` rather than `human-gate`, and the distinction is load
+  bearing: a gate approves work that already exists, an input originates something that did not.
+  Nothing upstream produces an objective.
+
+  This blueprint was generated automatically as an example for the registry.
+category: Reliability
+tags:
+  - goal-setting
+  - monitoring
+  - human-input
+  - isolation
+author: autogen
+createdAt: "2026-09-11"
+updatedAt: "2026-09-11"

@@ -91,16 +91,22 @@ const EXPORTS = loaded.map((entry) => ({
 }));
 
 describe("exportBundle over content/", () => {
-  it("covers all ten blueprints", () => {
+  it("covers every blueprint", () => {
     expect(EXPORTS.map((e) => e.slug)).toEqual([
       "adversarial-consensus-line",
+      "budget-aware-router",
       "checkpoint-resume-runner",
+      "delegation-broker",
       "frontline-triage",
       "grounded-research-desk",
+      "guarded-assistant-line",
       "guarded-merge-bot",
+      "hypothesis-tournament",
       "incident-commander",
       "nightly-data-janitor",
+      "objective-tracker",
       "pipeline-observability",
+      "producer-critic-refinery",
       "schema-forge-etl",
       "starter-software-factory",
     ]);
@@ -136,17 +142,25 @@ describe("exportBundle over content/", () => {
   // Doc 3 §7's terms are content with a version of their own, so the folder gets the
   // document rather than a restatement of it, exactly like the cards.
   it("carries the local vocabulary for the bundles whose cards declare one", () => {
+    // Which terms each bundle reaches, rather than which bundles reach any: a bundle that
+    // stopped declaring one of its own terms would still be in the list below while the
+    // map says what it lost. The file shipped is the whole overlay either way — the
+    // exporter writes `vocabulary.text` verbatim, so a reader's terms are defined exactly
+    // as the site scored them — and that is asserted separately from what is used.
+    const USED_BY: Record<string, string[]> = {
+      "budget-aware-router": ["autogen/budget-overrun"],
+      "delegation-broker": ["autogen/unverified-delegation"],
+      "frontline-triage": ["lupo/pii-handling"],
+      "guarded-assistant-line": ["autogen/prompt-injection", "autogen/untrusted-text"],
+    };
     const carrying = EXPORTS.filter((e) => fileMap(e.files).has(BUNDLE_VOCABULARY));
-    // The archive's one local term (`lupo/pii-handling`) is declared by two frontline
-    // triage cards and by nothing else. If that ever changes, this list changes with it
-    // and the assertion below says which way.
-    expect(carrying.map((e) => e.slug)).toEqual(["frontline-triage"]);
+    expect(carrying.map((e) => e.slug)).toEqual(Object.keys(USED_BY));
     for (const { slug, input, files } of carrying) {
       expect([slug, fileMap(files).get(BUNDLE_VOCABULARY)]).toEqual([
         slug,
         VOCABULARY?.text,
       ]);
-      expect(localTermsUsed(input).map((t) => t.id)).toEqual(["lupo/pii-handling"]);
+      expect([slug, localTermsUsed(input).map((t) => t.id)]).toEqual([slug, USED_BY[slug]]);
     }
   });
 

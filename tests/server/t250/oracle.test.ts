@@ -28,6 +28,7 @@ import {
   EXPECTED_CARD_FILES,
   EXPECTED_CARD_IDS,
   OVERLAY_TERM,
+  OVERLAY_TERMS,
   REGISTRY_HANDLE,
   REPO_ROOT,
   bundleSlugs,
@@ -86,13 +87,13 @@ describe("the archive this task imports", () => {
    * coverage. Both numbers are asserted, so the day that helper changes its mind the red says
    * which of the two moved.
    */
-  it("needs nodeCardVersions to reach all 61: allNodeCards answers 57", () => {
+  it("needs nodeCardVersions to reach every file: allNodeCards answers ids", () => {
     expect(allNodeCards()).toHaveLength(EXPECTED_CARD_IDS);
     expect(allCardVersions()).toHaveLength(EXPECTED_CARD_FILES);
   });
 
-  /* The archive is generated, and the two author sets say different things: the ten
-     manifests and the 61 cards now credit the one account that owns them. The six persona
+  /* The archive is generated, and the two author sets say different things: every
+     manifest and every card now credits the one account that owns them. The six persona
      names the cards carried were the seed's, and they were the one place authorship and
      ownership disagreed; the owner collapsed them. Read off `content/` rather than recalled,
      so a name reappearing in either set reds here. */
@@ -103,10 +104,10 @@ describe("the archive this task imports", () => {
     expect(cardAuthors()).toEqual([REGISTRY_HANDLE]);
   });
 
-  it("carries one overlay term whose namespace is not the registry handle (D-250-06)", () => {
+  it("carries the overlay terms, one of which has a namespace that is not the registry handle (D-250-06)", () => {
     const text = readFileSync(`${REPO_ROOT}content/ontology/extensions.yaml`, "utf8");
     const ids = [...text.matchAll(/^\s*-\s+id:\s*(\S+)\s*$/gm)].map((m) => m[1]);
-    expect(ids).toEqual([OVERLAY_TERM]);
+    expect(ids).toEqual(OVERLAY_TERMS);
     /* The half of D-250-06 that survives the author collapse, and it is the load-bearing
        half: the namespace is NOT the registry handle, so publishing the archive does not
        turn a namespace into an account. What no longer holds is that the segment names a
@@ -172,7 +173,7 @@ describe("re-attribution is digest-safe, measured rather than read", () => {
    * a digest does NOT move, so on its own it is satisfied by a `cardDigest` that always returns
    * the same string. Perturbing a field that IS in the identity has to move all 57.
    */
-  it("discriminates: a field inside the identity moves every one of the 61", () => {
+  it("discriminates: a field inside the identity moves every card version", () => {
     const moved = allCardVersions()
       .filter(({ card }) => cardDigest(card as never) !== cardDigest({ ...card, name: `${String(card.name)}!` } as never))
       .map(({ id, version }) => `${id}@${version}`);

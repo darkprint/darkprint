@@ -1,0 +1,29 @@
+slug: hypothesis-tournament
+title: Hypothesis Tournament
+summary: >-
+  A generate, review and rank loop under a manager node, where the bar a hypothesis is judged
+  against never reaches the nodes that write hypotheses.
+description: |-
+  The graph runs a tournament. `generate` proposes, `review` grades against a standing rubric,
+  `rank` orders what survived, and `evolve` takes the rejects back round. `supervisor` is the
+  node that owns the loop and the budget of rounds it may run.
+
+  Two nodes write hypotheses and neither can see the rubric. `review-rubric` is a root that emits
+  the bar and touches nothing else; the reviewer is the only node wired to it. A generator that
+  can read the novelty bar proposes to the bar, and the ranking that follows is then a ranking of
+  how well the bar was read.
+
+  The safety screen before delivery is not optional decoration. A line that proposes freely needs
+  a node that can refuse, and it is placed after synthesis so that it sees what is actually about
+  to leave rather than each hypothesis in isolation.
+
+  This blueprint was generated automatically as an example for the registry.
+category: Research
+tags:
+  - exploration
+  - tournament
+  - manager-loop
+  - isolation
+author: autogen
+createdAt: "2026-09-11"
+updatedAt: "2026-09-11"

@@ -1,0 +1,58 @@
+id: draft-critic
+name: Draft Critic
+type: validation
+phase: testing
+
+action: >-
+  Grade the draft against every condition in the rubric and split the outcome: the draft itself
+  when all of them hold, your own notes when any of them does not.
+spec: >-
+  You are handed a rubric and a draft. Take each condition in turn and decide whether the draft
+  meets it, working from the draft in front of you and nothing else. When every condition holds,
+  emit the draft unchanged on `approved`, emit nothing on `feedback`, and set your preferred label
+  to `approved`. When any condition does not hold, emit nothing on `approved` and write on
+  `feedback` what is wrong with the draft in your own words: name the passage at fault, say what
+  it fails to do, and say what would fix it. Do not restate, paraphrase or quote the condition
+  itself, and do not say how many conditions there are or how many are still outstanding, a
+  reviser that can reconstruct the rubric from your notes has been handed the rubric. Set your
+  preferred label to anything other than `approved` in that case. A condition you could not
+  evaluate has not held.
+agent: Critic
+tools: []
+mcp: []
+params:
+  max_retries: 2
+
+inputs:
+  - name: rubric
+    type: acceptance-criteria
+    description: The conditions the draft is judged against, as the rubric author wrote them.
+  - name: draft
+    type: markdown
+    description: The draft under review, either the first one or whatever came back from revision.
+outputs:
+  - name: approved
+    type: markdown
+    description: The draft passed through untouched because every condition held.
+  - name: feedback
+    type: report
+    description: The critic's own account of what is wrong, written so it cannot be read back as the rubric.
+dependencies:
+  - rubric-author
+  - draft-producer
+  - draft-reviser
+cannot: []
+will_not:
+  - quote or paraphrase a condition in the feedback it returns
+  - edit the draft it judges
+  - move a condition to make a draft pass
+
+risk_markers: []
+notes: >-
+  This node succeeds whichever way it grades, so both of its exits are guarded on
+  `preferred_label` rather than on `outcome`: a rejection here is a completed review and not a
+  failed node, and a guard reading `outcome` would put both arms on the same value.
+  `max_retries` is what stops the revision loop from running forever.
+
+version: 1.0.0
+author: autogen

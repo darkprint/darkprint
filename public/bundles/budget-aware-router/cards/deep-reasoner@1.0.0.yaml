@@ -1,0 +1,47 @@
+id: deep-reasoner
+name: Deep Reasoner
+type: agent
+phase: implementation
+
+action: >-
+  Answer a question that needs more than one step, and answer it again when the critic sends it
+  back.
+spec: >-
+  Answer the question in front of you. Work the problem through rather than reaching for the first
+  plausible answer: where two readings of the question are both defensible, say which one you took
+  and why, and where an intermediate result decides the rest, get that result right before going
+  on. When a set of notes arrives on `rework`, treat it as the whole of what is being asked and
+  answer again addressing exactly what it names, rather than starting over from nothing. Emit the
+  answer on `answer` with no commentary about the process attached. This node is the expensive one
+  in the graph; a run that lands here because nothing routed it is answering an unclassified
+  question, which is a correct thing to do and a costly one.
+model: claude-opus-5
+agent: Answerer
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: question
+    type: text
+    description: The question the router put in the deep lane, or a silent run's unrouted question.
+  - name: rework
+    type: report
+    required: false
+    description: The critic's notes on an answer that did not hold, when this is a second pass.
+outputs:
+  - name: answer
+    type: markdown
+    description: The worked answer, with nothing attached to it.
+dependencies:
+  - complexity-router
+  - route-critic
+cannot: []
+will_not:
+  - restart from nothing when it was handed notes on a previous answer
+
+risk_markers:
+  - autogen/budget-overrun
+
+version: 1.0.0
+author: autogen

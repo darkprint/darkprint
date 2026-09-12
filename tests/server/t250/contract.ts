@@ -72,9 +72,18 @@ export const RELEASES_PER_BUNDLE = 1;
 
 /** D-250-08. `created` and `skipped` count BUNDLES. Cards do not fold in. */
 export const SECOND_RUN_CREATED = 0;
-export const SECOND_RUN_SKIPPED = 10;
+export const SECOND_RUN_SKIPPED = 16;
 
-/** D-250-06. The sole overlay term. Its namespace segment names no author and no account; a rename would move card digests. */
+/** D-250-06. The overlay terms, in the order the file declares them. A namespace segment names no author and no account; a rename would move card digests. */
+export const OVERLAY_TERMS = [
+  "lupo/pii-handling",
+  "autogen/untrusted-text",
+  "autogen/prompt-injection",
+  "autogen/budget-overrun",
+  "autogen/unverified-delegation",
+];
+
+/** The one whose namespace is not the registry handle, which is the property D-250-06 turns on. */
 export const OVERLAY_TERM = "lupo/pii-handling";
 
 /* ============================================================
@@ -303,9 +312,9 @@ const PUBLIC_BUNDLES = `${REPO_ROOT}public/bundles`;
  * moves with it and asserts nothing, and `public/bundles/` losing six directories must not
  * silently shrink AC1 to a third of its domain, which is the failure T090's suite recorded.
  */
-export const EXPECTED_BUNDLES = 10;
-export const EXPECTED_CARD_FILES = 61;
-export const EXPECTED_CARD_IDS = 57;
+export const EXPECTED_BUNDLES = 16;
+export const EXPECTED_CARD_FILES = 103;
+export const EXPECTED_CARD_IDS = 99;
 
 export function bundleSlugs(): readonly string[] {
   return readdirSync(BUNDLES_DIR)

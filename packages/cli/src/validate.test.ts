@@ -82,8 +82,8 @@ function serverSubmission(slug: string) {
 }
 
 describe("AC1 — the CLI and the server disagree about nothing", () => {
-  it("reads ten bundles, which is the number the archive holds", () => {
-    expect(SLUGS).toHaveLength(10);
+  it("reads every bundle the archive holds", () => {
+    expect(SLUGS).toHaveLength(16);
   });
 
   it.each(SLUGS)("%s produces byte-identical diagnostics", (slug) => {

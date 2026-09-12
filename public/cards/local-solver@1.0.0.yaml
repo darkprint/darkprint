@@ -1,0 +1,45 @@
+id: local-solver
+name: Local Solver
+type: agent
+phase: implementation
+
+action: >-
+  Do the task here, either because nothing outside matched or because what came back did not hold
+  up.
+spec: >-
+  Work the task in front of you and produce the result it asks for. Where notes arrive on `rework`,
+  they describe a result that failed verification: treat them as the whole of what is being asked
+  and produce a result that answers them, rather than starting from nothing or reproducing the
+  approach that failed. Say in the result what you were unable to do, if anything, instead of
+  filling a gap with a plausible value. Do not reach outside this system for anything: you are the
+  arm of this graph that runs when the outside was unavailable or wrong, and reintroducing an
+  outside call here would put the run back in the position it fell out of.
+agent: Solver
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: brief
+    type: json
+    description: The task alone, when the matcher found nothing worth delegating to.
+  - name: rework
+    type: report
+    required: false
+    description: What the check found wrong with a result, when this is a second attempt.
+outputs:
+  - name: proposal
+    type: json
+    description: The result produced here, in the same shape a delegated result arrives in.
+dependencies:
+  - capability-matcher
+  - remote-result-check
+cannot: []
+will_not:
+  - reach outside this system for anything
+  - fill a gap with a plausible value instead of reporting it
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

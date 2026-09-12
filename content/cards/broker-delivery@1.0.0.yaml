@@ -1,0 +1,39 @@
+id: broker-delivery
+name: Broker Delivery
+type: tool
+phase: deployment
+
+action: >-
+  Return the verified result to the caller, saying where it was produced, and record that it went.
+spec: >-
+  Take the result on `verified` and return it to the caller unchanged. Say alongside it whether the
+  work was done here or delegated, and to which endpoint if it was: the caller is entitled to know
+  whose answer they are acting on, and that is the one piece of provenance that survives the check
+  deliberately ignoring it. Do not add anything else about the machinery. Emit a receipt on
+  `receipt` naming what was returned and when. Return nothing that did not arrive on `verified`.
+agent: Delivery
+tools:
+  - messaging
+mcp: []
+params: {}
+
+inputs:
+  - name: verified
+    type: json
+    description: The result the check cleared, unchanged since it cleared.
+outputs:
+  - name: receipt
+    type: status
+    description: What was returned and when, or the reason nothing was.
+dependencies:
+  - remote-result-check
+cannot: []
+will_not:
+  - alter the result it returns
+  - omit whether the work was delegated
+
+risk_markers:
+  - irreversible-action
+
+version: 1.0.0
+author: autogen

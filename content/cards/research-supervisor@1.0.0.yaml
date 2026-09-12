@@ -1,0 +1,46 @@
+id: research-supervisor
+name: Research Supervisor
+type: manager-loop
+phase: planning
+
+action: >-
+  Turn the question into an agenda for one tournament and hold the round budget the rest of the
+  graph spends.
+spec: >-
+  Read the question the run opened with and write the agenda a single tournament will work
+  through: what is being asked, what counts as being in scope, and which directions have already
+  been tried and should not be proposed again. Emit it on `agenda`. You own the round budget:
+  `max_iterations` is the number of times a hypothesis may go round the review loop before the
+  tournament ends with whatever it has, and it is a cap rather than a target. Do not raise it
+  because a round looked promising. Do not write hypotheses yourself, do not grade one, and do not
+  express a preference between directions in the agenda, a supervisor that names its favourite has
+  graded the tournament before it ran.
+agent: Supervisor
+tools: []
+mcp: []
+params:
+  max_iterations: 3
+
+inputs:
+  - name: question
+    type: text
+    description: The question the run opened with, as it arrived.
+outputs:
+  - name: agenda
+    type: plan
+    description: The scope of one tournament and the directions already ruled out.
+dependencies:
+  - question-intake
+cannot:
+  - acceptance-criteria
+will_not:
+  - propose a hypothesis of its own
+  - name a preferred direction in the agenda
+
+risk_markers: []
+notes: >-
+  `max_iterations` is read as the iteration cap for the loop this node owns. Without it the review
+  and evolve nodes sit in a cycle with no bound, and the graph is scored for that.
+
+version: 1.0.0
+author: autogen

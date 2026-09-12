@@ -1,0 +1,41 @@
+id: draft-delivery
+name: Draft Delivery
+type: tool
+phase: deployment
+
+action: >-
+  Publish the approved draft exactly as it was handed over, and record that it went.
+spec: >-
+  Take the draft on `approved` and publish it to the destination the run was configured with,
+  byte for byte as you received it. Do not reformat it, do not add a header, a footer or a note
+  about how it was produced, and do not hold it back because you would have written it
+  differently. Emit a receipt on `receipt` naming what was published and when. If publication
+  fails, say so on the receipt and do not retry silently: a second attempt that nobody asked for
+  can put the same piece out twice.
+agent: Publisher
+tools:
+  - file-io
+mcp:
+  - filesystem
+params: {}
+
+inputs:
+  - name: approved
+    type: markdown
+    description: The draft the critic cleared, unchanged since it cleared.
+outputs:
+  - name: receipt
+    type: status
+    description: What was published and when, or the reason nothing was.
+dependencies:
+  - draft-critic
+cannot: []
+will_not:
+  - edit a draft that has already been cleared
+  - publish anything that did not come off the approved port
+
+risk_markers:
+  - irreversible-action
+
+version: 1.0.0
+author: autogen

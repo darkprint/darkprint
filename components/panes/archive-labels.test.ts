@@ -541,15 +541,21 @@ describe("the archive schematics keep their type as large as the box allows", ()
     expect(canvasWidth(1456), "1456 is no longer the widest canvas above the grid").toBe(735);
     expect(measured).toEqual({
       "adversarial-consensus-line": 6.0,
+      "budget-aware-router": 6.6,
       "checkpoint-resume-runner": 5.7,
+      "delegation-broker": 6.2,
       "frontline-triage": 6.6,
       "grounded-research-desk": 6.6,
+      "guarded-assistant-line": 5.7,
       "guarded-merge-bot": 6.6,
+      "hypothesis-tournament": 4.4,
       "incident-commander": 6.6,
       "nightly-data-janitor": 6.6,
+      "objective-tracker": 5.8,
       /* Four columns and one return edge. Measured at 10.2, which is 0.2 CSS px over the
          floor: of the two drawings this canvas makes legible, it is the one nearer the line. */
       "pipeline-observability": 10.2,
+      "producer-critic-refinery": 12.2,
       "schema-forge-etl": 6.6,
       "starter-software-factory": 12.2,
     });
@@ -566,14 +572,20 @@ describe("the archive schematics keep their type as large as the box allows", ()
     expect(canvasWidth(1440), "the design width's canvas moved").toBe(724);
     expect(measured).toEqual({
       "adversarial-consensus-line": 5.9,
+      "budget-aware-router": 6.5,
       "checkpoint-resume-runner": 5.6,
+      "delegation-broker": 6.1,
       "frontline-triage": 6.5,
       "grounded-research-desk": 6.5,
+      "guarded-assistant-line": 5.6,
       "guarded-merge-bot": 6.5,
+      "hypothesis-tournament": 4.3,
       "incident-commander": 6.5,
       "nightly-data-janitor": 6.5,
+      "objective-tracker": 5.7,
       /* On the floor exactly at the design width: its narrower canvas takes the 0.2 CSS px away. */
       "pipeline-observability": 10.0,
+      "producer-critic-refinery": 12.0,
       "schema-forge-etl": 6.5,
       "starter-software-factory": 12.0,
     });
@@ -655,19 +667,19 @@ describe("the archive schematics keep their type as large as the box allows", ()
      1279, 1200 and at the tablet's full-body 900, and falls under it in the rail band (1366,
      1280), at 1024 and 768, and on both phones. */
   const LEGIBLE_AT: Record<number, readonly string[]> = {
-    1920: ["pipeline-observability", "starter-software-factory"],
-    1456: ["pipeline-observability", "starter-software-factory"],
-    1440: ["pipeline-observability", "starter-software-factory"],
-    1366: ["starter-software-factory"],
-    1280: ["starter-software-factory"],
-    1279: ["pipeline-observability", "starter-software-factory"],
-    1200: ["pipeline-observability", "starter-software-factory"],
-    1024: ["starter-software-factory"],
+    1920: ["pipeline-observability", "producer-critic-refinery", "starter-software-factory"],
+    1456: ["pipeline-observability", "producer-critic-refinery", "starter-software-factory"],
+    1440: ["pipeline-observability", "producer-critic-refinery", "starter-software-factory"],
+    1366: ["producer-critic-refinery", "starter-software-factory"],
+    1280: ["producer-critic-refinery", "starter-software-factory"],
+    1279: ["pipeline-observability", "producer-critic-refinery", "starter-software-factory"],
+    1200: ["pipeline-observability", "producer-critic-refinery", "starter-software-factory"],
+    1024: ["producer-critic-refinery", "starter-software-factory"],
     /* The widest canvas on the site, and it is a tablet. 900 is below `lg`, so the pane grid
        is one column and the graph has the whole body: 824px, against 735 at every desktop
        width above it. Still short of 1086. */
-    900: ["pipeline-observability", "starter-software-factory"],
-    768: ["starter-software-factory"],
+    900: ["pipeline-observability", "producer-critic-refinery", "starter-software-factory"],
+    768: ["producer-critic-refinery", "starter-software-factory"],
     500: [],
     390: [],
   };
@@ -1368,7 +1380,7 @@ describe("the archive frames with the canvas this guard reads", () => {
    */
   it("asks for a different pane height per blueprint", () => {
     const width = canvasWidth(1456);
-    expect(width, "the widest canvas moved and these nine heights are about 735").toBe(735);
+    expect(width, "the widest canvas moved and these heights are about 735").toBe(735);
     const heights = Object.fromEntries(
       BLUEPRINTS.map((blueprint) => [
         blueprint.slug,
@@ -1377,13 +1389,19 @@ describe("the archive frames with the canvas this guard reads", () => {
     );
     expect(heights).toEqual({
       "adversarial-consensus-line": 292,
+      "budget-aware-router": 312,
       "checkpoint-resume-runner": 282,
+      "delegation-broker": 299,
       "frontline-triage": 312,
       "grounded-research-desk": 421,
+      "guarded-assistant-line": 240,
       "guarded-merge-bot": 240,
+      "hypothesis-tournament": 242,
       "incident-commander": 312,
       "nightly-data-janitor": 312,
+      "objective-tracker": 285,
       "pipeline-observability": 255,
+      "producer-critic-refinery": 484,
       "schema-forge-etl": 312,
       "starter-software-factory": 484,
     });
@@ -1397,17 +1415,22 @@ describe("the archive frames with the canvas this guard reads", () => {
        the state the height derivation exists to avoid, and it is a cost of the column rather
        than a defect in the derivation.
 
-       The assertion is INVERTED rather than deleted, and it names the blueprint: exactly one
-       pane may sit on the floor at the widest canvas, and a second one arriving is a new
-       fact this cell should red on. `>=` everywhere else keeps the floor's meaning. */
+       The assertion is INVERTED rather than deleted, and it names the blueprints: only these
+       panes may sit on the floor at the widest canvas, and another one arriving is a new fact
+       this cell should red on. `>=` everywhere else keeps the floor's meaning.
+
+       `guarded-assistant-line` is the second, and the same phenomenon rather than a new one:
+       four columns and two rows leave a drawing shorter than the floor, so the pane carries
+       slack below it. Slack, not a clipped or overlapping drawing — the clearance cells above
+       are what speak to whether a reader can read it. */
     expect(
       Object.entries(heights)
         .filter(([, height]) => height <= PANE_MIN_HEIGHT)
         .map(([slug]) => slug),
-      "the set of panes sitting on PANE_MIN_HEIGHT at the widest canvas moved. One is the " +
-        "cost of the two-thirds column and is recorded; a second means another drawing has " +
-        "shrunk far enough for the floor to take over from the box",
-    ).toEqual(["guarded-merge-bot"]);
+      "the set of panes sitting on PANE_MIN_HEIGHT at the widest canvas moved. These two are " +
+        "the cost of the two-thirds column and are recorded; a third means another drawing " +
+        "has shrunk far enough for the floor to take over from the box",
+    ).toEqual(["guarded-assistant-line", "guarded-merge-bot"]);
 
     // And at the design width, which the rail takes to a 1108px canvas. Pinned because
     // `SynchronisedPanes.tsx`'s own note states both sets and a number there that disagrees
@@ -1420,13 +1443,22 @@ describe("the archive frames with the canvas this guard reads", () => {
     );
     expect(atDesign).toEqual({
       "adversarial-consensus-line": 289,
+      "budget-aware-router": 309,
       "checkpoint-resume-runner": 279,
+      "delegation-broker": 296,
       "frontline-triage": 309,
       "grounded-research-desk": 416,
+      "guarded-assistant-line": 240,
       "guarded-merge-bot": 240,
+      /* Eleven nodes, and on the floor at this canvas where it is 242 at the widest one: the
+         drawing is wide rather than tall, so the narrower canvas zooms it down into the
+         floor. What that zoom does to the row clearance is the clearance cells' business. */
+      "hypothesis-tournament": 240,
       "incident-commander": 309,
       "nightly-data-janitor": 309,
+      "objective-tracker": 282,
       "pipeline-observability": 252,
+      "producer-critic-refinery": 478,
       "schema-forge-etl": 309,
       "starter-software-factory": 478,
     });
@@ -1497,13 +1529,19 @@ describe("the archive schematics draw their wires inside the frame", () => {
     );
     expect(bow).toEqual({
       "adversarial-consensus-line": [0, 122.7],
+      "budget-aware-router": [0, 0],
       "checkpoint-resume-runner": [0, 0],
+      "delegation-broker": [0, 75.5],
       "pipeline-observability": [0, 0],
       "frontline-triage": [0, 0],
       "grounded-research-desk": [0, 0],
+      "guarded-assistant-line": [0, 0],
       "guarded-merge-bot": [0, 0],
+      "hypothesis-tournament": [0, 0],
       "incident-commander": [0, 0],
       "nightly-data-janitor": [0, 0],
+      "objective-tracker": [0, 174.4],
+      "producer-critic-refinery": [0, 75.5],
       "schema-forge-etl": [0, 0],
       "starter-software-factory": [0, 75.5],
     });

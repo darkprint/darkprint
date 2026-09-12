@@ -84,12 +84,12 @@ afterAll(async () => {
 });
 
 describe("AC1 against the build", () => {
-  it("returns the ten blueprints, in the build's order and with its fields", async () => {
+  it("returns every blueprint, in the build's order and with its fields", async () => {
     const blueprints = await bind("blueprints");
     const rows = asArray(await blueprints(s.db, anonymous), "blueprints()").map((row, i) =>
       asBlueprintSummary(row, `blueprints()[${i}]`),
     );
-    expect(rows.length, "content/blueprints holds ten bundles").toBe(10);
+    expect(rows.length, "content/blueprints holds sixteen bundles").toBe(16);
     expect(rows.map((b) => b.slug)).toEqual(registry.blueprints().map((b) => b.slug));
     for (const [i, expected] of registry.blueprints().entries()) {
       expect(rows[i].ownerHandle).toBe(handle);
@@ -121,7 +121,7 @@ describe("AC1 against the build", () => {
     }
   });
 
-  it("counts 61 card versions over 57 distinct ids, which is what AC1's 'fifty-three' named before the archive grew", async () => {
+  it("counts card versions over distinct ids, which is what AC1's 'fifty-three' named before the archive grew", async () => {
     const cards = await bind("cards");
     const latestCards = await bind("latestCards");
     const all = asArray(await cards(s.db, anonymous), "cards()");
@@ -137,7 +137,7 @@ describe("AC1 against the build", () => {
         `every seeded bundle has a single release, so no card is dropped by that rule at ` +
         `all. The step is versions to ids, and four ids carry two versions. Recorded here ` +
         `rather than left to be rediscovered from a count that is off by four.`,
-    ).toEqual({ versions: 61, ids: 57 });
+    ).toEqual({ versions: 103, ids: 99 });
   });
 
   it("returns the build's phases, tags and categories", async () => {

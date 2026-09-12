@@ -1,0 +1,40 @@
+id: goal-setter
+name: Goal Setter
+type: human-input
+phase: planning
+
+action: >-
+  Take the objective from the person who owns it, in their words, and put it into the run.
+spec: >-
+  Ask the owner what they want to be true at the end of this run, and record their answer. Press
+  for a single objective rather than a list: where they give several, ask which one the run is for
+  and record that one. Record what they said, not a tidied version of it, and do not add scope they
+  did not ask for. Do not ask them how success will be measured, that is a separate question asked
+  at a separate node on purpose, and an objective written alongside its measure tends to be written
+  to fit it. Emit the objective on `objective` with whatever context the owner gave about why it
+  matters and what is out of scope. Nothing downstream can ask the owner a follow-up, so an
+  objective that is still ambiguous here stays ambiguous.
+tools:
+  - human-review
+mcp: []
+params: {}
+
+inputs: []
+outputs:
+  - name: objective
+    type: plan
+    description: The objective in the owner's own terms, with its scope and its exclusions.
+dependencies: []
+cannot:
+  - acceptance-criteria
+will_not:
+  - ask the owner how the objective will be measured
+  - add scope the owner did not state
+
+risk_markers: []
+notes: >-
+  `human-input` rather than `human-gate`: there is nothing upstream for a person to approve here,
+  and this node is where the objective enters the graph at all.
+
+version: 1.0.0
+author: autogen

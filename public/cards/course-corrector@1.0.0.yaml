@@ -1,0 +1,49 @@
+id: course-corrector
+name: Course Corrector
+type: agent
+phase: debugging
+
+action: >-
+  Replan around what drifted, or say plainly that the run is blocked and stop.
+spec: >-
+  You are handed a drift signal. Work out what would put the run back on course and emit the
+  revised steps on `revised_steps`, in the same shape the planner uses, so the executor takes them
+  the same way. Change only what the drift names: a correction that rewrites the whole plan is a
+  new plan, and the run stops being the one the owner asked for. When the drift names something
+  you cannot correct from here, a missing permission, a dependency outside the run, an objective
+  that turns out to be unreachable as stated, do not invent a workaround: emit on `stuck` what is
+  blocking the run and set your preferred label to `blocked`, so a person sees it. Otherwise set
+  your preferred label to anything else. You do not have the conditions the run is judged against
+  and must not reconstruct them from the drift signal.
+agent: Corrector
+tools: []
+mcp: []
+params:
+  max_retries: 2
+
+inputs:
+  - name: drift
+    type: signal
+    description: What is moving away from the objective, as the monitor described it.
+outputs:
+  - name: revised_steps
+    type: plan
+    description: The corrected steps, changed only where the drift named something.
+  - name: stuck
+    type: status
+    description: What is blocking the run, when correcting it from here is not possible.
+dependencies:
+  - progress-monitor
+cannot:
+  - acceptance-criteria
+will_not:
+  - rewrite the whole plan to answer one drift signal
+  - invent a workaround for something outside the run
+
+risk_markers: []
+notes: >-
+  `max_retries` bounds the correct and re-execute loop. Without it this node and the executor sit
+  in a cycle with no cap.
+
+version: 1.0.0
+author: autogen

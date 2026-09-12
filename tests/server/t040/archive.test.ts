@@ -51,6 +51,7 @@ import {
   EXPECTED_BUNDLE_COUNT,
   LOCAL_TERM,
   VOCABULARY_BUNDLE,
+  VOCABULARY_BUNDLES,
   archiveCases,
   archiveSlugs,
   caseFor,
@@ -61,7 +62,7 @@ describe("AC1: the oracle itself", () => {
   /* Not ceremony. Every figure below is read out of a file `prebuild` writes, and a README
      whose format drifted would otherwise let nine assertions compare `undefined` to
      `undefined` and report a pass. A set that can only be empty is not a measurement. */
-  it("parses five figures out of all ten shipped READMEs", () => {
+  it("parses five figures out of every shipped README", () => {
     const cases = archiveCases();
     expect(cases).toHaveLength(EXPECTED_BUNDLE_COUNT);
     for (const { slug, oracle } of cases) {
@@ -90,9 +91,9 @@ describe("AC1: the oracle itself", () => {
      vocabulary this number moves and whoever reads the red learns the sweep got stronger. If
      the last one loses it, the sweep silently stops observing the argument entirely, which is
      the failure this assertion exists to make loud. */
-  it("carries exactly one bundle whose cards need a supplied vocabulary", () => {
+  it("carries exactly the bundles whose cards need a supplied vocabulary", () => {
     const withVocabulary = archiveCases().filter((c) => c.carriesVocabulary);
-    expect(withVocabulary.map((c) => c.slug)).toEqual([VOCABULARY_BUNDLE]);
+    expect(withVocabulary.map((c) => c.slug)).toEqual(VOCABULARY_BUNDLES);
   });
 });
 

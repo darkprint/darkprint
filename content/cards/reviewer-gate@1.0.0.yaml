@@ -1,0 +1,55 @@
+id: reviewer-gate
+name: Reviewer Gate
+type: human-gate
+
+action: >-
+  Park anything a guard refused in front of a person, and let nothing past that the person has not
+  released.
+spec: >-
+  Everything that reaches you was refused by a guard upstream. Assemble the case for a reviewer:
+  what was refused, which guard refused it, and what that guard said, taken from the context you
+  were given or pulled from the run record when none was wired. Put the configured deadline on it,
+  notify the reviewer on call, and wait. Decide nothing yourself. When the reviewer releases the
+  work, emit exactly what they released on `released`, unchanged, and nothing else. When they do
+  not, emit the closed case on `parked` and emit nothing on `released`. Nothing reaches `released`
+  that a person has not explicitly approved, and a deadline passing is not an approval.
+tools:
+  - human-review
+  - messaging
+mcp:
+  - slack
+params:
+  sla_minutes: 30
+
+inputs:
+  - name: held
+    type: status
+    description: What the refusing guard found, whichever of the three it was.
+  - name: context
+    type: markdown
+    required: false
+    description: The work that was refused, attached so the reviewer does not have to go digging.
+outputs:
+  - name: released
+    type: markdown
+    description: Exactly what the reviewer approved, unchanged.
+  - name: parked
+    type: json
+    description: The closed case, when the reviewer did not release it.
+dependencies:
+  - input-sanitizer
+  - policy-screen
+  - output-filter
+cannot: []
+will_not:
+  - release a case on its own judgement
+  - treat a passed deadline as an approval
+
+risk_markers: []
+notes: >-
+  `context` is optional because an edge carries one value: the guards wire their finding, and the
+  gate pulls the work it refers to from the run record. The `human-gate` type is the whole of what
+  says a person acts here.
+
+version: 1.0.0
+author: autogen

@@ -1,0 +1,41 @@
+id: hypothesis-generator
+name: Hypothesis Generator
+type: agent
+phase: implementation
+
+action: >-
+  Propose a spread of candidate hypotheses against the agenda, without knowing how they will be
+  graded.
+spec: >-
+  Read the agenda and propose candidate hypotheses for the question it scopes. Emit them on
+  `hypotheses` as a list, each with the claim itself, the reasoning that makes it worth taking
+  seriously, and what would have to be observed for it to be wrong. Propose a spread rather than
+  variations on one idea: two hypotheses that fail for the same reason are one hypothesis. Do not
+  rank them, do not mark one as most likely, and do not go looking for the conditions they will be
+  graded against, you do not have them and shaping a proposal toward a bar you have guessed at is
+  worse than proposing freely. Do not re-propose a direction the agenda says has been tried.
+agent: Generator
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: agenda
+    type: plan
+    description: The scope of this tournament and the directions already ruled out.
+outputs:
+  - name: hypotheses
+    type: json
+    description: Candidate hypotheses, each with its reasoning and its falsifier, in no order.
+dependencies:
+  - research-supervisor
+cannot:
+  - acceptance-criteria
+will_not:
+  - rank or mark a favourite among its own proposals
+  - shape a proposal toward a bar it has guessed at
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

@@ -1,0 +1,40 @@
+id: metric-setter
+name: Metric Setter
+type: human-input
+phase: planning
+
+action: >-
+  Take the measure from the person who will judge the run, and put it where only the monitor can
+  read it.
+spec: >-
+  Ask the person accountable for this run how they will know the objective was met, and record
+  their answer as conditions. Each condition should be one a reader holding the run's state and
+  that condition alone could settle. Press for conditions that would be false if the objective
+  were missed: a measure that is satisfied by almost any run is not a measure. Record what would
+  count as failure as well as what would count as success, because a run that ends ambiguously is
+  the case this node exists to prevent. Emit them on `success_metric`. This is the only node in
+  the graph that produces them and exactly one node reads them; do not restate any of it anywhere
+  a working node could see.
+tools:
+  - human-review
+mcp: []
+params: {}
+
+inputs: []
+outputs:
+  - name: success_metric
+    type: acceptance-criteria
+    description: The conditions the run is judged against, as the accountable person stated them.
+dependencies: []
+cannot: []
+will_not:
+  - state the measure anywhere a working node could read it
+  - accept a measure that almost any run would satisfy
+
+risk_markers: []
+notes: >-
+  A second `human-input` root, deliberately separate from `goal-setter`. Splitting them is what
+  lets the objective reach the planner while the measure reaches only the monitor.
+
+version: 1.0.0
+author: autogen

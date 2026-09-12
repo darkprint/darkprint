@@ -1,0 +1,33 @@
+digraph guarded_assistant_line {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  inbound [card="untrusted-intake@1.0.0"];
+  sanitize [card="input-sanitizer@1.0.0"];
+  screen   [card="policy-screen@1.0.0"];
+  assist   [card="constrained-assistant@1.0.0"];
+  filter   [card="output-filter@1.0.0"];
+  gate     [card="reviewer-gate@1.0.0"];
+  send     [card="reply-delivery@1.0.0"];
+
+  // The edge this graph does not have is `inbound -> assist`. It is not merely absent:
+  // the intake emits `autogen/untrusted-text` and the assistant refuses that type by
+  // name, so drawing it stops the bundle resolving rather than starting an argument.
+  inbound -> sanitize [label="untrusted text", out="inbound", in="inbound"];
+
+  // Three guards, each with two exits, each completing whichever way it decides, so all
+  // six arms read `preferred_label`. Every negation arm goes to the human gate: the cost
+  // of a guard that writes no label is a person's time, never a bad send.
+  sanitize -> screen [label="sanitised", out="clean", in="clean", condition="preferred_label=clean"];
+  sanitize -> gate   [label="suspected injection", style=dashed, out="suspect", in="held", condition="preferred_label!=clean"];
+
+  screen -> assist [label="cleared", out="cleared", in="cleared", condition="preferred_label=cleared"];
+  screen -> gate   [label="policy hit", style=dashed, out="flagged", in="held", condition="preferred_label!=cleared"];
+
+  assist -> filter [label="reply", out="reply", in="reply"];
+
+  filter -> send [label="cleared reply", out="clean_reply", in="clean_reply", condition="preferred_label=clean"];
+  filter -> gate [label="held reply", style=dashed, out="held", in="held", condition="preferred_label!=clean"];
+
+  gate -> send [label="released by reviewer", out="released", in="clean_reply"];
+}

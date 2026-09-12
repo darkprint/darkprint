@@ -1,0 +1,41 @@
+id: proximity-clusterer
+name: Proximity Clusterer
+type: tool
+
+action: >-
+  Group the ranked hypotheses by how close they are to one another, so the spread of the field is
+  visible rather than just its top.
+spec: >-
+  Embed each hypothesis and group them by proximity. Emit the groups on `clustered`, each carrying
+  its members unchanged and in the order they arrived, so the ranking survives the grouping. A
+  group of one is a real result and must be emitted as such: an isolated hypothesis is the most
+  interesting thing this node can find, and folding it into the nearest group to tidy the output
+  destroys exactly that. Do not rewrite, summarise or retitle a hypothesis to make a grouping
+  cleaner, and do not write anything from this run back into the store you search.
+agent: Clusterer
+tools:
+  - vector-store
+mcp:
+  - qdrant
+params:
+  min_cluster_size: 1
+
+inputs:
+  - name: ranked
+    type: json
+    description: The ordered hypotheses with their comparison records.
+outputs:
+  - name: clustered
+    type: json
+    description: The hypotheses grouped by proximity, ranking preserved inside each group.
+dependencies:
+  - elo-tournament
+cannot: []
+will_not:
+  - fold a single-member group into its nearest neighbour
+  - write this run's own text back into the store
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

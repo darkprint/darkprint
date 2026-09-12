@@ -1,0 +1,53 @@
+id: progress-monitor
+name: Progress Monitor
+type: validation
+phase: testing
+
+action: >-
+  Read the run's progress against the measure and say whether the objective is being reached or
+  drifting away from it.
+spec: >-
+  You are handed the measure and a progress report. Decide, condition by condition, whether the run
+  as reported satisfies it. When every condition holds, emit the progress on `on_track` unchanged
+  and set your preferred label to `on-track`. When any does not, emit on `drift` a signal saying
+  what is moving away from the objective and in which direction: name the step, say what the report
+  shows, and say what would have to change. Do not restate or quote the condition, and do not say
+  how many there are, a corrector that can reconstruct the measure from your signal has been handed
+  the measure. Set your preferred label to anything other than `on-track` in that case. A condition
+  you cannot evaluate from the report has not held, and a report that does not mention a step at
+  all is not evidence that the step went well.
+agent: Monitor
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: success_metric
+    type: acceptance-criteria
+    description: The conditions the run is judged against, as the accountable person stated them.
+  - name: progress
+    type: json
+    description: What the executor reports having done, step by step.
+outputs:
+  - name: on_track
+    type: json
+    description: The progress passed through unchanged because every condition held.
+  - name: drift
+    type: signal
+    description: What is moving away from the objective and in which direction, in the monitor's own words.
+dependencies:
+  - metric-setter
+  - objective-executor
+cannot: []
+will_not:
+  - quote or paraphrase a condition in the signal it emits
+  - treat an unmentioned step as a step that went well
+
+risk_markers: []
+notes: >-
+  The only node in this bundle that reads the measure, and the reason the measure is in the graph
+  at all. Both exits are guarded on `preferred_label`, because this node completes whichever way it
+  reads the run.
+
+version: 1.0.0
+author: autogen

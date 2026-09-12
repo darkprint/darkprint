@@ -1,0 +1,42 @@
+id: outcome-delivery
+name: Outcome Delivery
+type: tool
+phase: deployment
+
+action: >-
+  Report the finished run to the people who set it going, and record that it went.
+spec: >-
+  Take what arrives on `on_track` and report it to the owner and to the person accountable for the
+  measure. Report what the run actually did, step by step, including any step that was corrected on
+  the way: a run that reached its objective after two corrections is a different result from one
+  that reached it first time, and both are worth reporting as what they were. Do not restate the
+  measure in the report. Emit a receipt on `receipt` saying what was reported and when. Report
+  nothing that did not arrive on `on_track`.
+agent: Delivery
+tools:
+  - messaging
+mcp:
+  - slack
+params: {}
+
+inputs:
+  - name: on_track
+    type: json
+    description: The progress the monitor accepted, unchanged since it accepted it.
+outputs:
+  - name: receipt
+    type: status
+    description: What was reported and when, or the reason nothing was.
+dependencies:
+  - progress-monitor
+cannot:
+  - acceptance-criteria
+will_not:
+  - restate the measure in the report it sends
+  - hide a correction the run needed on the way
+
+risk_markers:
+  - irreversible-action
+
+version: 1.0.0
+author: autogen

@@ -147,7 +147,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
   /* --------------------- AC1 --------------------- */
 
   it("AC1: each bundle's file list equals what public/bundles/<slug>/ holds, name for name", async () => {
-    expect(seeded.size).toBe(10);
+    expect(seeded.size).toBe(16);
     for (const [slug, ids] of seeded) {
       const files = await exportRelease(db, ANONYMOUS, ids.bundleId, ids.digest);
       expect(files.map((file) => file.path).sort(), slug).toEqual(

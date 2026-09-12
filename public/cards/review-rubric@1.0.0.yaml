@@ -1,0 +1,39 @@
+id: review-rubric
+name: Review Rubric
+type: agent
+phase: planning
+
+action: >-
+  State the standing bar a hypothesis has to clear, once, for the whole tournament.
+spec: >-
+  Write the conditions a hypothesis must meet to be admitted, and emit them on `rubric` as an
+  ordered list. Cover at least three things: whether the hypothesis is actually testable as
+  written, whether it is distinguishable from what is already established, and whether the
+  reasoning offered for it holds on its own terms. Phrase each condition so that a reader holding
+  a hypothesis and that condition alone can answer yes or no. Do not propose a hypothesis to
+  illustrate a condition, do not name a direction you expect to win, and do not write a condition
+  that only one shape of answer could satisfy. The bar is set once and does not move during the
+  tournament: a bar that follows the hypotheses is not a bar.
+agent: Rubric author
+tools: []
+mcp: []
+params: {}
+
+inputs: []
+outputs:
+  - name: rubric
+    type: acceptance-criteria
+    description: The standing conditions every hypothesis is graded against, fixed for the tournament.
+dependencies: []
+cannot: []
+will_not:
+  - propose a hypothesis of its own
+  - change the bar once the tournament has started
+
+risk_markers: []
+notes: >-
+  A root wired to exactly one node. It is the only producer of `acceptance-criteria` in this
+  bundle, which is what gives the leak check something to trace.
+
+version: 1.0.0
+author: autogen

@@ -1,0 +1,30 @@
+digraph delegation_broker {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  task     [card="task-intake@1.0.0"];
+  discover [card="agent-card-resolver@1.0.0"];
+  match    [card="capability-matcher@1.0.0"];
+  delegate [card="a2a-delegate@1.0.0"];
+  local    [card="local-solver@1.0.0"];
+  verify   [card="remote-result-check@1.0.0"];
+  deliver  [card="broker-delivery@1.0.0"];
+
+  task -> discover [label="request", out="request", in="request"];
+  discover -> match [label="candidates", out="candidates", in="candidates"];
+
+  // `match` pins a `decision` card, which runs as a no-op writing no preferred label, so
+  // the fork reads a context key the matcher's own spec puts in `context_updates`. A
+  // missing key reads back as the empty string, which is why the negation arm is `local`:
+  // a run that matched nothing does the work here instead of handing it to no one.
+  match -> delegate [label="matched",   out="assignment", in="assignment", condition="context.match=found"];
+  match -> local    [label="no match",  out="fallback", in="brief", condition="context.match!=found"];
+
+  delegate -> verify [label="remote result", out="remote_result", in="result"];
+  local -> verify    [label="local result", out="proposal", in="result"];
+
+  // The check completes whichever way it decides, so both arms read `preferred_label`.
+  // A rejected remote result goes to the local solver, not back to the remote agent.
+  verify -> deliver [label="verified", out="verified", in="verified", condition="preferred_label=verified"];
+  verify -> local   [label="rejected", style=dashed, out="rejected", in="rework", condition="preferred_label!=verified"];
+}

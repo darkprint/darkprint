@@ -1,0 +1,50 @@
+id: hypothesis-reviewer
+name: Hypothesis Reviewer
+type: validation
+phase: testing
+
+action: >-
+  Grade each hypothesis against the standing rubric and split them: admitted to the tournament, or
+  sent back with notes.
+spec: >-
+  You are handed the rubric and a set of hypotheses. Take each hypothesis and each condition in
+  turn and decide whether it holds. Emit on `reviewed` every hypothesis that met all of them,
+  unchanged, and set your preferred label to `admitted` when at least one did. Emit on `rejected`
+  your own notes on the ones that did not: name the hypothesis, say what is missing from it, and
+  say what a stronger version would need to do. Do not restate or quote the condition it failed,
+  and do not say how many conditions there are, an evolver that can reconstruct the rubric from
+  your notes has been handed the rubric. When nothing was admitted, set your preferred label to
+  anything other than `admitted`. A hypothesis you could not evaluate has not met the bar.
+agent: Reviewer
+tools: []
+mcp: []
+params:
+  max_retries: 3
+
+inputs:
+  - name: rubric
+    type: acceptance-criteria
+    description: The standing conditions, as the rubric author fixed them.
+  - name: hypotheses
+    type: json
+    description: The candidates under review, freshly generated or back round from evolution.
+outputs:
+  - name: reviewed
+    type: json
+    description: The hypotheses that met every condition, unchanged.
+  - name: rejected
+    type: report
+    description: The reviewer's own notes on what fell short, written so they cannot be read back as the rubric.
+dependencies:
+  - review-rubric
+  - hypothesis-generator
+  - hypothesis-evolver
+cannot: []
+will_not:
+  - quote or paraphrase a condition in the notes it returns
+  - edit a hypothesis to make it pass
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

@@ -431,7 +431,7 @@ describe("markdown: malformed input degrades, and never throws", () => {
   });
 });
 
-describe("markdown: the ten shipped bundle READMEs", () => {
+describe("markdown: the shipped bundle READMEs", () => {
   for (const readme of READMES) {
     it(`renders ${readme.slug} whole`, () => {
       const html = render(readme.text);
@@ -464,11 +464,16 @@ describe("markdown: the ten shipped bundle READMEs", () => {
   });
 
   it("puts no raw angle bracket from the source into the markup", () => {
-    for (const readme of READMES) {
+    /* `cards/<ref>.yaml` sits inside a code span in the READMEs of the bundles whose cards
+       name a model, and it must be escaped rather than opening an element nobody wrote. The
+       count is asserted first because a corpus that stopped carrying the token at all would
+       leave the escaping cell below passing over nothing. */
+    const carrying = READMES.filter((readme) => readme.text.includes("<ref>"));
+    expect(carrying.length).toBeGreaterThan(0);
+    for (const readme of carrying) {
       const html = render(readme.text);
-      /* `cards/<ref>.yaml` appears in every one of them, inside a code span. It must be
-         escaped rather than opening an element nobody wrote. */
-      expect(html).toContain("&lt;ref&gt;");
+      expect(html, readme.slug).toContain("&lt;ref&gt;");
+      expect(html, readme.slug).not.toContain("<ref>");
     }
   });
 });

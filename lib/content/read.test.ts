@@ -19,16 +19,22 @@ import { contentOntology, contentOntologyDiagnostics, readContent } from "./read
 describe("readContent over content/", () => {
   const loaded = readContent();
 
-  it("loads all ten blueprints with no error-severity diagnostic", () => {
+  it("loads every blueprint with no error-severity diagnostic", () => {
     expect(loaded.map((b) => b.slug)).toEqual([
       "adversarial-consensus-line",
+      "budget-aware-router",
       "checkpoint-resume-runner",
+      "delegation-broker",
       "frontline-triage",
       "grounded-research-desk",
+      "guarded-assistant-line",
       "guarded-merge-bot",
+      "hypothesis-tournament",
       "incident-commander",
       "nightly-data-janitor",
+      "objective-tracker",
       "pipeline-observability",
+      "producer-critic-refinery",
       "schema-forge-etl",
       "starter-software-factory",
     ]);
@@ -40,17 +46,22 @@ describe("readContent over content/", () => {
   // Doc 3 §3 makes `type` one of the things every node declares, doc 3 §2 makes `phase`
   // one it *may* declare, and doc 1 §3.2 makes `spec` the payload the agent actually
   // receives. The whole archive was migrated to v0.1 at once, so the cheapest way to
-  // notice a card slipping back is to assert the vocabulary here rather than to trust 57
-  // files to stay migrated.
+  // notice a card slipping back is to assert the vocabulary here rather than to trust the
+  // library to stay migrated.
+  //
+  // The list is the core node types the archive actually pins, written out rather than read
+  // off `CORE_ONTOLOGY`: a list derived from the vocabulary it is checking would accept
+  // whatever the vocabulary grew and assert nothing. `manager-loop` is on it because a
+  // blueprint pins a card declaring it, not because the ontology offers it.
   //
   // `phases` is checked entry by entry rather than for presence: the author's ruling makes
   // the five phases a description of the factory, not of every node in it, so an intake or
   // a retrieval strand declaring none is a complete answer and `[]` is asserted as legal.
   // What must never drift is an entry *outside* the five, or a namespaced one (doc 3 §7
   // keeps the dimension closed), or the same phase written twice.
-  it("resolves every node against ontology v0.1 — five phases, six types, a real spec", () => {
+  it("resolves every node against ontology v0.1 — five phases, the pinned types, a real spec", () => {
     const PHASES = ["planning", "implementation", "testing", "debugging", "deployment"];
-    const TYPES = ["agent", "tool", "human-gate", "human-input", "decision", "validation"];
+    const TYPES = ["agent", "tool", "human-gate", "human-input", "decision", "validation", "manager-loop"];
     for (const bundle of loaded) {
       for (const node of bundle.blueprint.nodes) {
         const phases = node.card.phases;

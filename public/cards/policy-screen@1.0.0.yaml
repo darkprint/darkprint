@@ -1,0 +1,48 @@
+id: policy-screen
+name: Policy Screen
+type: tool
+
+action: >-
+  Put the screened message past the external content policy service and act on what it says.
+spec: >-
+  Send the message to the configured moderation endpoint and read the verdict back. When the
+  service clears it, emit the message on `cleared` unchanged and set your preferred label to
+  `cleared`. When the service flags it, emit the categories it returned on `flagged` and set your
+  preferred label to anything else. When the service is unreachable, times out, or returns
+  something you cannot parse, treat that as flagged rather than as cleared, and say on `flagged`
+  that the screen did not run: an unavailable check is not a passed check. Send only the message
+  itself, no account identifier and no run metadata. Do not form your own opinion about the
+  content and do not overrule the verdict in either direction.
+agent: Policy screen
+tools:
+  - http-fetch
+mcp:
+  - moderation
+params:
+  timeout_ms: 2000
+  fail_closed: true
+
+inputs:
+  - name: clean
+    type: text
+    description: The screened message, as the sanitiser passed it on.
+outputs:
+  - name: cleared
+    type: text
+    description: The message unchanged, cleared by the external service.
+  - name: flagged
+    type: status
+    description: The categories the service returned, or the reason the screen could not run.
+dependencies:
+  - input-sanitizer
+cannot: []
+will_not:
+  - treat an unreachable service as a pass
+  - overrule the verdict it is given
+  - send account identifiers or run metadata to the service
+
+risk_markers:
+  - unvalidated-external-access
+
+version: 1.0.0
+author: autogen

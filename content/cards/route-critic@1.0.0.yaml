@@ -1,0 +1,51 @@
+id: route-critic
+name: Route Critic
+type: validation
+phase: testing
+
+action: >-
+  Grade the answer, and separately record whether the lane it came from was the right one.
+spec: >-
+  You are handed an answer. Decide whether it actually answers the question it was given: whether
+  it is correct as far as you can tell, whether it is complete, and whether anything in it is
+  asserted with more confidence than the working supports. When it holds, emit it unchanged on
+  `accepted`, emit nothing on `rework`, and set your preferred label to `accepted`. When it does
+  not, emit nothing on `accepted`, write on `rework` what is wrong and what a second attempt
+  should do differently, and set your preferred label to anything else. Either way, say in one
+  sentence on `rework` or `accepted` whether the lane that produced this answer was the right one
+  for the question: a simple question answered by the expensive lane and a hard one answered by
+  the fast lane are both routing faults, and they are the signal that the router's thresholds want
+  moving. Do not rewrite the answer yourself.
+agent: Critic
+tools: []
+mcp: []
+params:
+  max_retries: 1
+
+inputs:
+  - name: answer
+    type: markdown
+    description: The answer from whichever lane ran, with no indication of which one that was beyond its content.
+outputs:
+  - name: accepted
+    type: markdown
+    description: The answer passed through untouched because it held.
+  - name: rework
+    type: report
+    description: What was wrong and what a second pass should do, plus the verdict on the routing.
+dependencies:
+  - flash-answerer
+  - deep-reasoner
+cannot: []
+will_not:
+  - rewrite the answer it judges
+  - send a rejected answer back to the lane that produced it
+
+risk_markers: []
+notes: >-
+  Both exits are guarded on `preferred_label`, because this node completes whichever way it grades
+  and `outcome` would read the same on both arms. `max_retries` is 1: a second rejection means the
+  question is harder than this graph, not that a third attempt will land.
+
+version: 1.0.0
+author: autogen

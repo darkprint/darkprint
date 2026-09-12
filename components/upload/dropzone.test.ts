@@ -66,7 +66,15 @@ describe("the wizard, given a downloaded bundle", () => {
     expect(parts.cards).toHaveLength(7);
     expect(parts.vocabulary?.name).toBe("ontology/extensions.yaml");
     expect(parts.vocabularyProblem).toBeUndefined();
-    expect(parts.terms.map((term) => term.id)).toEqual(["lupo/pii-handling"]);
+    expect(parts.terms.map((term) => term.id)).toEqual([
+      // The whole overlay, not the subset this bundle uses: `exportBundle` writes
+      // `vocabulary.text` verbatim so a reader's terms are the ones the site scored.
+      "lupo/pii-handling",
+      "autogen/untrusted-text",
+      "autogen/prompt-injection",
+      "autogen/budget-overrun",
+      "autogen/unverified-delegation",
+    ]);
     // One file in the folder is deliberately not read, and it says why rather than
     // reading as a rejection: `README.md` addresses a person, not the engine. Owner
     // instruction, 2026-08-25: a fresh download no longer carries `factory.dot` or
@@ -124,7 +132,15 @@ describe("the wizard, given a downloaded bundle", () => {
       { name: "other/extensions.yaml", text: 'version: "9.9.9"\nterms: []\n' },
     ]);
     expect(parts.vocabulary?.name).toBe("ontology/extensions.yaml");
-    expect(parts.terms.map((term) => term.id)).toEqual(["lupo/pii-handling"]);
+    expect(parts.terms.map((term) => term.id)).toEqual([
+      // The whole overlay, not the subset this bundle uses: `exportBundle` writes
+      // `vocabulary.text` verbatim so a reader's terms are the ones the site scored.
+      "lupo/pii-handling",
+      "autogen/untrusted-text",
+      "autogen/prompt-injection",
+      "autogen/budget-overrun",
+      "autogen/unverified-delegation",
+    ]);
     expect(
       parts.roles.find((entry) => entry.file.name === "other/extensions.yaml")?.role,
     ).toBe("ignored");

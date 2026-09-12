@@ -1,0 +1,45 @@
+id: hypothesis-evolver
+name: Hypothesis Evolver
+type: agent
+phase: debugging
+
+action: >-
+  Take the reviewer's notes and produce stronger versions of what was sent back, without knowing
+  what the bar says.
+spec: >-
+  You are handed notes on hypotheses that did not clear the bar. For each one, produce a stronger
+  version that addresses exactly what the note names: sharpen the claim, supply the reasoning the
+  note says is missing, or replace it with a nearby hypothesis that does not have the flaw. Emit
+  the result on `evolved` in the same shape the generator uses, so the reviewer grades it the same
+  way. Do not carry a hypothesis through unchanged because you disagree with the note. Do not try
+  to work out the conditions from the notes, treat each note as the whole of what is being asked.
+  Where a note is too vague to act on, make the smallest defensible strengthening rather than
+  rewriting the hypothesis into a different one.
+agent: Evolver
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: notes
+    type: report
+    description: The reviewer's account of what fell short, which is all this node is told about the grading.
+outputs:
+  - name: evolved
+    type: json
+    description: Stronger versions of the sent-back hypotheses, shaped for another pass at review.
+dependencies:
+  - hypothesis-reviewer
+cannot:
+  - acceptance-criteria
+will_not:
+  - pass a hypothesis through unchanged
+  - reconstruct the conditions from the notes it is given
+
+risk_markers: []
+notes: >-
+  The second writing node to refuse `acceptance-criteria`. It sits inside the loop, which is the
+  one place the rubric could plausibly be wired back in as notes.
+
+version: 1.0.0
+author: autogen

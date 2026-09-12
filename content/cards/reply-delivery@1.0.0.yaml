@@ -1,0 +1,42 @@
+id: reply-delivery
+name: Reply Delivery
+type: tool
+phase: deployment
+
+action: >-
+  Send the reply that was cleared, or the one a reviewer released, and record that it went.
+spec: >-
+  Take what arrives on `clean_reply` and send it to the requester exactly as you received it. It
+  reached you one of two ways, cleared by the filter or released by a reviewer, and it is sent the
+  same way in both cases: do not annotate a reviewed reply as reviewed, and do not add a note about
+  the delay. Emit a receipt on `receipt` saying what was sent and when. Send nothing that did not
+  arrive on that port, and do not resend on your own initiative if the first attempt failed, say so
+  on the receipt instead.
+agent: Delivery
+tools:
+  - messaging
+mcp:
+  - slack
+params: {}
+
+inputs:
+  - name: clean_reply
+    type: markdown
+    description: The reply the filter cleared, or the one the reviewer released.
+outputs:
+  - name: receipt
+    type: status
+    description: What was sent and when, or the reason nothing was.
+dependencies:
+  - output-filter
+  - reviewer-gate
+cannot: []
+will_not:
+  - edit a reply that has already been cleared
+  - resend on its own initiative after a failure
+
+risk_markers:
+  - irreversible-action
+
+version: 1.0.0
+author: autogen

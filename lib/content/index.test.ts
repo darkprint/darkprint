@@ -19,17 +19,25 @@ import {
 
 const SLUGS = [
   "adversarial-consensus-line",
+  "budget-aware-router",
   "checkpoint-resume-runner",
+  "delegation-broker",
   "frontline-triage",
   "grounded-research-desk",
+  "guarded-assistant-line",
   "guarded-merge-bot",
+  // One of the four bundles that give doc 3 §4.1's `criteria-leak` check something to
+  // anchor on, through `review-rubric`. The others are `objective-tracker`
+  // (`metric-setter`), `producer-critic-refinery` (`rubric-author`) and
+  // `starter-software-factory` (`spec-planner`, doc 2 §5.2's canonical factory); those
+  // four cards are the only ones declaring an `acceptance-criteria` output port.
+  "hypothesis-tournament",
   "incident-commander",
   "nightly-data-janitor",
+  "objective-tracker",
   "pipeline-observability",
+  "producer-critic-refinery",
   "schema-forge-etl",
-  // Doc 2 §5.2's canonical factory, and the only bundle in the archive that gives doc 3
-  // §4.1's `criteria-leak` check something to anchor on: `spec-planner` is the one card
-  // declaring an `acceptance-criteria` output port.
   "starter-software-factory",
 ];
 
@@ -45,7 +53,7 @@ const METRIC_ORDER: MetricKey[] = [
 const blueprints = allBlueprints();
 
 describe("allBlueprints", () => {
-  it("resolves all ten, sorted by slug", () => {
+  it("resolves every one, sorted by slug", () => {
     expect(blueprints.map((b) => b.slug)).toEqual(SLUGS);
   });
 
@@ -88,22 +96,48 @@ describe("allBlueprints", () => {
       "warning analysis/criteria-leak-unanchored",
       "warning analysis/criteria-out-of-band",
     ],
+    // `budget` and `critic` judge the router's arms and no node types a criteria port: the
+    // bar a cheap answer has to clear lives with the caller, not in this graph.
+    "budget-aware-router": ["warning analysis/criteria-leak-unanchored"],
     "checkpoint-resume-runner": [
       "warning analysis/criteria-leak-unanchored",
       "warning analysis/criteria-out-of-band",
     ],
+    // `verify` judges work done by an agent this bundle cannot resolve, so the criteria the
+    // delegate worked to are outside the graph by construction.
+    "delegation-broker": ["warning analysis/criteria-leak-unanchored"],
     "frontline-triage": ["warning analysis/criteria-leak-unanchored"],
     "grounded-research-desk": ["warning analysis/criteria-leak-unanchored"],
+    // `filter` and `sanitize` judge the assistant and the inbound text against a screening
+    // bar no node publishes as a port.
+    "guarded-assistant-line": ["warning analysis/criteria-leak-unanchored"],
     "guarded-merge-bot": ["warning analysis/criteria-leak-unanchored"],
+    // `review-rubric` types its criteria port, so the check runs and stops at `review`,
+    // once for each judged node downstream of it: `cluster`, `evolve` and `meta`.
+    "hypothesis-tournament": [
+      "warning analysis/criteria-relayed-through-judge",
+      "warning analysis/criteria-relayed-through-judge",
+      "warning analysis/criteria-relayed-through-judge",
+    ],
     "incident-commander": ["warning analysis/criteria-leak-unanchored"],
     "nightly-data-janitor": ["warning analysis/criteria-leak-unanchored"],
+    // `metric-setter` types its criteria port, and `monitor` relays to `correct`,
+    // `escalate` and `execute`.
+    "objective-tracker": [
+      "warning analysis/criteria-relayed-through-judge",
+      "warning analysis/criteria-relayed-through-judge",
+      "warning analysis/criteria-relayed-through-judge",
+    ],
     // `gate` judges `summariser` and no node types a criteria port: the observability line
     // sits on top of a pipeline somebody else wrote, so the criteria live in that graph.
     "pipeline-observability": ["warning analysis/criteria-leak-unanchored"],
+    // The rubric is `rubric-author`'s output and `critique` is the only node holding both
+    // it and the draft, so the check runs and names the one channel on to `revise`.
+    "producer-critic-refinery": ["warning analysis/criteria-relayed-through-judge"],
     "schema-forge-etl": ["warning analysis/criteria-leak-unanchored"],
-    // Doc 2 §5.2's canonical factory, and the only bundle where the check runs end to
-    // end: `spec-planner` types its `criteria` port, `planner -> builder` is absent, and
-    // the marker verdict is a real clean rather than a silence.
+    // Doc 2 §5.2's canonical factory, and one of the four bundles where the check runs
+    // rather than going quiet: `spec-planner` types its `criteria` port, `planner ->
+    // builder` is absent, and the marker verdict is a real clean rather than a silence.
     //
     // The one warning is doc 2 §5.5's repair loop, and it is not a defect in this
     // blueprint. The criteria reach `tester`; `tester -> debugger` carries what the run
@@ -289,15 +323,14 @@ describe("the React Flow seeds", () => {
     // They are the "deliberate losses" `lib/graph-seed.ts` records, and this is the assertion
     // that keeps them out of the archive.
     //
-    // `human-input` is off the list for a different reason: it is reachable — doc 3 §3's
-    // `human-input` type draws as it — but no card in the archive declares that type
-    // today, so no blueprint here produces one. It goes on the list the moment one does.
+    // `human-input` is ON the list: doc 3 §3's `human-input` type draws as it, and
+    // `goal-setter` declares that type, so a blueprint here produces one.
     //
     // `start` is NOT one of them, though it was while this file was written. Like `ship` it
     // comes from the topology rather than the type: `placeTool` reads a tool-family node's
     // position, and a node with nothing upstream is the intake the run starts from. Pinned
     // directly in `view.test.ts`.
-    const REACHABLE = new Set(["start", "executor", "verifier", "router", "gate", "tool", "ship"]);
+    const REACHABLE = new Set(["start", "executor", "verifier", "router", "gate", "tool", "ship", "human-input"]);
     for (const bp of blueprints) {
       for (const node of bp.graph.nodes) {
         expect([bp.slug, node.id, REACHABLE.has(node.kind)]).toEqual([bp.slug, node.id, true]);

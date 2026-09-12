@@ -1,0 +1,36 @@
+digraph objective_tracker {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  goal     [card="goal-setter@1.0.0"];
+  metric   [card="metric-setter@1.0.0"];
+  plan     [card="work-planner@1.0.0"];
+  execute  [card="objective-executor@1.0.0"];
+  monitor  [card="progress-monitor@1.0.0"];
+  correct  [card="course-corrector@1.0.0"];
+  escalate [card="owner-escalation@1.0.0"];
+  deliver  [card="outcome-delivery@1.0.0"];
+
+  // Two roots that do not meet. The edge this graph does not have is `metric -> plan`,
+  // and it does not have `metric -> execute` either. Both writing nodes refuse
+  // `acceptance-criteria`, so neither absence rests on anyone remembering it.
+  goal -> plan      [label="objective", out="objective", in="objective"];
+  metric -> monitor [label="success metric", out="success_metric", in="success_metric"];
+
+  plan -> execute    [label="steps", out="steps", in="steps"];
+  execute -> monitor [label="progress", out="progress", in="progress"];
+
+  // The monitor completes whichever way it reads the run, so both arms read
+  // `preferred_label`. The negation arm is `correct`: a monitor that writes no label at
+  // all must not be able to declare an objective met.
+  monitor -> deliver [label="on track", out="on_track", in="on_track", condition="preferred_label=on-track"];
+  monitor -> correct [label="drift", style=dashed, out="drift", in="drift", condition="preferred_label!=on-track"];
+
+  // The corrector either re-plans the work or says it cannot. Its negation arm is another
+  // pass at execution, which the monitor will catch again; the loop is bounded by
+  // `max_retries` on the corrector, and giving up goes to a person rather than to delivery.
+  correct -> escalate [label="blocked", style=dashed, out="stuck", in="verdict", condition="preferred_label=blocked"];
+  correct -> execute  [label="revised steps", out="revised_steps", in="steps", condition="preferred_label!=blocked"];
+
+  escalate -> execute [label="resumed by owner", out="resumed", in="steps"];
+}

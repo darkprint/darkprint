@@ -1,0 +1,41 @@
+id: work-planner
+name: Work Planner
+type: agent
+phase: planning
+
+action: >-
+  Turn the objective into an ordered set of steps, without knowing how the result will be measured.
+spec: >-
+  Read the objective and write the steps that would achieve it, in the order they have to happen.
+  Each step names one action and what it needs from the steps before it. Do not order a step before
+  one it depends on, and do not write a step whose completion nobody could check. Where the
+  objective is ambiguous, choose the reading that does least and say in the step which reading you
+  took, rather than planning for both. Do not write any of the work itself. You do not have the
+  conditions this run will be judged against and must not guess at them: a plan written toward a
+  guessed measure is worse than one written toward the objective, because it looks like it was
+  written toward the objective.
+agent: Planner
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: objective
+    type: plan
+    description: The objective in the owner's terms, with its scope and exclusions.
+outputs:
+  - name: steps
+    type: plan
+    description: The ordered steps, each naming its action and what it depends on.
+dependencies:
+  - goal-setter
+cannot:
+  - acceptance-criteria
+will_not:
+  - write any of the work it plans
+  - guess at the conditions the run will be judged against
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

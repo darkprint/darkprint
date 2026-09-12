@@ -1,0 +1,32 @@
+slug: delegation-broker
+title: Delegation Broker
+summary: >-
+  Find an outside agent that can do the work, hand it over, and check what comes back as if it came
+  from nowhere, because as far as this graph can tell it did.
+description: |-
+  A delegation node is where a blueprint stops being able to see. Everything past `delegate`
+  happens in a topology this resolver cannot read, run by cards it cannot check, and the result
+  arrives as an assertion rather than as something observed.
+
+  So `verify` is not decoration on the end of the line. It is the only node that can re-establish
+  anything about work the graph did not watch, and its rejection arm goes to the local solver
+  rather than back out to the remote agent: an outside agent that returned the wrong thing once
+  is not obviously the right place to ask twice.
+
+  `discover` reaches the network for agent descriptions, which is unvalidated external access by
+  construction. The fix is the one the diagnostic itself names: a node between the fetch and
+  anything that acts on it. `match` is that node.
+
+  The fork's negation arm is the local solver. A run that resolved no remote agent does the work
+  here rather than delegating into the void.
+
+  This blueprint was generated automatically as an example for the registry.
+category: Coordination
+tags:
+  - delegation
+  - discovery
+  - verification
+  - interoperability
+author: autogen
+createdAt: "2026-09-11"
+updatedAt: "2026-09-11"

@@ -1,0 +1,42 @@
+digraph hypothesis_tournament {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  question   [card="question-intake@1.0.0"];
+  supervisor [card="research-supervisor@1.0.0"];
+  generate   [card="hypothesis-generator@1.0.0"];
+  rubric     [card="review-rubric@1.0.0"];
+  review     [card="hypothesis-reviewer@1.0.0"];
+  rank       [card="elo-tournament@1.0.0"];
+  evolve     [card="hypothesis-evolver@1.0.0"];
+  cluster    [card="proximity-clusterer@1.0.0"];
+  meta       [card="meta-reviewer@1.0.0"];
+  safety     [card="hypothesis-safety-screen@1.0.0"];
+  deliver    [card="research-report-delivery@1.0.0"];
+
+  question -> supervisor [label="question", out="question", in="question"];
+  supervisor -> generate [label="agenda", out="agenda", in="agenda"];
+
+  // `rubric` is a second root and reaches exactly one node. The edge this graph does not
+  // have is `rubric -> generate`, and it does not have `rubric -> evolve` either: both
+  // writing nodes declare `cannot: [acceptance-criteria]`, so neither absence depends on
+  // anyone remembering why it is there.
+  rubric -> review [label="rubric", out="rubric", in="rubric"];
+
+  generate -> review [label="hypotheses", out="hypotheses", in="hypotheses"];
+
+  // The reviewer completes whichever way it grades, so both arms read `preferred_label`.
+  // The negation arm is `evolve`, which sends a hypothesis round again rather than
+  // admitting it: a reviewer that writes no label costs a round, not a bad admission.
+  review -> rank   [label="admitted", out="reviewed", in="reviewed", condition="preferred_label=admitted"];
+  review -> evolve [label="sent back", style=dashed, out="rejected", in="notes", condition="preferred_label!=admitted"];
+  evolve -> review [label="evolved", out="evolved", in="hypotheses"];
+
+  rank -> cluster [label="ranked", out="ranked", in="ranked"];
+  cluster -> meta [label="clusters", out="clustered", in="clustered"];
+  meta -> safety  [label="synthesis", out="synthesis", in="synthesis"];
+
+  // The screen genuinely fails when it refuses, so this guard reads `outcome` and a
+  // refused synthesis has no path onward at all.
+  safety -> deliver [label="cleared", out="cleared", in="cleared", condition="outcome=success"];
+}

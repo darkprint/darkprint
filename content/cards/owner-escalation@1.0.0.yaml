@@ -1,0 +1,44 @@
+id: owner-escalation
+name: Owner Escalation
+type: human-gate
+
+action: >-
+  Put a blocked run in front of the owner and let nothing continue that they have not restarted.
+spec: >-
+  The run reached you because it could not be corrected from inside the graph. Assemble the case
+  for the owner: what was blocking it, what had been done up to that point, and what the corrector
+  tried. Put the configured deadline on it, notify the owner, and wait. Decide nothing yourself and
+  do not propose a resolution, the owner set the objective and only they can change it or accept
+  that it will not be met. When they hand back a revised set of steps, emit exactly those on
+  `resumed`. When they end the run, emit the closed case on `closed` and emit nothing on `resumed`.
+  A deadline passing is not a decision.
+tools:
+  - human-review
+  - messaging
+mcp:
+  - slack
+params:
+  sla_minutes: 60
+
+inputs:
+  - name: verdict
+    type: status
+    description: What the corrector says is blocking the run.
+outputs:
+  - name: resumed
+    type: plan
+    description: The steps the owner handed back, exactly as they gave them.
+  - name: closed
+    type: json
+    description: The closed case, when the owner ended the run instead.
+dependencies:
+  - course-corrector
+cannot: []
+will_not:
+  - propose a resolution to the owner
+  - treat a passed deadline as a decision
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

@@ -1,0 +1,41 @@
+id: research-report-delivery
+name: Research Report Delivery
+type: tool
+phase: deployment
+
+action: >-
+  Publish the cleared synthesis as it stands, and record that it went.
+spec: >-
+  Take the synthesis on `cleared` and publish it to the destination the run was configured with,
+  unchanged. Do not add a summary above it, do not drop the parts about where the field was thin
+  or where its agreement was suspect, and do not reorder it to lead with the strongest finding,
+  those caveats are the part a reader most needs and the part most easily lost in delivery. Emit a
+  receipt on `receipt` naming what was published and when. Publish nothing that did not arrive on
+  `cleared`.
+agent: Publisher
+tools:
+  - file-io
+mcp:
+  - filesystem
+params: {}
+
+inputs:
+  - name: cleared
+    type: report
+    description: The synthesis the safety screen let through.
+outputs:
+  - name: receipt
+    type: status
+    description: What was published and when, or the reason nothing was.
+dependencies:
+  - hypothesis-safety-screen
+cannot: []
+will_not:
+  - drop the caveats from a synthesis it publishes
+  - publish anything that did not arrive on the cleared port
+
+risk_markers:
+  - irreversible-action
+
+version: 1.0.0
+author: autogen

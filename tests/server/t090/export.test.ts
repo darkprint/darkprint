@@ -132,11 +132,11 @@ describe("AC1 — the file list equals what public/bundles/<slug>/ holds today, 
     }, 60_000);
   }
 
-  it("covers all ten bundles the archive ships", () => {
+  it("covers every bundle the archive ships", () => {
     /* A guard on the loop above rather than on the implementation. If `public/bundles/` ever held
        three directories the ten `it`s would silently become three and AC1 would report green
        over a third of its domain — "the reachable set is the coverage claim". */
-    expect(shippedSlugs().length).toBe(10);
+    expect(shippedSlugs().length).toBe(16);
     expect(archive().map((entry) => entry.slug).sort()).toEqual([...shippedSlugs()]);
   });
 });

@@ -1,0 +1,44 @@
+id: hypothesis-safety-screen
+name: Hypothesis Safety Screen
+type: validation
+phase: testing
+
+action: >-
+  Read the synthesis about to leave the graph and refuse it outright if any part of it should not.
+spec: >-
+  Read the whole synthesis, not one hypothesis at a time: the thing being released is the
+  synthesis, and a set of individually unremarkable claims can be a problem in combination. Refuse
+  when any part of it gives operational detail that would cause harm if followed, when it directs
+  work at a target that cannot consent, or when it presents an untested proposal in language that
+  would read as established. Refusing means failing: do not emit a redacted version on `cleared`,
+  because a partially released synthesis is the one outcome nobody downstream can interpret. When
+  nothing in it warrants refusal, emit it on `cleared` exactly as you received it. Say what you
+  refused and why in the failure, so a person can act on it. Do not soften a finding to let it
+  through.
+agent: Safety screen
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: synthesis
+    type: report
+    description: The synthesis about to be released, in full.
+outputs:
+  - name: cleared
+    type: report
+    description: The synthesis passed through untouched because nothing in it warranted refusal.
+dependencies:
+  - meta-reviewer
+cannot: []
+will_not:
+  - emit a redacted version instead of refusing
+  - soften a finding to let it through
+
+risk_markers: []
+notes: >-
+  A single exit guarded on `outcome`. This node genuinely fails when it refuses, which is what
+  leaves a refused synthesis with no path onward.
+
+version: 1.0.0
+author: autogen

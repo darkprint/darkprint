@@ -1,0 +1,42 @@
+id: flash-answerer
+name: Flash Answerer
+type: agent
+phase: implementation
+
+action: >-
+  Answer a question that was judged simple, in one pass, and stop.
+spec: >-
+  Answer the question in front of you directly and briefly. One pass: do not open a line of
+  reasoning you then have to close, do not enumerate alternatives you are going to discard, and do
+  not pad the answer to look thorough. If the question turns out to need more than a couple of
+  steps held together, say so plainly in the answer rather than attempting it badly, because a
+  wrong answer produced cheaply costs more than the reroute would have. Emit the answer on
+  `answer` with nothing attached, no restatement of the question and no note about how you
+  arrived at it.
+model: claude-haiku-4-5
+agent: Answerer
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: question
+    type: text
+    description: The question the router put in the simple lane.
+outputs:
+  - name: answer
+    type: markdown
+    description: A short direct answer, with nothing attached to it.
+dependencies:
+  - complexity-router
+cannot: []
+will_not:
+  - attempt work it has already judged too large for one pass
+
+risk_markers: []
+notes: >-
+  This card and `deep-reasoner` are deliberately the same card apart from `model`. Keeping every
+  other field identical is what makes a run on one comparable with a run on the other.
+
+version: 1.0.0
+author: autogen

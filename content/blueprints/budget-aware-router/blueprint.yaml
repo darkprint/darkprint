@@ -1,0 +1,29 @@
+slug: budget-aware-router
+title: Budget Aware Router
+summary: >-
+  Two answering nodes that differ in exactly one field, a router that decides which one runs, and a
+  critic that grades the route as well as the answer.
+description: |-
+  Most of the cost of an answering line is spent on questions that did not need the expensive
+  model. This graph puts that decision in a node of its own: `classify` writes a tier into the run
+  context, and the fork reads it.
+
+  `flash-answerer` and `deep-reasoner` are the same card twice over except for `model`. That is
+  deliberate: when two nodes differ in one field, the difference between two runs is attributable
+  to that field and nothing else, which is what makes a change to it measurable rather than a
+  matter of opinion.
+
+  The negation arm of the fork points at the capable model on purpose. A missing context key reads
+  back as the empty string, so a run where the classifier wrote nothing takes the `deep` arm: the
+  failure mode is an expensive answer rather than a bad one.
+
+  This blueprint was generated automatically as an example for the registry.
+category: Efficiency
+tags:
+  - routing
+  - cost
+  - critique
+  - operations
+author: autogen
+createdAt: "2026-09-11"
+updatedAt: "2026-09-11"

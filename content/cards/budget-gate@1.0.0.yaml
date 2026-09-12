@@ -1,0 +1,44 @@
+id: budget-gate
+name: Budget Gate
+type: validation
+phase: deployment
+
+action: >-
+  Let the answer through when the run is inside its spend cap, and fail outright when it is not.
+spec: >-
+  Read what this run has consumed so far against the cap the deployment configured. When the run
+  is inside the cap, emit the answer on `released` exactly as you received it and take no other
+  action. When it is not, do not emit on `released` at all: fail, and say in the failure what the
+  cap was and what the run spent. This node is the one place in the graph where refusing is a
+  failure rather than a verdict, and that distinction is deliberate, a blown cap is not a judgement
+  about the answer and must not be reported as one. Do not raise the cap, do not average it across
+  runs, and do not let a run through because it is only slightly over.
+agent: Budget gate
+tools: []
+mcp: []
+params:
+  max_run_cost_usd: 0.5
+
+inputs:
+  - name: accepted
+    type: markdown
+    description: The answer the critic cleared, unchanged since it cleared.
+outputs:
+  - name: released
+    type: markdown
+    description: The answer released because the run stayed inside its cap.
+dependencies:
+  - route-critic
+cannot: []
+will_not:
+  - raise the cap to let a run through
+  - alter the answer on the way past
+
+risk_markers: []
+notes: >-
+  A single exit, guarded on `outcome`. That is the correct key here and the wrong key almost
+  everywhere else in this bundle: this node genuinely fails when it refuses, so the two states are
+  distinguishable without a label.
+
+version: 1.0.0
+author: autogen

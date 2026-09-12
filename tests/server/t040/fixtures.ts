@@ -102,8 +102,8 @@ const BUNDLES_DIR = "public/bundles";
 const BLUEPRINTS_DIR = "content/blueprints";
 const EXTENSIONS_FILE = "ontology/extensions.yaml";
 
-/** The archive as it ships. Ten, and the count is asserted rather than assumed. */
-export const EXPECTED_BUNDLE_COUNT = 10;
+/** The archive as it ships, and the count is asserted rather than assumed. */
+export const EXPECTED_BUNDLE_COUNT = 16;
 
 /**
  * Every bundle's scorecard, read once.
@@ -201,7 +201,15 @@ export function archiveCases(): ArchiveCase[] {
   return cases;
 }
 
-/** The one bundle whose cards name a term only its own vocabulary defines. */
+/** Every bundle whose cards name a term only the overlay defines, sorted. */
+export const VOCABULARY_BUNDLES = [
+  "budget-aware-router",
+  "delegation-broker",
+  "frontline-triage",
+  "guarded-assistant-line",
+];
+
+/** The one of them the cells below drive, because `LOCAL_TERM` is the term it names. */
 export const VOCABULARY_BUNDLE = "frontline-triage";
 /** The local term those cards name. `card/unknown-term` quotes it when the vocabulary is absent. */
 export const LOCAL_TERM = "lupo/pii-handling";

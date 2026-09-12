@@ -1,0 +1,48 @@
+id: complexity-router
+name: Complexity Router
+type: decision
+
+action: >-
+  Decide whether the question in front of you needs the capable model or the fast one, and put that
+  decision where a downstream fork can read it.
+spec: >-
+  Read the question as it arrived and decide which of `simple` or `deep` describes the work it
+  needs. `simple` means the answer is a lookup, a restatement, a short factual recall or a single
+  step of arithmetic. `deep` means anything that needs more than one step held in mind at once,
+  a judgement between competing readings, or work whose first plausible answer is often wrong.
+  When you are not sure, say `deep`: the cost of the wrong call in that direction is money, and in
+  the other direction it is a wrong answer. Emit the question unchanged on `routed`, payload
+  untouched, and record the tier in your status file as well: put `tier` in `context_updates`, set
+  to the value you picked, so the fork downstream can branch on `context.tier`. A run that leaves
+  that key unwritten reads back as the empty string, and no tier name matches it.
+agent: Router
+tools: []
+mcp: []
+params:
+  tiers:
+    - simple
+    - deep
+  default_tier: deep
+
+inputs:
+  - name: question
+    type: text
+    description: The question as it arrived, unchanged.
+outputs:
+  - name: routed
+    type: text
+    description: The same question, passed on untouched for whichever lane takes it.
+dependencies:
+  - question-intake
+cannot: []
+will_not:
+  - change the question it routes
+  - answer the question itself
+
+risk_markers: []
+notes: >-
+  The tier is configuration written into the run context rather than a port, because a fork reads
+  context keys and a `decision` card writes no status distinction a guard could use instead.
+
+version: 1.0.0
+author: autogen

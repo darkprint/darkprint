@@ -1,0 +1,39 @@
+id: answer-delivery
+name: Answer Delivery
+type: tool
+phase: deployment
+
+action: >-
+  Return the released answer to whoever asked, and record that it went.
+spec: >-
+  Take the answer on `released` and return it to the caller the run was opened for, exactly as you
+  received it. Do not reformat it, do not prepend a summary, and do not attach a note about which
+  lane produced it, the caller asked a question and is owed an answer rather than an account of
+  the machinery. Emit a receipt on `receipt` saying what was returned and when. If delivery fails,
+  say so on the receipt rather than retrying on your own.
+agent: Delivery
+tools:
+  - messaging
+mcp: []
+params: {}
+
+inputs:
+  - name: released
+    type: markdown
+    description: The answer the budget gate let through.
+outputs:
+  - name: receipt
+    type: status
+    description: What was returned and when, or the reason nothing was.
+dependencies:
+  - budget-gate
+cannot: []
+will_not:
+  - alter the answer it returns
+  - report a failed delivery as a success
+
+risk_markers:
+  - irreversible-action
+
+version: 1.0.0
+author: autogen

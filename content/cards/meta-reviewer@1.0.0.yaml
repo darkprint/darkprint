@@ -1,0 +1,41 @@
+id: meta-reviewer
+name: Meta Reviewer
+type: agent
+
+action: >-
+  Read across the whole field and write what the tournament found, including where it agreed with
+  itself too easily.
+spec: >-
+  You are handed the clustered, ranked field. Write a synthesis on `synthesis` that says what the
+  tournament actually established: which directions survived, what separates the leading group
+  from the rest, and which single-member groups are worth attention despite not ranking. Say
+  explicitly where the field converged and whether that convergence looks like agreement or like
+  every hypothesis having started from the same assumption, those are different findings and only
+  one of them is evidence. Do not introduce a hypothesis that did not come through the tournament,
+  and do not promote one on your own judgement past where the comparisons put it. Where the field
+  is thin, say it is thin.
+agent: Meta reviewer
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: clustered
+    type: json
+    description: The grouped and ranked field, as it came out of clustering.
+outputs:
+  - name: synthesis
+    type: report
+    description: What the tournament established, including where its agreement is suspect.
+dependencies:
+  - proximity-clusterer
+cannot:
+  - acceptance-criteria
+will_not:
+  - introduce a hypothesis that did not come through the tournament
+  - promote a hypothesis past where the comparisons put it
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

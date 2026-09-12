@@ -1,0 +1,27 @@
+digraph producer_critic_refinery {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  rubric   [card="rubric-author@1.0.0"];
+  produce  [card="draft-producer@1.0.0"];
+  critique [card="draft-critic@1.0.0"];
+  revise   [card="draft-reviser@1.0.0"];
+  deliver  [card="draft-delivery@1.0.0"];
+
+  // Two roots, one judge. The edge this graph deliberately does not have is
+  // `rubric -> produce`: the criteria reach the node that grades the work and
+  // never the nodes that write it. Both writing nodes declare
+  // `cannot: [acceptance-criteria]`, so the absence is enforced and not merely drawn.
+  rubric  -> critique [label="rubric", out="rubric", in="rubric"];
+  produce -> critique [label="draft", out="draft", in="draft"];
+
+  // `critique` succeeds whichever way it grades: a rejection is a completed review,
+  // not a failed node, so `outcome` cannot separate these two arms and
+  // `preferred_label` is the only key that can. The negation arm is another revision
+  // pass, so a critic that writes no label at all costs one iteration rather than
+  // shipping an ungraded draft. `params.max_retries` on the critic bounds the loop.
+  critique -> revise  [label="critique notes", style=dashed, out="feedback", in="feedback", condition="preferred_label!=approved"];
+  revise   -> critique [label="revised draft", out="revised", in="draft"];
+
+  critique -> deliver [label="approved draft", out="approved", in="approved", condition="preferred_label=approved"];
+}

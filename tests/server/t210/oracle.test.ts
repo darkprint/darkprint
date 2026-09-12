@@ -44,6 +44,19 @@ import { getRegistry } from "@/lib/content";
 import { anonymous, dropScratchDatabases, seededWorld } from "./fixtures";
 import { assertCandidate, assertUsage, bind } from "./contract";
 
+/* The overlay's term ids, sorted, as literals: a list read off `content/ontology/extensions.yaml`
+   would move with the file it is checking and assert nothing about what the corpus holds. */
+const OVERLAY_TERMS = [
+  "autogen/budget-overrun",
+  "autogen/prompt-injection",
+  "autogen/untrusted-text",
+  "autogen/unverified-delegation",
+  "lupo/pii-handling",
+];
+
+/* `autogen/untrusted-text` counts 2 cards and not the 3 that name it: `constrained-assistant`
+   names it under `cannot`, and refusing a type is not using one. */
+
 afterAll(async () => {
   await dropScratchDatabases();
 });
@@ -81,9 +94,9 @@ describe("the seeded archive, against the shipped component", () => {
     /* Numbers as literals, deliberately. A bound imported from the thing it bounds moves with
        it and asserts nothing, and `public/bundles/` losing directories must not silently shrink
        this file's domain to a fraction of the archive — the failure T090's suite recorded. */
-    expect(all.length).toBe(61);
-    expect(ids.size).toBe(57);
-    expect(registry.blueprints().length).toBe(10);
+    expect(all.length).toBe(103);
+    expect(ids.size).toBe(99);
+    expect(registry.blueprints().length).toBe(16);
   });
 
   it("`usage()` and the component agree on every term either of them counts", async () => {
@@ -114,20 +127,22 @@ describe("the seeded archive, against the shipped component", () => {
     expect(disagreements).toEqual({});
   });
 
-  it("the archive's one local term is counted, and is the only namespaced id in the corpus", async () => {
+  it("every local term is counted, and they are the only namespaced ids in the corpus", async () => {
     const theirs = componentIndex();
     const namespaced = [...theirs.keys()].filter((id) => id.includes("/")).sort();
-    /* `lupo/pii-handling` is the archive's sole overlay term (D-250-06). Asserted here because
-       it is the thing that makes the seeded corpus interesting to AC5 at all — and because
-       D-210-08 measured its counts (2 cards, 1 blueprint, 1 author) clearing NEITHER threshold,
-       which is why the seed's candidate list is empty and why every AC5 cell is synthetic. */
-    expect(namespaced).toEqual(["lupo/pii-handling"]);
-    const usage = theirs.get("lupo/pii-handling");
-    expect(usage).toBeDefined();
-    expect(usage!.cards).toBeGreaterThan(0);
+    /* The overlay's terms, and nothing else namespaced (D-250-06). Asserted here because they
+       are what makes the seeded corpus interesting to AC5 at all — and because none of them
+       clears either threshold, which is why the seed's candidate list is empty and why every
+       AC5 cell is synthetic. */
+    expect(namespaced).toEqual(OVERLAY_TERMS);
+    for (const id of OVERLAY_TERMS) {
+      const usage = theirs.get(id);
+      expect(usage, id).toBeDefined();
+      expect(usage!.cards, id).toBeGreaterThan(0);
+    }
   });
 
-  it("`candidates()` over the seeded archive is ONE INELIGIBLE local term, not an empty list", async () => {
+  it("`candidates()` over the seeded archive is every INELIGIBLE local term, not an empty list", async () => {
     const { scratch } = await seededWorld();
     const candidates = await bind("candidates");
     const list = await candidates(scratch.db, anonymous);
@@ -151,15 +166,14 @@ describe("the seeded archive, against the shipped component", () => {
        itself. */
     expect(Array.isArray(list)).toBe(true);
     const rows = (list as unknown[]).map((row, i) => assertCandidate(row, `candidates()[${i}]`));
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toEqual({
-      termId: "lupo/pii-handling",
-      cards: 2,
-      blueprints: 1,
-      authors: 1,
-      meetsAuthors: false,
-      meetsBlueprints: false,
-    });
+    expect(rows).toHaveLength(OVERLAY_TERMS.length);
+    expect([...rows].sort((a, b) => (a.termId < b.termId ? -1 : 1))).toEqual([
+      { termId: "autogen/budget-overrun", cards: 1, blueprints: 1, authors: 1, meetsAuthors: false, meetsBlueprints: false },
+      { termId: "autogen/prompt-injection", cards: 2, blueprints: 1, authors: 1, meetsAuthors: false, meetsBlueprints: false },
+      { termId: "autogen/untrusted-text", cards: 2, blueprints: 1, authors: 1, meetsAuthors: false, meetsBlueprints: false },
+      { termId: "autogen/unverified-delegation", cards: 1, blueprints: 1, authors: 1, meetsAuthors: false, meetsBlueprints: false },
+      { termId: "lupo/pii-handling", cards: 2, blueprints: 1, authors: 1, meetsAuthors: false, meetsBlueprints: false },
+    ]);
     /* The eligible subset over the real archive IS empty, which is what D-210-08 was reaching
        for and is still true. Asserted as the derived quantity rather than as the list's length,
        so the two readings can never be confused again. */

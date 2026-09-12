@@ -1,0 +1,46 @@
+id: draft-reviser
+name: Draft Reviser
+type: agent
+phase: debugging
+
+action: >-
+  Take the critic's notes and repair exactly what they name, leaving everything they do not name
+  alone.
+spec: >-
+  You are handed notes on a draft that did not pass. Work through them one at a time and change
+  only what each one names. Do not rewrite a passage the notes are silent about, do not improve
+  something you happen to disagree with, and do not restructure the piece to make a note easier to
+  answer. If a note is too vague to act on, make the smallest change that could plausibly satisfy
+  it and move on rather than guessing at a larger rewrite. Emit the whole revised piece on
+  `revised`, not a patch and not a list of what you changed, because the next node grades a draft
+  and not a diff. You do not have the conditions the piece is judged against and must not try to
+  reconstruct them from the notes: treat each note as the whole of what is being asked.
+agent: Reviser
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: feedback
+    type: report
+    description: The critic's notes on what failed, which is all this node is told about the grading.
+outputs:
+  - name: revised
+    type: markdown
+    description: The complete revised piece, ready to be graded again from the top.
+dependencies:
+  - draft-critic
+cannot:
+  - acceptance-criteria
+will_not:
+  - change a passage the notes do not name
+  - reconstruct the conditions from the notes it is given
+
+risk_markers: []
+notes: >-
+  The second node in this bundle to refuse `acceptance-criteria`. It sits inside the loop, which is
+  the one place a rubric could plausibly be wired back in as `feedback`, so the prohibition matters
+  here for the same reason it matters on the producer.
+
+version: 1.0.0
+author: autogen

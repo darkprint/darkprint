@@ -40,3 +40,44 @@ terms:
     broader: isolation-breach
     defaultWeight: 0.5
     since: "0.1.0"
+
+  # guarded-assistant-line. A narrowing of `text`, and the reason that bundle can
+  # state its isolation as an enforced prohibition instead of as a topology someone
+  # has to keep intact. The resolver's test is reflexive and one-directional, so an
+  # edge carrying this type trips a `cannot` naming it while plain `text` does not.
+  - id: autogen/untrusted-text
+    kind: data-type
+    label: Untrusted text
+    description: Text that arrived from outside the system and has not yet been screened by a node in this graph.
+    broader: text
+    since: "0.1.0"
+
+  # guarded-assistant-line. The core set has no marker for text that carries
+  # instructions into a channel meant for content.
+  - id: autogen/prompt-injection
+    kind: risk-marker
+    label: Prompt injection
+    description: The node accepts text from outside that may carry instructions aimed at the model reading it.
+    broader: isolation-breach
+    defaultWeight: 1.5
+    since: "0.1.0"
+
+  # budget-aware-router. `execution-risk` is the right parent: an uncapped call is
+  # something the blueprint did not fix in advance.
+  - id: autogen/budget-overrun
+    kind: risk-marker
+    label: Budget overrun
+    description: The node consumes tokens, time or money without a cap the blueprint fixed in advance.
+    broader: execution-risk
+    defaultWeight: 0.5
+    since: "0.1.0"
+
+  # delegation-broker. Distinct from `unvalidated-external-access`, which is about
+  # reading something from outside; this is about handing work out.
+  - id: autogen/unverified-delegation
+    kind: risk-marker
+    label: Unverified delegation
+    description: The node hands work to an agent whose own topology and cards this blueprint cannot resolve.
+    broader: isolation-breach
+    defaultWeight: 1.0
+    since: "0.1.0"
