@@ -32,6 +32,18 @@ export interface CardVersionRecord {
   usedIn: string[];
 }
 
+/**
+ * A card published without a blueprint, as `buildRegistry` takes it.
+ *
+ * It carries its own digest because nothing resolved it: a pinned card's identity comes off
+ * the node that pins it, and this is the same shape for a card no node does.
+ */
+export interface LooseCard {
+  ref: CardRef;
+  card: NodeCard;
+  digest: string;
+}
+
 /** One blueprint as the index sees it: its searchable metadata and its pins. */
 export interface BlueprintRecord {
   slug: string;
@@ -156,11 +168,20 @@ function cmpCardRecords(a: CardVersionRecord, b: CardVersionRecord): number {
  * place. The `manifest` and `card` objects belong to the caller and are passed through as they
  * came, so the registry never edits its own input either.
  *
- * Only cards a DOT node actually instantiates are indexed. A card that sits in the bundle
- * unreferenced (`bundle/orphan-card`) has no digest and no user, so it has nothing to index;
- * `ResolvedBlueprint.cards` keeps it for the resolver's diagnostics, not for the registry.
+ * Two sources, and the order between them is load-bearing. Blueprints first, so a card a DOT
+ * node instantiates takes its identity from the node — `bundle/orphan-card`, a card sitting
+ * unreferenced INSIDE a bundle, still has no digest and no user and is still not indexed;
+ * `ResolvedBlueprint.cards` keeps it for the resolver's diagnostics. Then `loose`, the cards
+ * published on their own, each skipped if a blueprint already claimed its ref: a second
+ * opinion about a pinned card's digest is what §4's immutability forbids, so the standalone
+ * reading can never override the pinned one.
+ *
+ * A loose card's `usedIn` is empty, which is its true answer and not a missing one.
  */
-export function buildRegistry(blueprints: readonly ResolvedBlueprint[]): Registry {
+export function buildRegistry(
+  blueprints: readonly ResolvedBlueprint[],
+  loose: readonly LooseCard[] = [],
+): Registry {
   const drafts = new Map<CardRef, CardDraft>();
   const bySlug = new Map<string, BlueprintRecord>();
 
@@ -203,6 +224,20 @@ export function buildRegistry(blueprints: readonly ResolvedBlueprint[]): Registr
         cardRefs: frozen([...refs].sort(cmpString)),
       }),
     );
+  }
+
+  /* After the blueprint loop, never before it, and `has` rather than a blind `set`. */
+  for (const entry of loose) {
+    if (drafts.has(entry.ref)) continue;
+    const parsed = parseCardRef(entry.ref);
+    drafts.set(entry.ref, {
+      ref: entry.ref,
+      id: parsed?.id ?? entry.card.id,
+      version: parsed?.version ?? entry.card.version,
+      digest: entry.digest,
+      card: entry.card,
+      usedIn: new Set<string>(),
+    });
   }
 
   const cards = frozen(

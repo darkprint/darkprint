@@ -257,10 +257,13 @@ describe("the query surface, as an anonymous caller sees it", () => {
   });
 
   it("orders cards by id ascending then version descending", async () => {
+    /* `solver@2.0.0` leads its id: no release pins it, so it is a standalone version and the
+       order is still id ascending, version descending. */
     expect(refs(await cards(db, ANON))).toEqual([
       "intake@1.0.0",
       "mirror@1.1.0",
       "probe@1.0.0",
+      "solver@2.0.0",
       "solver@1.1.0",
       "solver@1.0.0",
     ]);
@@ -275,12 +278,16 @@ describe("the query surface, as an anonymous caller sees it", () => {
       "intake@1.0.0",
       "mirror@1.1.0",
       "probe@1.0.0",
-      "solver@1.1.0",
+      "solver@2.0.0",
     ]);
   });
 
   it("returns every version of one id, newest first", async () => {
-    expect(refs(await versionsOf(db, ANON, "solver"))).toEqual(["solver@1.1.0", "solver@1.0.0"]);
+    expect(refs(await versionsOf(db, ANON, "solver"))).toEqual([
+      "solver@2.0.0",
+      "solver@1.1.0",
+      "solver@1.0.0",
+    ]);
     expect(await versionsOf(db, ANON, "no-such-card")).toEqual([]);
   });
 
@@ -303,13 +310,16 @@ describe("the query surface, as an anonymous caller sees it", () => {
   });
 
   it("reports phases in lifecycle order, not alphabetically", async () => {
-    expect(await phases(db, ANON)).toEqual(["planning", "testing"]);
+    /* `debugging` is here because `solver@2.0.0` declares it and is indexed. Alphabetically it
+       would lead; in doc 3 §2's lifecycle it comes after testing, which is the point. */
+    expect(await phases(db, ANON)).toEqual(["planning", "testing", "debugging"]);
   });
 
   it("AC3: an undeclared phase is an empty list, and so is an arbitrary string", async () => {
-    // `debugging` is declared by `solver@2.0.0`, which nothing pins — so it is undeclared
-    // *by the index*, which is the only sense that matters here.
-    expect(await cardsByPhase(db, ANON, "debugging")).toEqual([]);
+    /* `debugging` is no longer the example: `solver@2.0.0` declares it and is indexed, so the
+       bucket is real. What stays empty is a phase the index has never seen — including the
+       empty string, which is a value and not an absence. */
+    expect(await cardsByPhase(db, ANON, "deployment")).toEqual([]);
     expect(await cardsByPhase(db, ANON, "not-a-phase-at-all")).toEqual([]);
     expect(await cardsByPhase(db, ANON, "")).toEqual([]);
   });
@@ -320,7 +330,7 @@ describe("the query surface, as an anonymous caller sees it", () => {
     const buckets = await Promise.all(declared.map((phase) => cardsByPhase(db, ANON, phase)));
     const summed = buckets.reduce((total, bucket) => total + bucket.length, 0);
 
-    // The inequality is the assertion, not a tolerance: 5 cards, 4 bucket seats.
+    // The inequality is the assertion, not a tolerance: 6 cards, 5 bucket seats.
     expect(summed).not.toBe(all.length);
 
     // One card in two buckets...
@@ -342,27 +352,47 @@ describe("the query surface, as an anonymous caller sees it", () => {
   });
 });
 
-describe("D-80-06: a version of a pinned id that nothing pins", () => {
-  it("is absent from every reader that lists or looks up a card", async () => {
-    expect(refs(await cards(db, ANON))).not.toContain("solver@2.0.0");
-    expect(refs(await versionsOf(db, ANON, "solver"))).toEqual(["solver@1.1.0", "solver@1.0.0"]);
-    expect(await card(db, ANON, "solver@2.0.0")).toBeUndefined();
-    expect(refs(await latestCards(db, ANON))).toContain("solver@1.1.0");
-    expect(refs(await latestCards(db, ANON))).not.toContain("solver@2.0.0");
+/**
+ * `solver@2.0.0` is a version of a pinned id that NO release names, which D-80-06 excluded and
+ * which is now a standalone card. What that ruling was built to stop is unchanged and is
+ * asserted in AC6 below: a card reachable only through a bundle somebody cannot see stays
+ * unreachable. The difference is between a row nothing has ever claimed and a row claimed by
+ * something the caller may not read, and only the first is published here.
+ */
+describe("a version of a pinned id that nothing pins", () => {
+  it("is present in every reader that lists or looks up a card", async () => {
+    expect(refs(await cards(db, ANON))).toContain("solver@2.0.0");
+    expect(refs(await versionsOf(db, ANON, "solver"))).toEqual([
+      "solver@2.0.0",
+      "solver@1.1.0",
+      "solver@1.0.0",
+    ]);
+    expect(await card(db, ANON, "solver@2.0.0")).toBeDefined();
+    /* `latestCards` takes the newest INDEXED version, and 2.0.0 is now one of them. */
+    expect(refs(await latestCards(db, ANON))).toContain("solver@2.0.0");
+    expect(refs(await latestCards(db, ANON))).not.toContain("solver@1.1.0");
   });
 
-  it("does not reach the derived indexes either", async () => {
-    expect(await phases(db, ANON)).not.toContain("debugging");
-    expect(await cardsByPhase(db, ANON, "debugging")).toEqual([]);
+  it("reaches the derived indexes, and is reachable through them", async () => {
+    expect(await phases(db, ANON)).toContain("debugging");
+    /* The phase is listed AND its bucket holds the card: a filter offering an empty bucket is
+       the defect this shape can still have. */
+    expect(refs(await cardsByPhase(db, ANON, "debugging"))).toEqual(["solver@2.0.0"]);
+    /* `usersOf` is unmoved. It answers which blueprints use an ID, and no blueprint gained
+       one by this version becoming visible. */
     expect(keys(await usersOf(db, ANON, "solver"))).toEqual(["alice/atlas", "bob/atlas"]);
   });
 
-  it("holds the invariant the leak violated: every indexed card has a user", async () => {
-    // The tell, and it is better than any single absence assertion: a record reaching the
-    // index without a pin carries `usedIn: []`, which the indexing rule makes impossible.
-    // Quantified over the whole index rather than over the one row this fixture plants.
-    for (const rec of await cards(db, ANON)) expect(rec.usedIn.length).toBeGreaterThan(0);
-    for (const rec of await cards(db, alice)) expect(rec.usedIn.length).toBeGreaterThan(0);
+  it("is the only indexed card with no user, and says so by name", async () => {
+    /* The invariant was "every indexed card has a user", and the leak it caught was a row
+       arriving without a pin. A standalone card arrives without a pin legitimately, so the
+       cell names the ones entitled to it instead of forbidding the shape: any OTHER ref with
+       an empty `usedIn` is the same leak, and still reds. Quantified over the whole index
+       rather than over the one row this fixture plants. */
+    const userless = (rows: readonly { ref: string; usedIn: readonly unknown[] }[]) =>
+      rows.filter((rec) => rec.usedIn.length === 0).map((rec) => rec.ref).sort();
+    expect(userless(await cards(db, ANON))).toEqual(["solver@2.0.0"]);
+    expect(userless(await cards(db, alice))).toEqual(["solver@2.0.0"]);
   });
 });
 
@@ -447,7 +477,7 @@ describe("the read API", () => {
     expect(keys(listed.blueprints)).toEqual(["alice/atlas", "bob/atlas"]);
 
     const carded = await (await getCards(url("/api/cards"))).json();
-    expect(refs(carded.cards)).toHaveLength(5);
+    expect(refs(carded.cards)).toHaveLength(6);
 
     const grouped = await (await getDuplicates(url("/api/cards/duplicates"))).json();
     expect(grouped.groups).toHaveLength(1);
@@ -455,6 +485,7 @@ describe("the read API", () => {
     expect((await (await getPhases(url("/api/ontology/phases"))).json()).phases).toEqual([
       "planning",
       "testing",
+      "debugging",
     ]);
     expect((await (await getTags(url("/api/ontology/tags"))).json()).tags).toEqual(["ops", "research"]);
     expect(

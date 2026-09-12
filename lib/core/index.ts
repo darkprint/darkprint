@@ -273,5 +273,5 @@ export { analyzeBlueprint, loadBundle } from "./analysis/analyze";
 /* --------------------- archive + index (doc 1 §5) --------------------- */
 export type { StoredObject, ContentStore } from "./archive/store";
 export { contentDigest, memoryContentStore } from "./archive/store";
-export type { CardVersionRecord, BlueprintRecord, Registry } from "./archive/registry";
+export type { CardVersionRecord, BlueprintRecord, LooseCard, Registry } from "./archive/registry";
 export { buildRegistry } from "./archive/registry";

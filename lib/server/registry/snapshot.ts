@@ -118,25 +118,10 @@ function contentKey(card: NodeCard, ref: CardRef): string {
   }
 }
 
-const EMPTY_CARDS: readonly CardSummary[] = frozen<CardSummary>([]);
-const EMPTY_BLUEPRINTS: readonly BlueprintSummary[] = frozen<BlueprintSummary>([]);
-
-const EMPTY_SNAPSHOT: RegistrySnapshot = {
-  blueprints: EMPTY_BLUEPRINTS,
-  byKey: new Map(),
-  releaseByKey: new Map(),
-  sourceByRef: new Map(),
-  cards: EMPTY_CARDS,
-  byRef: new Map(),
-  byId: new Map(),
-  latest: EMPTY_CARDS,
-  byPhase: new Map(),
-  usersById: new Map(),
-  duplicates: frozen<readonly CardSummary[]>([]),
-  phases: frozen<string>([]),
-  tags: frozen<string>([]),
-  categories: frozen<string>([]),
-};
+/* `EMPTY_SNAPSHOT` and the two empty arrays it was built from stood here, and went with the
+   empty-bundle short circuit that was their only reader. That circuit answered a registry
+   holding no bundles as though it held nothing; a registry can hold standalone cards now, so
+   the body builds the real answer instead of returning a constant. */
 
 /** One row of the join a blueprint is projected from: its bundle, its owner, its current release. */
 interface CurrentBlueprint {
@@ -151,18 +136,27 @@ interface CurrentBlueprint {
 
 export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapshot> {
   const bundles = (await db.select().from(schema.bundle)).filter((row) => readable(actor, row));
-  if (bundles.length === 0) return EMPTY_SNAPSHOT;
 
-  const owners = await db
-    .select({ id: schema.account.id, handle: schema.account.handle })
-    .from(schema.account)
-    .where(inArray(schema.account.id, [...new Set(bundles.map((b) => b.ownerId))]));
+  /* No short circuit on an empty bundle list, and that is the point: a registry can hold
+     cards and no blueprints — an account whose first publish is `New card` — and the second
+     source below is what serves them. The two queries here are guarded instead, because
+     `inArray` over an empty list is not a question worth asking Postgres. */
+  const owners =
+    bundles.length === 0
+      ? []
+      : await db
+          .select({ id: schema.account.id, handle: schema.account.handle })
+          .from(schema.account)
+          .where(inArray(schema.account.id, [...new Set(bundles.map((b) => b.ownerId))]));
   const handleOf = new Map(owners.map((o) => [o.id, o.handle]));
 
-  const releases = await db
-    .select()
-    .from(schema.release)
-    .where(inArray(schema.release.bundleId, bundles.map((b) => b.id)));
+  const releases =
+    bundles.length === 0
+      ? []
+      : await db
+          .select()
+          .from(schema.release)
+          .where(inArray(schema.release.bundleId, bundles.map((b) => b.id)));
 
   // Highest semver, tiebroken on row id (D-80-03). One release per bundle: a blueprint is
   // what its current release says it is, and the appended history is T010's to serve.
@@ -240,6 +234,35 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
   for (const row of cardRows) {
     const ref = cardRef(row.cardId, row.version);
     if (!pinnedRefs.has(ref)) continue;
+    rowsByRef.set(ref, row);
+  }
+
+  /* THE SECOND SOURCE — a card version no release anywhere pins, which the profile publishes
+     through `New card` and which is a published card whether or not a graph ever uses it.
+
+     `claimed` is the pin set of EVERY release in the table, read BEFORE any visibility
+     filter, and that is the whole safety of this block. D-80-06 above narrows the pinned
+     query because selecting by id alone dragged in other VERSIONS of a pinned id; that
+     narrowing is untouched, and so is every rule around who may see what. Filtering on
+     `pinnedRefs` here — this actor's VISIBLE pins — would have published the three things the
+     suite forbids: a card pinned only by a private bundle, by a handleless owner's bundle, or
+     by a release this actor cannot read. Each of those is claimed by some release, so each
+     stays exactly as absent as it was.
+
+     A version pinned only by a SUPERSEDED release is claimed too, and stays out: `cardRefs`
+     of every release enters this set, not only the current one. What is left is a row no
+     release has ever named. Its `usedIn` is `[]` by construction rather than by omission. */
+  const claimed = new Set<CardRef>();
+  for (const row of await db.select({ cardRefs: schema.release.cardRefs }).from(schema.release)) {
+    for (const pin of row.cardRefs) {
+      const parsed = parseCardRef(pin);
+      if (parsed !== undefined) claimed.add(cardRef(parsed.id, parsed.version));
+    }
+  }
+
+  for (const row of (await db.select().from(schema.cardVersion)).filter((r) => readable(actor, r))) {
+    const ref = cardRef(row.cardId, row.version);
+    if (claimed.has(ref) || rowsByRef.has(ref)) continue;
     rowsByRef.set(ref, row);
   }
 

@@ -27,8 +27,6 @@ import {
   EXPECTED_BUNDLES,
   EXPECTED_CARD_FILES,
   EXPECTED_CARD_IDS,
-  INDEXED_CARD_FILES,
-  INDEXED_CARD_IDS,
   OVERLAY_TERM,
   OVERLAY_TERMS,
   REGISTRY_HANDLE,
@@ -89,9 +87,9 @@ describe("the archive this task imports", () => {
    * coverage. Both numbers are asserted, so the day that helper changes its mind the red says
    * which of the two moved.
    */
-  it("needs nodeCardVersions to reach every indexed file: allNodeCards answers ids", () => {
-    expect(allNodeCards()).toHaveLength(INDEXED_CARD_IDS);
-    expect(allCardVersions()).toHaveLength(INDEXED_CARD_FILES);
+  it("needs nodeCardVersions to reach every file: allNodeCards answers ids", () => {
+    expect(allNodeCards()).toHaveLength(EXPECTED_CARD_IDS);
+    expect(allCardVersions()).toHaveLength(EXPECTED_CARD_FILES);
   });
 
   /* The archive is generated, and the two author sets say different things: every
@@ -179,7 +177,7 @@ describe("re-attribution is digest-safe, measured rather than read", () => {
     const moved = allCardVersions()
       .filter(({ card }) => cardDigest(card as never) !== cardDigest({ ...card, name: `${String(card.name)}!` } as never))
       .map(({ id, version }) => `${id}@${version}`);
-    expect(moved).toHaveLength(INDEXED_CARD_FILES);
+    expect(moved).toHaveLength(EXPECTED_CARD_FILES);
   });
 });
 

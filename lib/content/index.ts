@@ -110,7 +110,10 @@ function build(): Content {
   return {
     blueprints,
     bySlug: new Map(blueprints.map((b) => [b.slug, b])),
-    registry: buildRegistry(loaded.map((entry) => entry.blueprint)),
+    registry: buildRegistry(
+      loaded.map((entry) => entry.blueprint),
+      library.map((entry) => ({ ref: entry.ref, card: entry.card, digest: entry.digest })),
+    ),
     ontology: contentOntology(),
     sources,
     vocabularies,

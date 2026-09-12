@@ -42,10 +42,10 @@ const SLUGS = [
 ];
 
 /**
- * The cards in `content/cards/` that no blueprint pins, which the registry therefore omits.
+ * The cards no blueprint pins, sorted the way `registry.cards()` orders them (id ascending).
  *
- * Written out rather than derived, because a card that fell out of a topology would join this
- * set too and naming the members is what tells the two cases apart.
+ * Written out rather than derived from `usedIn`, which is the thing being checked. A card that
+ * fell out of a topology would join this set too, and naming the members tells them apart.
  */
 const STANDALONE_CARDS = [
   "dynamic-repriority@1.0.0",
@@ -427,23 +427,29 @@ describe("the registry", () => {
   const registry = getRegistry();
 
   /**
-   * Every indexed card still has a user, and `STANDALONE_CARDS` is why that is worth saying.
+   * `usedIn` is no longer positive on every row, and what replaces it is not a weaker bound.
    *
-   * `content/cards/` holds eight documents no blueprint pins. They are stored as card rows by
-   * the seed and they are NOT in this index, because the index holds what a blueprint pins —
-   * the same rule `lib/server/registry/snapshot.ts` keeps on the database side (D-80-06). The
-   * two read models agree, and the cell below is what says so: the pinned set and the file set
-   * differ by exactly those eight and by nothing else.
+   * A card published on its own has no blueprint pinning it, so zero is its true answer, and
+   * `/nodes` lists it — the same rule `lib/server/registry/snapshot.ts` now keeps on the
+   * database side. Asserting `> 0` would forbid the card the profile offers a button for;
+   * asserting nothing would let a pinned card silently lose its users. So the set with no
+   * users is pinned by NAME, and every name in a non-empty `usedIn` has to be a blueprint the
+   * registry actually holds, which is the half that catches a `usedIn` pointing at nothing.
    */
-  it("indexes every blueprint and every pinned card, and no standalone one", () => {
+  it("indexes every blueprint and every card, pinned or standalone", () => {
     expect(registry.blueprints().map((b) => b.slug)).toEqual(SLUGS);
     expect(registry.cards().length).toBeGreaterThan(0);
+    const known = new Set(SLUGS);
     for (const record of registry.cards()) {
-      expect(record.usedIn.length).toBeGreaterThan(0);
       expect(record.digest).toMatch(/^sha256:[0-9a-f]{64}$/);
+      for (const slug of record.usedIn) expect([record.ref, known.has(slug)]).toEqual([record.ref, true]);
     }
-    const indexed = new Set(registry.cards().map((record) => record.ref));
-    expect(STANDALONE_CARDS.filter((ref) => indexed.has(ref))).toEqual([]);
+    expect(
+      registry
+        .cards()
+        .filter((record) => record.usedIn.length === 0)
+        .map((record) => record.ref),
+    ).toEqual(STANDALONE_CARDS);
   });
 
   it("sees each shared card as used by exactly two blueprints", () => {

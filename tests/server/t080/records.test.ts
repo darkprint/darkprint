@@ -422,7 +422,7 @@ describe("AC1 order", () => {
       beta,
       `cards() sorts "id ascending, then version descending so the current one leads" ` +
         `(lib/core/archive/registry.ts:147). Sorted as strings, "10.0.0" would come last.`,
-    ).toEqual(["beta-card@10.0.0", "beta-card@2.0.0", "beta-card@1.0.0"]);
+    ).toEqual(["beta-card@99.0.0", "beta-card@10.0.0", "beta-card@2.0.0", "beta-card@1.0.0"]);
     const ids = rows.map((row, i) => asCardSummary(row, `cards()[${i}]`).id);
     expect(isSorted(ids), `cards() is not id-ascending: ${JSON.stringify(ids)}`).toBe(true);
   });
@@ -431,7 +431,10 @@ describe("AC1 order", () => {
     const versionsOf = await bind("versionsOf");
     const rows = asArray(await versionsOf(s.db, anonymous, "beta-card"), "versionsOf(beta-card)");
     const versions = rows.map((row, i) => asCardSummary(row, `versionsOf()[${i}]`).version);
-    expect(versions).toEqual(["10.0.0", "2.0.0", "1.0.0"]);
+    /* `99.0.0` is here because no release pins it, which now makes it a standalone version
+       rather than an absent one. It is still the ORDER being asserted: a string sort would
+       put `10.0.0` last, and `99.0.0` leading is semver agreeing with recency by accident. */
+    expect(versions).toEqual(["99.0.0", "10.0.0", "2.0.0", "1.0.0"]);
   });
 
   it("latestCards() is the newest version of every distinct id, sorted by id", async () => {
@@ -442,7 +445,11 @@ describe("AC1 order", () => {
     expect(new Set(ids).size, `latestCards() repeats an id: ${JSON.stringify(ids)}`).toBe(ids.length);
     expect(isSorted(ids), `latestCards() is not sorted by id: ${JSON.stringify(ids)}`).toBe(true);
     const beta = summaries.find((c) => c.id === "beta-card");
-    expect(beta?.version, "the newest beta-card is 10.0.0, not 2.0.0 and not 1.0.0").toBe("10.0.0");
+    expect(
+      beta?.version,
+      "the newest beta-card is 99.0.0: no release pins it, so it is a standalone version and " +
+        "`latestCards()` takes the newest INDEXED one, which now includes it",
+    ).toBe("99.0.0");
   });
 
   it("phases() is in lifecycle order, filtered to what is present", async () => {
@@ -460,8 +467,12 @@ describe("AC1 order", () => {
       "debugging",
     );
     const extra = answered.filter((p) => !(CORE_PHASE_IDS as readonly string[]).includes(p));
+    /* Two now, and both are outside the five. `zzz-unpinned-only-phase` is declared by
+       `beta-card@99.0.0` alone, which no release pins and which the index therefore holds as
+       a standalone version — so the bucket it opens is a real one a reader can filter on. */
     expect(extra, "a value outside the five is appended after them, in sorted order").toEqual([
       "zzz-custom-phase",
+      "zzz-unpinned-only-phase",
     ]);
     expect(answered.slice(-extra.length)).toEqual(extra);
   });
@@ -556,15 +567,27 @@ describe("AC1 lookups", () => {
     expect(asArray(await versionsOf(s.db, anonymous, "no-such-card"), "versionsOf()")).toEqual([]);
   });
 
-  it("card() answers undefined for a card_version row the index does not hold", async () => {
+  it("card() answers a standalone row and still refuses one the index does not hold", async () => {
     const card = await bind("card");
-    expect(
+    /* The row nothing has EVER pinned is a published card now, so `card()` answers it and its
+       `usedIn` is empty — which is the half saying it arrived through the standalone path and
+       not by some blueprint quietly claiming it. */
+    const orphan = asCardSummary(
       await card(s.db, anonymous, `${ORPHAN_CARD}@1.0.0`),
-      `The row is in \`card_version\` and it is public; nothing pins it. A \`card()\` that ` +
-        `looks the row up directly instead of asking the index answers it, and that ` +
-        `defect is invisible to every assertion about \`cards()\`.`,
+      `card(${ORPHAN_CARD}@1.0.0)`,
+    );
+    expect(orphan.usedIn).toEqual([]);
+
+    /* And the discrimination the cell was built for survives, on the fixture that still
+       carries it: a card pinned only by a SUPERSEDED release was named by a release once, so
+       it is not standalone and the index does not hold it. A `card()` that looks the row up
+       directly instead of asking the index answers it, and that defect is invisible to every
+       assertion about `cards()`. */
+    expect(
+      await card(s.db, anonymous, `${SUPERSEDED_CARD}@1.0.0`),
+      `${SUPERSEDED_CARD} is pinned by a superseded release, so it is history rather than a ` +
+        `standalone publish, and reading the table instead of the index is what surfaces it.`,
     ).toBeUndefined();
-    expect(await card(s.db, anonymous, `${SUPERSEDED_CARD}@1.0.0`)).toBeUndefined();
   });
 
   it("card() carries the pins that put the card in the index", async () => {
@@ -647,16 +670,16 @@ describe("AC1 current release (D-80-03)", () => {
     ).not.toContain(SUPERSEDED_CARD);
   });
 
-  it("does not index a card_version row no release pins", async () => {
+  it("indexes a card_version row no release pins, with no users", async () => {
     const cards = await bind("cards");
     const rows = asArray(await cards(s.db, anonymous), "cards()");
-    const ids = rows.map((row, i) => asCardSummary(row, `cards()[${i}]`).id);
-    expect(
-      ids,
-      `Contract: "Only cards a DOT node instantiates are indexed." The row is in ` +
-        `\`card_version\` and \`select … from card_version\` returns it, so this ` +
-        `discriminates a reader that lists the table from one that joins the pins.`,
-    ).not.toContain(ORPHAN_CARD);
+    const summaries = rows.map((row, i) => asCardSummary(row, `cards()[${i}]`));
+    /* A row no release has ever named is a card somebody published on its own — `New card`
+       writes exactly this shape — so it is listed, and `usedIn` empty is what says it came
+       in that way rather than through a pin the index mis-read. */
+    const orphan = summaries.find((c) => c.id === ORPHAN_CARD);
+    expect(orphan, `${ORPHAN_CARD} is a standalone publish and belongs in cards()`).toBeDefined();
+    expect(orphan?.usedIn).toEqual([]);
   });
 
   it("does not project a bundle that has never published a release", async () => {
@@ -728,7 +751,7 @@ describe("AC1 current release (D-80-03)", () => {
     }
   });
 
-  it("indexes on id@version, not on id: an unpinned version of a pinned id is absent", async () => {
+  it("indexes on id@version, not on id: an unpinned version of a pinned id stands alone", async () => {
     const cards = await bind("cards");
     const versionsOf = await bind("versionsOf");
     const card = await bind("card");
@@ -738,22 +761,25 @@ describe("AC1 current release (D-80-03)", () => {
     );
     expect(
       refs,
-      `D-80-03 makes the membership predicate "\`card_version\` rows whose \`id@version\` ` +
-        `appears in the current release's \`cardRefs\`". \`beta-card\` is pinned at three ` +
-        `versions and \`${UNPINNED_VERSION}\` at none, so a reader that narrows on the ` +
-        `**id** and then reads every row for it answers this — and every other negative ` +
-        `fixture in this suite uses an id no release mentions, so none of them can tell the ` +
-        `two predicates apart.`,
-    ).not.toContain(UNPINNED_VERSION);
+      `The membership predicate is over \`id@version\`, and it is the VERSION that decides: ` +
+        `\`beta-card\` is pinned at three versions and \`${UNPINNED_VERSION}\` at none, so ` +
+        `that ref stands or falls on its own. It stands — no release has ever named it, which ` +
+        `is a standalone publish — and the id-level reading is still wrong, just in the other ` +
+        `direction now: see ${SUPERSEDED_CARD}, whose version WAS named once and stays out.`,
+    ).toContain(UNPINNED_VERSION);
 
     const versions = asArray(await versionsOf(s.db, anonymous, "beta-card"), "versionsOf()").map(
       (row, i) => asCardSummary(row, `versionsOf()[${i}]`).version,
     );
-    expect(versions).toEqual(["10.0.0", "2.0.0", "1.0.0"]);
-    expect(await card(s.db, anonymous, UNPINNED_VERSION)).toBeUndefined();
+    /* `99.0.0` is here because no release pins it, which now makes it a standalone version
+       rather than an absent one. It is still the ORDER being asserted: a string sort would
+       put `10.0.0` last, and `99.0.0` leading is semver agreeing with recency by accident. */
+    expect(versions).toEqual(["99.0.0", "10.0.0", "2.0.0", "1.0.0"]);
+    const found = asCardSummary(await card(s.db, anonymous, UNPINNED_VERSION), "card()");
+    expect(found.usedIn, "a version no release names has no users").toEqual([]);
   });
 
-  it("takes latestCards() over the indexed versions, not over every row for the id", async () => {
+  it("takes latestCards() over the indexed versions, not over every row in the table", async () => {
     const latestCards = await bind("latestCards");
     const rows = asArray(await latestCards(s.db, anonymous), "latestCards()");
     const beta = rows
@@ -762,22 +788,29 @@ describe("AC1 current release (D-80-03)", () => {
     expect(
       beta?.version,
       `\`${UNPINNED_VERSION}\` is the highest version of \`beta-card\` in \`card_version\` ` +
-        `and the lowest-effort way to answer "newest" is to take it. The newest *indexed* ` +
-        `version is 10.0.0.`,
-    ).toBe("10.0.0");
+        `and it is indexed, so it is also the newest INDEXED one. The two agree here; what ` +
+        `keeps the cell discriminating is ${SUPERSEDED_CARD} below, whose version is in the ` +
+        `table, is NOT indexed, and must not be taken as anybody's newest.`,
+    ).toBe("99.0.0");
+    const superseded = rows
+      .map((row, i) => asCardSummary(row, `latestCards()[${i}]`))
+      .find((c) => c.id === SUPERSEDED_CARD);
+    expect(superseded, `${SUPERSEDED_CARD} is not indexed, so it is nobody's latest`).toBeUndefined();
   });
 
-  it("does not report a phase only an unpinned version declares", async () => {
+  it("reports the phase a standalone version declares, and reaches it", async () => {
     const phases = await bind("phases");
     const cardsByPhase = await bind("cardsByPhase");
-    expect(
-      asArray(await phases(s.db, anonymous), "phases()"),
-      `\`${UNPINNED_VERSION}\` declares \`${UNPINNED_VERSION_PHASE}\` and nothing else does, ` +
-        `so a gallery filter offering it is the production shape of indexing an unpinned row.`,
-    ).not.toContain(UNPINNED_VERSION_PHASE);
-    expect(
-      asArray(await cardsByPhase(s.db, anonymous, UNPINNED_VERSION_PHASE), "cardsByPhase()"),
-    ).toEqual([]);
+    /* `${UNPINNED_VERSION}` declares `${UNPINNED_VERSION_PHASE}` and nothing else does. A
+       gallery filter offering a bucket has to have something in it, so the two halves are
+       asserted together: the phase is listed AND the card is reachable through it. A phase
+       listed with an empty bucket is the defect this shape can still have. */
+    expect(asArray(await phases(s.db, anonymous), "phases()")).toContain(UNPINNED_VERSION_PHASE);
+    const inBucket = asArray(
+      await cardsByPhase(s.db, anonymous, UNPINNED_VERSION_PHASE),
+      "cardsByPhase()",
+    ).map((row, i) => asCardSummary(row, `cardsByPhase()[${i}]`).ref);
+    expect(inBucket).toEqual([UNPINNED_VERSION]);
   });
 
   it("holds cards() and the blueprints' cardRefs to each other, in both directions", async () => {
@@ -788,9 +821,13 @@ describe("AC1 current release (D-80-03)", () => {
          every ref in cards() is pinned by some visible blueprint   <- no unpinned row leaks
          every card a visible blueprint pins is in cards()          <- no pinned row is lost
 
-       The first direction makes `usedIn === []` impossible for an indexed card, which is
-       the tell for the whole class — it catches an unpinned row however it got in, and it
-       does not depend on the fixture below having thought of that row's shape. */
+       The first direction no longer holds outright: a card published on its own is indexed
+       and appears in nobody's `cardRefs`. It is not dropped, it is NAMED — the set outside
+       the pins has to be exactly the two standalone fixtures — so a row leaking in by any
+       other route still reds, which is what the direction was for. And `usedIn === []` is
+       now asserted to describe the SAME set, from the other side: the two readings of "no
+       blueprint pins this" must agree, or one of them is being computed wrong. */
+    const STANDALONE = [UNPINNED_VERSION, `${ORPHAN_CARD}@1.0.0`].sort();
     const cards = await bind("cards");
     const blueprints = await bind("blueprints");
 
@@ -802,13 +839,13 @@ describe("AC1 current release (D-80-03)", () => {
       for (const ref of asBlueprintSummary(row, `blueprints()[${i}]`).cardRefs) pinned.add(ref);
     }
 
-    const unpinned = summaries.filter((c) => !pinned.has(c.ref)).map((c) => c.ref);
+    const unpinned = summaries.filter((c) => !pinned.has(c.ref)).map((c) => c.ref).sort();
     expect(
       unpinned,
-      `Every indexed card must appear in some visible blueprint's \`cardRefs\` — that is ` +
-        `what "only cards a DOT node instantiates are indexed" means once D-80-03 says ` +
-        `which release supplies the pins.`,
-    ).toEqual([]);
+      `An indexed card appears in some visible blueprint's \`cardRefs\` unless it was ` +
+        `published on its own, and the standalone ones are named rather than tolerated: any ` +
+        `OTHER ref arriving here is a row that leaked past the pin join.`,
+    ).toEqual(STANDALONE);
 
     const missing = [...pinned].filter((ref) => !summaries.some((c) => c.ref === ref));
     expect(
@@ -817,13 +854,15 @@ describe("AC1 current release (D-80-03)", () => {
         `\`cards()\`. Without this half the first is satisfied by returning nothing.`,
     ).toEqual([]);
 
-    const orphaned = summaries.filter((c) => c.usedIn.length === 0).map((c) => c.ref);
+    const orphaned = summaries.filter((c) => c.usedIn.length === 0).map((c) => c.ref).sort();
     expect(
       orphaned,
-      `\`usedIn\` is the same join read from the other side, so an indexed card with no ` +
-        `users is a contradiction the indexing rule makes impossible. This is the tell that ` +
-        `does not depend on knowing which row leaked.`,
-    ).toEqual([]);
+      `\`usedIn\` is the same join read from the other side, so the cards with no users and ` +
+        `the cards outside every \`cardRefs\` have to be one set. A row in one and not the ` +
+        `other means one of the two joins is wrong, and this says so without depending on ` +
+        `knowing which row leaked.`,
+    ).toEqual(unpinned);
+    expect(orphaned).toEqual(STANDALONE);
   });
 
   it("groups two versions of one card whose bodies are otherwise identical", async () => {

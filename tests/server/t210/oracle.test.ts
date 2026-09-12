@@ -94,8 +94,8 @@ describe("the seeded archive, against the shipped component", () => {
     /* Numbers as literals, deliberately. A bound imported from the thing it bounds moves with
        it and asserts nothing, and `public/bundles/` losing directories must not silently shrink
        this file's domain to a fraction of the archive — the failure T090's suite recorded. */
-    expect(all.length).toBe(103);
-    expect(ids.size).toBe(99);
+    expect(all.length).toBe(111);
+    expect(ids.size).toBe(107);
     expect(registry.blueprints().length).toBe(16);
   });
 

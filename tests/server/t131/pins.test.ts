@@ -327,11 +327,12 @@ describe("AC3: a pin at a deleted target is omitted, not nulled", () => {
     ).toHaveLength(1);
   });
 
-  it("goes absent when no current release pins the version, while the card row survives", async () => {
-    /* C-10, ruled. A node pin resolves through the PIN INDEX — `loadSnapshot` indexes only the
-       versions some current release pins — so a pinned version that no release carries any more
-       is unresolvable even though `card_version` still holds it. This is the case that separates
-       "the row is gone" from "nothing points at the row", and no cell above reaches it. */
+  it("survives a release moving off the version, because the card row survives", async () => {
+    /* C-10 and D-131-04 ruled this ABSENT while `loadSnapshot` indexed only versions a current
+       release pins. It indexes a version no release pins at all as a standalone card now, so a
+       pin at one resolves, and the distinction this cell exists for is sharper than before: a
+       pin dies when its TARGET is gone, not when a blueprint moves on without it. The
+       deleted-target cell above is the other half and still answers `[]`. */
     const o = await freshOwner("unpinned-version");
     const v1 = await insertCard(s, {
       id: `${o.account.handle}/drifting`,
@@ -364,15 +365,16 @@ describe("AC3: a pin at a deleted target is omitted, not nulled", () => {
 
     expect(
       await pinnedFor(o.account.handle, o.actor),
-      `C-10, ruled at D-131-04: "a node pin \`id@version\` resolves through the pin index and ` +
-        `goes ABSENT when no current release pins that version while the row survives".`,
-    ).toEqual([]);
+      `The release now pins 2.0.0 and nothing pins 1.0.0, but the row is still there and the ` +
+        `owner still chose it. A pin that went dead here would go dead because somebody else ` +
+        `edited a blueprint, which is not a fact about this pin.`,
+    ).toEqual([{ kind: "node", ref: v1.ref }]);
 
     const [surviving] = await s.query("select id from card_version where id = $1", [v1.rowId]);
     expect(
       surviving?.id,
-      "and the row survives. If it had been deleted this cell would be the deleted-target cell " +
-        "above wearing a different name, and would prove nothing about the index.",
+      "and the row survives, which is the premise the assertion above rests on. Had it been " +
+        "deleted this cell would be the deleted-target cell above wearing a different name.",
     ).toBe(v1.rowId);
   });
 });
