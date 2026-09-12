@@ -185,12 +185,18 @@ export async function runImport(
      They do NOT touch `created` or `skipped`. Those count BUNDLES (D-250-08), and a second
      run reports the same two numbers whether the library moved or not.
 
+     `options.only` SKIPS them entirely rather than filtering them, because it names slugs and
+     a standalone card has none. Its whole purpose is to publish one slug alone and leave the
+     rest of the archive untouched for the owner to decide on; writing eight unrelated cards
+     during that run would be the surprise it exists to avoid. A whole-archive run is what
+     stores them.
+
      The already-stored case is ASKED rather than caught. `addCard` refuses any second write
      for one `(id, version)` — same bytes or different — and its refusal carries no `kind`,
      so catching it would mean matching a message and would swallow a genuine storage failure
      along with the re-run. Reading first also keeps the stored bytes untouched, which is what
      §4 asks of a published version. */
-  for (const entry of loose) {
+  for (const entry of options.only === undefined ? loose : []) {
     if ((await getCard(db, registry, entry.card.id, entry.card.version)) !== undefined) continue;
     await addCard(db, {
       cardId: entry.card.id,

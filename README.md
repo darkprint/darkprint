@@ -157,7 +157,7 @@ lib/server/          accounts, archive, auth, cards, engine, export, http, lifec
 packages/cli/        the darkprint verbs
 packages/mcp/        the darkprint package: the bin, the stdio MCP server, the tool table
 skills/darkprint/    the blueprint-writing skill: SKILL.md, references, templates
-content/             10 blueprints, 61 card versions, ontology/extensions.yaml
+content/             16 blueprints, 111 card versions, ontology/extensions.yaml
 models/              all-MiniLM-L6-v2, quantised ONNX (23 MB)
 scripts/             prebuild, seed import, re-embed, retrieval eval, production preflight
 tests/               the backend suites, tree-wide guards, scratch-database support
