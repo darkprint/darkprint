@@ -1,0 +1,45 @@
+id: priority-scorer
+name: Priority Scorer
+type: agent
+
+action: >-
+  Score each item on the criteria the deployment set, and keep the criteria apart instead of
+  collapsing them into one number.
+spec: >-
+  For each item in front of you, score it separately on urgency, on impact, on what it blocks, and
+  on what it would cost to do. Emit all four scores per item on `scored`, alongside the item
+  unchanged. Do not combine them into a single priority figure: the four pull in different
+  directions and which one wins is a policy decision belonging to the node that schedules, not to
+  the node that scores. Score on what the item says, not on who filed it. An item you cannot score
+  on a given criterion gets the worst score for that criterion and a note saying why, because an
+  unscored item quietly sorts to the bottom and that is a decision nobody made.
+agent: Scorer
+tools: []
+mcp: []
+params:
+  criteria:
+    - urgency
+    - impact
+    - blocks
+    - cost
+  scale_max: 5
+
+inputs:
+  - name: items
+    type: json
+    description: The items to be scored, as they arrived.
+outputs:
+  - name: scored
+    type: json
+    description: Each item unchanged with its four separate scores attached.
+dependencies: []
+cannot: []
+will_not:
+  - collapse the four criteria into a single figure
+  - score an item on who filed it
+  - leave an item unscored on any criterion
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

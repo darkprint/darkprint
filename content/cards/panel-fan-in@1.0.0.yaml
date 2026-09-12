@@ -1,0 +1,42 @@
+id: panel-fan-in
+name: Panel Fan In
+type: parallel.fan-in
+
+action: >-
+  Collect the branch verdicts into one set without reconciling them, and say plainly when a branch
+  did not report.
+spec: >-
+  Gather what each branch produced and emit all of it on `collected`, each verdict tagged with the
+  branch it came from and otherwise untouched. Do not reconcile them, do not summarise them, and do
+  not drop the outlier: disagreement between branches is the signal a panel exists to produce, and
+  a fan-in that resolves it has thrown away the only thing the extra branches bought. Where a
+  branch produced nothing, or failed, record that as a missing verdict rather than omitting the
+  branch, a set of two verdicts that was meant to be three is a different result from a set of two.
+  Whichever node decides what the panel concluded reads this output; you are not that node.
+agent: Fan in
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: verdicts
+    type: json
+    description: What each branch produced, arriving as the branches finish.
+outputs:
+  - name: collected
+    type: json
+    description: Every branch's verdict tagged with its source, plus an explicit entry for any that did not report.
+dependencies: []
+cannot: []
+will_not:
+  - reconcile or summarise the verdicts it collects
+  - drop an outlier
+  - omit a branch that failed to report
+
+risk_markers: []
+notes: >-
+  A `parallel.fan-in` card, the counterpart to `panel-fanout`. Confirm the runner wires fan-out
+  results through to a fan-in before building a graph that depends on it.
+
+version: 1.0.0
+author: autogen

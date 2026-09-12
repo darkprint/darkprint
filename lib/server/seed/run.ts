@@ -23,11 +23,12 @@
    this task deciding a product question by shipping.
    ============================================================ */
 
-import { contentVocabulary, readContent } from "@/lib/content/read";
+import { contentCardLibrary, contentVocabulary, readContent } from "@/lib/content/read";
 import type { Db, ObjectStorage } from "@/lib/db";
 import { changeHandle, updateProfile, upsertFromGitHub } from "@/lib/server/accounts";
 import { getBundle, getRelease } from "@/lib/server/archive";
 import type { Actor } from "@/lib/server/policy";
+import { addCard, getCard } from "@/lib/server/cards";
 import { PublishRefusedError, publish } from "@/lib/server/publish";
 import { REGISTRY_HANDLE, SEED_RELEASE_VERSION, type ImportPlan } from "./plan";
 
@@ -122,6 +123,13 @@ export async function runImport(
   const vocabulary =
     archiveVocabulary === undefined ? undefined : { text: archiveVocabulary.text, terms: archiveVocabulary.terms };
 
+  /* The library minus every ref a blueprint pins. Computed against `readContent()` rather
+     than against the registry, because the registry indexes only what a blueprint pins —
+     these are exactly the entries it does not hold. */
+  const pinned = new Set<string>();
+  for (const bundle of readContent()) for (const node of bundle.blueprint.nodes) pinned.add(node.ref);
+  const loose = contentCardLibrary().filter((entry) => !pinned.has(entry.ref));
+
   let created = 0;
   let skipped = 0;
   for (const loaded of readContent()) {
@@ -166,6 +174,32 @@ export async function runImport(
       }
       throw err;
     }
+  }
+
+  /* The cards no blueprint pins, which `publish` above cannot reach: it writes the cards a
+     release carries, and these belong to no release. They are published the same way the
+     profile's `New card` publishes one — a card version owned by the registry account, with
+     no bundle behind it — and the archive is read for them the same way it is read for the
+     rest, so the two paths cannot come to disagree about what a standalone card is.
+
+     They do NOT touch `created` or `skipped`. Those count BUNDLES (D-250-08), and a second
+     run reports the same two numbers whether the library moved or not.
+
+     The already-stored case is ASKED rather than caught. `addCard` refuses any second write
+     for one `(id, version)` — same bytes or different — and its refusal carries no `kind`,
+     so catching it would mean matching a message and would swallow a genuine storage failure
+     along with the re-run. Reading first also keeps the stored bytes untouched, which is what
+     §4 asks of a published version. */
+  for (const entry of loose) {
+    if ((await getCard(db, registry, entry.card.id, entry.card.version)) !== undefined) continue;
+    await addCard(db, {
+      cardId: entry.card.id,
+      version: entry.card.version,
+      ownerId: registry.accountId,
+      body: entry.card,
+      source: entry.text,
+      visibility: "public",
+    });
   }
 
   return { ...plan, created, skipped };

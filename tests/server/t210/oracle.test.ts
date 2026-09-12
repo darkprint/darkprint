@@ -87,7 +87,7 @@ function componentIndex(): Map<string, { cards: number; blueprints: number; auth
 }
 
 describe("the seeded archive, against the shipped component", () => {
-  it("the corpus really is the 10 / 61 / 57 one, so the comparison is over the archive", () => {
+  it("the corpus really is the whole archive, so the comparison is over it", () => {
     const registry = getRegistry();
     const all = registry.cards();
     const ids = new Set(all.map((r: { id: string }) => r.id));

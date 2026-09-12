@@ -32,8 +32,10 @@
 
 import { describe, expect, it } from "vitest";
 
-import { cardDigest } from "@/lib/core";
-import { nodeCardVersions } from "@/lib/content";
+import { readFileSync } from "node:fs";
+
+import { cardDigest, loadCard } from "@/lib/core";
+import { getOntologyView } from "@/lib/content";
 
 import {
   DIGEST,
@@ -49,8 +51,8 @@ import {
   assertCount,
   assertKeys,
   bundleSlugs,
+  REPO_ROOT,
   cardFiles,
-  cardIds,
   printedDigests,
   type Namespace,
 } from "./contract";
@@ -194,16 +196,21 @@ describe("AC1's other half: the 57 card files", () => {
    * author still on it. `oracle.test.ts` shows separately that changing the author moves none of
    * the 57, which is what makes both AC1 and AC4 satisfiable at once.
    */
-  it("plans the digest lib/core computes for every one of the 57", async () => {
+  it("plans the digest lib/core computes for every card file", async () => {
+    /* Parsed off the FILES rather than looked up through `nodeCardVersions`, which indexes
+       only what a blueprint pins and answers nothing for the eight standalone documents the
+       plan carries. Reading the directory also keeps this an independent recomputation: the
+       digest is taken here from the parsed document, never read off the field
+       `lib/content/read.ts` filled, so the two can disagree and this cell can say so. */
     const expected = new Map<string, string>();
-    for (const id of cardIds()) {
-      for (const record of nodeCardVersions(id)) {
-        const card = ((record as { card?: unknown }).card ?? record) as {
-          id: string;
-          version: string;
-        };
-        expected.set(`${card.id}@${card.version}`, cardDigest(card as never));
-      }
+    for (const file of cardFiles()) {
+      const loaded = loadCard(readFileSync(`${REPO_ROOT}content/cards/${file}`, "utf8"), {
+        ontology: getOntologyView(),
+        file,
+      });
+      expect(loaded.card, `${file} does not load`).toBeDefined();
+      const card = loaded.card!;
+      expected.set(`${card.id}@${card.version}`, cardDigest(card));
     }
     expect(expected.size).toBe(EXPECTED_CARD_FILES);
 

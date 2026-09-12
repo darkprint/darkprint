@@ -157,7 +157,7 @@ export function ProfileHeader({
                     one document, so there is no draft to create first, and the flow that
                     takes one already exists. `?kind=node` opens its picker on Card, which
                     is the question this click has already answered. */}
-                <ButtonLink href="/upload?kind=node" variant="outline">
+                <ButtonLink href="/upload?kind=node" variant="card">
                   New card
                 </ButtonLink>
               </>

@@ -313,8 +313,20 @@ const PUBLIC_BUNDLES = `${REPO_ROOT}public/bundles`;
  * silently shrink AC1 to a third of its domain, which is the failure T090's suite recorded.
  */
 export const EXPECTED_BUNDLES = 16;
-export const EXPECTED_CARD_FILES = 103;
-export const EXPECTED_CARD_IDS = 99;
+export const EXPECTED_CARD_FILES = 111;
+export const EXPECTED_CARD_IDS = 107;
+
+/**
+ * The same library as the REGISTRIES hold it, which is smaller than the library on disk.
+ *
+ * Eight documents in `content/cards/` are pinned by no blueprint. The seed stores them, so a
+ * count of files or of stored rows is 111; both read models index what a blueprint pins, so a
+ * count taken through `allNodeCards`, `allCardVersions` or `cards()` is 103. A cell that used
+ * one figure for both would be green whichever way a future change broke them apart, which is
+ * the reason these are two names rather than one.
+ */
+export const INDEXED_CARD_FILES = 103;
+export const INDEXED_CARD_IDS = 99;
 
 export function bundleSlugs(): readonly string[] {
   return readdirSync(BUNDLES_DIR)

@@ -28,15 +28,32 @@ describe("T250 scratch: what the content tree already answers", () => {
     }
   });
 
-  it("every library file is pinned by some bundle, and every pin names a file", () => {
+  /**
+   * Both directions, and only one of them is an equality now.
+   *
+   * A pin naming no file is still a broken archive, so that stays `[]`. A file no pin names
+   * is a card published on its own, which the library is allowed to hold, so the unpinned
+   * set is asserted to be EXACTLY the standalone ones rather than left unbounded: a card
+   * quietly dropped out of a topology would otherwise land in this set and read as intended.
+   */
+  it("names a file for every pin, and pins every file except the standalone ones", () => {
     const pinned = new Set<string>();
     for (const b of readContent()) for (const n of b.blueprint.nodes) pinned.add(n.ref);
     const fileRefs = readdirSync("content/cards")
       .filter((f) => f.endsWith(".yaml"))
       .map((f) => f.replace(/\.yaml$/, ""));
-    expect(fileRefs.length).toBe(103);
-    expect(fileRefs.filter((r) => !pinned.has(r))).toEqual([]);
+    expect(fileRefs.length).toBe(111);
     expect([...pinned].filter((r) => !fileRefs.includes(r))).toEqual([]);
+    expect(fileRefs.filter((r) => !pinned.has(r)).sort()).toEqual([
+      "dynamic-repriority@1.0.0",
+      "llm-judge@1.0.0",
+      "panel-fan-in@1.0.0",
+      "panel-fanout@1.0.0",
+      "priority-scorer@1.0.0",
+      "queue-scheduler@1.0.0",
+      "sandboxed-python-runner@1.0.0",
+      "trajectory-auditor@1.0.0",
+    ]);
   });
 
   it("the ontology overlay is one file carrying the terms content declares", () => {

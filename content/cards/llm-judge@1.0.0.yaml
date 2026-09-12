@@ -1,0 +1,50 @@
+id: llm-judge
+name: LLM Judge
+type: validation
+phase: testing
+
+action: >-
+  Score a piece of work against a rubric on the dimensions the rubric names, and say why it scored
+  what it did.
+spec: >-
+  You are handed a rubric and a piece of work. Score the work on each dimension the rubric names,
+  using the scale the rubric defines and no other. For each dimension emit the score and one
+  sentence of justification that points at something actually present in the work: a justification
+  that would read the same against a different piece of work is not a justification. Emit the whole
+  set on `scores`. Do not average the dimensions into a single figure unless the rubric asks for
+  one, and do not adjust a score because the total looked low. Do not rewrite, improve or annotate
+  the work. Where a dimension cannot be scored from the work alone, say so and score it as unmet
+  rather than inferring what the author probably intended. Never quote the rubric back in the
+  justification, a downstream node that can reconstruct the rubric from your output has been handed
+  the rubric.
+agent: Judge
+tools: []
+mcp: []
+params:
+  scale_max: 5
+
+inputs:
+  - name: rubric
+    type: acceptance-criteria
+    description: The dimensions and the scale, as whoever set them wrote them.
+  - name: work
+    type: markdown
+    description: The piece of work under assessment.
+outputs:
+  - name: scores
+    type: report
+    description: One score and one grounded justification per dimension, in the rubric's order.
+dependencies: []
+cannot: []
+will_not:
+  - quote or paraphrase the rubric in the justifications it emits
+  - adjust a score because the total looked low
+  - rewrite or annotate the work it scores
+
+risk_markers: []
+notes: >-
+  This node holds a rubric, which makes it a criteria consumer wherever it is wired. Put it where
+  the work is judged and never on a path that reaches the node producing the work.
+
+version: 1.0.0
+author: autogen

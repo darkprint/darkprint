@@ -41,6 +41,23 @@ const SLUGS = [
   "starter-software-factory",
 ];
 
+/**
+ * The cards in `content/cards/` that no blueprint pins, which the registry therefore omits.
+ *
+ * Written out rather than derived, because a card that fell out of a topology would join this
+ * set too and naming the members is what tells the two cases apart.
+ */
+const STANDALONE_CARDS = [
+  "dynamic-repriority@1.0.0",
+  "llm-judge@1.0.0",
+  "panel-fan-in@1.0.0",
+  "panel-fanout@1.0.0",
+  "priority-scorer@1.0.0",
+  "queue-scheduler@1.0.0",
+  "sandboxed-python-runner@1.0.0",
+  "trajectory-auditor@1.0.0",
+];
+
 const METRIC_ORDER: MetricKey[] = [
   "autonomy",
   "efficacy",
@@ -409,13 +426,24 @@ describe("archive identity", () => {
 describe("the registry", () => {
   const registry = getRegistry();
 
-  it("indexes every blueprint and every pinned card", () => {
+  /**
+   * Every indexed card still has a user, and `STANDALONE_CARDS` is why that is worth saying.
+   *
+   * `content/cards/` holds eight documents no blueprint pins. They are stored as card rows by
+   * the seed and they are NOT in this index, because the index holds what a blueprint pins —
+   * the same rule `lib/server/registry/snapshot.ts` keeps on the database side (D-80-06). The
+   * two read models agree, and the cell below is what says so: the pinned set and the file set
+   * differ by exactly those eight and by nothing else.
+   */
+  it("indexes every blueprint and every pinned card, and no standalone one", () => {
     expect(registry.blueprints().map((b) => b.slug)).toEqual(SLUGS);
     expect(registry.cards().length).toBeGreaterThan(0);
     for (const record of registry.cards()) {
       expect(record.usedIn.length).toBeGreaterThan(0);
       expect(record.digest).toMatch(/^sha256:[0-9a-f]{64}$/);
     }
+    const indexed = new Set(registry.cards().map((record) => record.ref));
+    expect(STANDALONE_CARDS.filter((ref) => indexed.has(ref))).toEqual([]);
   });
 
   it("sees each shared card as used by exactly two blueprints", () => {

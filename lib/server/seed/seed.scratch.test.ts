@@ -87,12 +87,12 @@ describe("planImport (AC1, no database)", () => {
   });
 
   it("names every card file, four ids of which carry two versions", () => {
-    expect(plan.cards.length).toBe(103);
-    expect(new Set(plan.cards.map((c) => c.cardId)).size).toBe(99);
+    expect(plan.cards.length).toBe(111);
+    expect(new Set(plan.cards.map((c) => c.cardId)).size).toBe(107);
     expect(plan.cards.every((c) => c.visibility === "public")).toBe(true);
     /* Every digest distinct: two versions of one card are two documents, and a plan that
        collapsed them would still report 61 rows. */
-    expect(new Set(plan.cards.map((c) => c.digest)).size).toBe(103);
+    expect(new Set(plan.cards.map((c) => c.digest)).size).toBe(111);
   });
 
   /* Literals, never `REGISTRY_HANDLE` and `SEED_RELEASE_VERSION` off the barrel. Measured:
@@ -147,7 +147,7 @@ describe("runImport (AC2, AC4)", () => {
   it("stores every card version once, public, owned by the registry account", async () => {
     const owner = await resolveOwner(db, "autogen");
     const rows = await db.select().from(schema.cardVersion);
-    expect(rows.length, "a card pinned by two bundles was stored twice").toBe(103);
+    expect(rows.length, "a card pinned by two bundles was stored twice").toBe(111);
     expect(rows.every((r) => r.ownerId === owner!.accountId)).toBe(true);
 
     /* Stored against PLANNED, not against the literal `"public"`, and the difference was
@@ -157,7 +157,7 @@ describe("runImport (AC2, AC4)", () => {
        nothing held it to. Comparing the two makes the field a claim about the store rather
        than a value only its author reads. */
     const stored = new Map(rows.map((r) => [`${r.cardId}@${r.version}`, r.visibility]));
-    expect(stored.size).toBe(103);
+    expect(stored.size).toBe(111);
     for (const card of plan.cards) {
       expect(stored.get(`${card.cardId}@${card.version}`), `${card.cardId}@${card.version}`).toBe(
         card.visibility,
@@ -190,7 +190,7 @@ describe("runImport (AC2, AC4)", () => {
        `content/`. Read back off the store and compared against the FILES rather than a
        literal, so the assertion stays about the import carrying bytes through. */
     const sources = await db.select({ source: schema.cardVersion.source }).from(schema.cardVersion);
-    expect(sources.length).toBe(103);
+    expect(sources.length).toBe(111);
     const authors = new Set(sources.map((r) => /^author:\s*(\S+)\s*$/m.exec(r.source)?.[1]));
     expect([...authors]).toEqual(["autogen"]);
   });

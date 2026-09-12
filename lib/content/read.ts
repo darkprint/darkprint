@@ -3,7 +3,10 @@
    The ONLY module in the repo that touches the filesystem. It walks
    `content/`, assembles one `Bundle` per blueprint by pulling exactly
    the cards that blueprint's DOT pins out of the shared library, and
-   hands each to the engine.
+   hands each to the engine. It also reads the library WHOLE, because a
+   card no blueprint pins is publishable on its own — the profile offers
+   `New card` beside `New blueprint` — so the library is the unit here
+   rather than the set of pins.
 
    SERVER ONLY, BUILD TIME ONLY. Every page is statically generated, so
    this runs once per build and never in a request or a browser. It is
@@ -19,6 +22,7 @@ import { parse as parseYaml } from "yaml";
 
 import {
   CORE_ONTOLOGY,
+  cardDigest,
   cardRef,
   checkVersionChain,
   hasErrors,
@@ -95,6 +99,12 @@ export interface LoadedBundle {
   cardFiles: readonly BundleCardFile[];
 }
 
+/** What one read of `content/` produces: the bundles, and the library they draw from. */
+interface LoadedContent {
+  bundles: readonly LoadedBundle[];
+  library: readonly LibraryCard[];
+}
+
 /* --------------------- the memoized read --------------------- */
 
 /**
@@ -134,7 +144,7 @@ export interface ContentVocabulary {
 
 let ontologyCache: ContentOntology | undefined;
 
-let cache: readonly LoadedBundle[] | undefined;
+let cache: LoadedContent | undefined;
 
 function contentOntologyState(): ContentOntology {
   if (ontologyCache === undefined) {
@@ -211,11 +221,26 @@ function readVocabulary(): ContentVocabulary | undefined {
  * from every bundle formatted underneath — one broken file should not hide the rest.
  */
 export function readContent(): readonly LoadedBundle[] {
+  return load().bundles;
+}
+
+/**
+ * Every card under `content/cards/`, pinned by a blueprint or not.
+ *
+ * The registry indexes both: a card published on its own through `New card` has a node
+ * page and a row of its own, and the archive's own library is read the same way so the
+ * two cannot drift into different rules.
+ */
+export function contentCardLibrary(): readonly LibraryCard[] {
+  return load().library;
+}
+
+function load(): LoadedContent {
   if (cache === undefined) cache = loadAll();
   return cache;
 }
 
-function loadAll(): readonly LoadedBundle[] {
+function loadAll(): LoadedContent {
   const loaded: LoadedBundle[] = [];
   const problems: string[] = [];
 
@@ -238,7 +263,8 @@ function loadAll(): readonly LoadedBundle[] {
   // said so in red on their node pages, while `/spec` told a reader the check refuses a
   // bundle. Broken content fails the build, and a version number the site's own engine
   // contradicts is broken content.
-  problems.push(...cardLibraryProblems(ontology));
+  const library = readCardLibrary(ontology);
+  problems.push(...library.problems);
 
   for (const slug of blueprintSlugs()) {
     const dir = `content/blueprints/${slug}`;
@@ -286,46 +312,82 @@ function loadAll(): readonly LoadedBundle[] {
     );
   }
 
-  return Object.freeze(loaded);
+  return Object.freeze({ bundles: Object.freeze(loaded), library: Object.freeze(library.cards) });
 }
 
 /* --------------------- the shared card library --------------------- */
 
+/** One card document from the shared library, with the identity the registry will store. */
+export interface LibraryCard {
+  /** The `id@version` the file is named for, which is the registry's key. */
+  ref: CardRef;
+  /** Bare filename, e.g. "schema-gate@1.1.0.yaml". */
+  file: string;
+  text: string;
+  card: NodeCard;
+  digest: string;
+}
+
 /**
  * Every version of every card under `content/cards/`, checked against §4's bump rule.
  *
- * Only the version chain is reported from here. A card that fails to load at all is left
- * to the bundle that pins it, which names the DOT line the reference came from and is a
- * better message than anything a directory walk could write; a card nothing pins and
- * nothing can load ships in no bundle and reaches no page, so it is not the loader's
- * business either. What *is* the loader's business is a published version number the
- * engine disagrees with, because the site prints the engine's verdict on the node page
- * beside the number and the two must not contradict each other.
+ * The whole library, not the pinned part of it. A card no blueprint pins is a card
+ * somebody published on its own, so it reaches a node page and a registry row like any
+ * other, and the walk that finds it is the only thing that can: there is no DOT line to
+ * report it against. That is also why a card failing to LOAD is a problem raised here
+ * rather than left to a bundle — an unpinned one has no bundle to leave it to, and a
+ * broken card silently skipped would ship as absent instead of as an error.
+ *
+ * The digest is taken here for the same reason the text is read here. `lib/server/seed`
+ * carries identity and never computes it, and a pinned card's identity arrives as
+ * `ResolvedNode.digest`; an unpinned one has no node, so the one module that already
+ * holds the parsed document is the one that hashes it.
  */
-function cardLibraryProblems(ontology: OntologyView): string[] {
+function readCardLibrary(ontology: OntologyView): {
+  cards: LibraryCard[];
+  problems: string[];
+} {
+  const cards: LibraryCard[] = [];
+  const problems: string[] = [];
   const chains = new Map<string, { card: NodeCard; file?: string }[]>();
+
   // The bare filename, because `formatDiagnostic` prefixes it with the directory it is
   // handed. A name already carrying `content/cards/` would be printed twice.
   for (const name of readdirSync(CARDS_DIR).sort()) {
     if (!name.endsWith(".yaml")) continue;
-    const loaded = loadCard(readFileSync(join(CARDS_DIR, name), "utf8"), {
-      ontology,
+    const text = readFileSync(join(CARDS_DIR, name), "utf8");
+    const loaded = loadCard(text, { ontology, file: name });
+    if (loaded.card === undefined) {
+      for (const d of sortDiagnostics(loaded.diagnostics)) {
+        problems.push(formatDiagnostic(d, "content/cards"));
+      }
+      continue;
+    }
+
+    /* The FILENAME is the key, not the card's own two fields: the archive addresses a
+       version by the name it is published under, and a file whose name and contents
+       disagree is a publishing bug the chain check below reports rather than a pair of
+       identities to choose between. */
+    cards.push({
+      ref: name.replace(/\.yaml$/, "") as CardRef,
       file: name,
+      text,
+      card: loaded.card,
+      digest: cardDigest(loaded.card),
     });
-    if (loaded.card === undefined) continue;
+
     const chain = chains.get(loaded.card.id);
     if (chain === undefined) chains.set(loaded.card.id, [{ card: loaded.card, file: name }]);
     else chain.push({ card: loaded.card, file: name });
   }
 
-  const problems: string[] = [];
   for (const chain of chains.values()) {
     if (chain.length < 2) continue;
     for (const d of sortDiagnostics(checkVersionChain(chain))) {
       problems.push(formatDiagnostic(d, "content/cards"));
     }
   }
-  return problems;
+  return { cards, problems };
 }
 
 /* --------------------- assembling one bundle --------------------- */

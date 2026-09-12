@@ -16,7 +16,7 @@
    no plan.
    ============================================================ */
 
-import { readContent } from "@/lib/content/read";
+import { contentCardLibrary, readContent } from "@/lib/content/read";
 
 /**
  * The one handle every imported bundle and card is owned by.
@@ -85,40 +85,32 @@ export async function planImport(): Promise<ImportPlan> {
     releases: 1,
   }));
 
-  /* Keyed by ref rather than by id: four ids in the library carry two versions, and a
-     card is one immutable document per `(id, version)`. Seven refs are pinned by two
-     bundles apiece — 64 nodes over 57 distinct refs — so the map is what turns the
-     blueprint's node list into the card library without counting a shared card twice.
+  /* The LIBRARY, which is one entry per file in `content/cards/`, pinned or not. Walking
+     `blueprint.nodes` instead was complete only while every file happened to be pinned: a
+     card published on its own has no node to walk to, and an enumeration through the graph
+     would read as complete while missing it.
 
-     `allNodeCards()` is NOT the source. Its own doc says it returns the newest version of
-     every distinct card id, which is 53 of the 57 files, and an enumeration through it
-     would read as complete while missing four. */
-  const byRef = new Map<string, { cardId: string; version: string; digest: string; visibility: "public" | "private" }>();
-  for (const bundle of loaded) {
-    for (const node of bundle.blueprint.nodes) {
-      /* The map KEY is the dedup, and there is no `if (has) continue` above this line. It
-         was there and a mutation sweep reddened zero of nine cells removing it: setting an
-         existing key to an equal value changes nothing, so the guard read as the dedup
-         while the map did the work. Equal because the nine bundles carry no `cards/` folder
-         of their own — every ref resolves out of the one shared `content/cards/` library,
-         measured as 57 distinct refs over 57 files with no ref naming no file — so one ref
-         names exactly one document and last-write-wins cannot pick between two. */
-      byRef.set(node.ref, {
-        cardId: node.card.id,
-        version: node.card.version,
-        digest: node.digest,
-        /* Public, every one of them, and it is a property of where the document lives
-           rather than a default this module picked. `content/` is what the site reads at
-           build time and treats as published; `lib/data/cards.ts`'s own header argues that
-           a private row there would be a contradiction in terms. AC6's two private cards
-           were withdrawn for that reason among four (D-250-02). */
-        visibility: "public",
-      });
-    }
-  }
-  const cards = [...byRef.values()].sort((a, b) =>
-    a.cardId === b.cardId ? compare(a.version, b.version) : compare(a.cardId, b.cardId),
-  );
+     `allNodeCards()` is NOT the source either. Its own doc says it returns the newest
+     version of every distinct card id, and four ids here carry two versions.
+
+     The identity is still READ rather than computed here: `contentCardLibrary()` carries
+     the digest `lib/content/read.ts` took when it parsed the document, which is the module
+     that already held it. No dedup is needed — one file is one entry. */
+  const cards = contentCardLibrary()
+    .map((entry) => ({
+      cardId: entry.card.id,
+      version: entry.card.version,
+      digest: entry.digest,
+      /* Public, every one of them, and it is a property of where the document lives
+         rather than a default this module picked. `content/` is what the site reads at
+         build time and treats as published; `lib/data/cards.ts`'s own header argues that
+         a private row there would be a contradiction in terms. AC6's two private cards
+         were withdrawn for that reason among four (D-250-02). */
+      visibility: "public" as const,
+    }))
+    .sort((a, b) =>
+      a.cardId === b.cardId ? compare(a.version, b.version) : compare(a.cardId, b.cardId),
+    );
 
   return {
     bundles,

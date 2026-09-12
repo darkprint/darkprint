@@ -1,0 +1,47 @@
+id: sandboxed-python-runner
+name: Sandboxed Python Runner
+type: shell-tool
+
+action: >-
+  Run the supplied script inside the sandbox and return what it printed, whatever that turns out to
+  be.
+spec: >-
+  Run the script you are given in the configured sandbox and capture its standard output, its
+  standard error and its exit status. Emit all three on `result`, unchanged. Do not edit the script
+  to make it run, do not install a package it imports, and do not retry it with a change of your
+  own: a script that failed is a result, and repairing it here hides the failure from whichever
+  node was meant to see it. The sandbox has no network and a working directory that does not
+  survive the run; do not attempt to write outside it. Truncate nothing: if the output is large,
+  emit it in full, because the node reading it decides what matters and you do not.
+agent: Runner
+tools:
+  - python-sandbox
+mcp: []
+params:
+  tool_command: "python3 -I -"
+  timeout_ms: 30000
+
+inputs:
+  - name: script
+    type: code
+    description: The script to run, exactly as whoever wrote it wrote it.
+outputs:
+  - name: result
+    type: json
+    description: Standard output, standard error and exit status, none of them truncated.
+dependencies: []
+cannot: []
+will_not:
+  - edit the script to make it run
+  - install a package the script imports
+  - retry a failed script with a change of its own
+
+risk_markers:
+  - arbitrary-code-execution
+notes: >-
+  A `shell-tool`, so `params.tool_command` is the command actually run and the node compiles to the
+  runner's tool handler rather than to a prompted stage. The risk marker is the heaviest in the
+  vocabulary and it is correct here: the script is decided at run time and not by the blueprint.
+
+version: 1.0.0
+author: autogen

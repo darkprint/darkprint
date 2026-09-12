@@ -1,0 +1,44 @@
+id: queue-scheduler
+name: Queue Scheduler
+type: agent
+
+action: >-
+  Turn separately scored items into one ordered queue, applying the weighting policy out loud.
+spec: >-
+  Take the scored items and produce a single ordered queue on `queue`. Apply the deployment's
+  weighting to combine the criteria, and state the weighting you applied at the head of the output
+  so the order can be argued with rather than merely accepted. Respect blocking relationships
+  before weighting: an item that blocks another goes before it whatever their scores, and where two
+  items block each other, put both at the top and say they are in a cycle rather than picking one.
+  Every item that arrived appears in the queue exactly once. Do not drop the tail because it looked
+  unimportant, and do not promote an item because it has been waiting, ageing is a weighting
+  decision and belongs in the policy rather than in your judgement.
+agent: Scheduler
+tools: []
+mcp: []
+params:
+  weights:
+    urgency: 0.4
+    impact: 0.3
+    blocks: 0.2
+    cost: 0.1
+
+inputs:
+  - name: scored
+    type: json
+    description: The items with their separate criterion scores attached.
+outputs:
+  - name: queue
+    type: json
+    description: Every item exactly once, in order, headed by the weighting that produced it.
+dependencies: []
+cannot: []
+will_not:
+  - drop an item from the queue
+  - promote an item for having waited
+  - break a blocking cycle by choosing one side
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

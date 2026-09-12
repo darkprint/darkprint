@@ -1,0 +1,40 @@
+id: panel-fanout
+name: Panel Fanout
+type: parallel
+
+action: >-
+  Hand the identical brief to every reviewer on the panel, so their verdicts are comparable.
+spec: >-
+  Take the brief and pass it to each outgoing branch unchanged and identical. Identical is the
+  whole requirement: two reviewers given subtly different briefs produce two verdicts that cannot
+  be compared, and the disagreement that follows is about the brief rather than about the work. Do
+  not tailor the brief to a branch, do not tell a branch what another branch is doing, and do not
+  order the branches in a way that suggests precedence. Emit the brief on `briefed`. You decide
+  nothing about the work itself and hold no opinion about it.
+agent: Fanout
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: brief
+    type: plan
+    description: The brief every branch receives, identically.
+outputs:
+  - name: briefed
+    type: plan
+    description: The same brief, unchanged, for each branch to take.
+dependencies: []
+cannot: []
+will_not:
+  - tailor the brief to any one branch
+  - tell a branch what another branch is doing
+
+risk_markers: []
+notes: >-
+  A `parallel` card, which compiles to the runner's parallel handler rather than to an ordinary
+  stage. Whether the branches actually run concurrently is a property of the runner, not of this
+  card; check that before relying on the fan-out.
+
+version: 1.0.0
+author: autogen

@@ -1,0 +1,41 @@
+id: trajectory-auditor
+name: Trajectory Auditor
+type: validation
+phase: testing
+
+action: >-
+  Judge the route a run took rather than the answer it arrived at, and report where the route was
+  wrong even when the answer was right.
+spec: >-
+  You are handed the recorded steps of a completed run: what each node did, in what order, and what
+  it called. Judge the route. Report on `audit` every step that was taken out of order, every call
+  made with arguments the previous step did not support, every repetition that added nothing, and
+  every point where the run reached the right place by a path that would not work again. Say
+  explicitly when the outcome was correct and the route was not: that is the finding this node
+  exists for, and a run that succeeded by luck is the one most likely to be copied. Do not grade
+  the final answer, another node does that. Do not omit a step because it succeeded, and do not
+  invent a timing or an argument for a step the record does not carry.
+agent: Auditor
+tools: []
+mcp: []
+params: {}
+
+inputs:
+  - name: trace
+    type: json
+    description: The recorded steps of the run, in the order they happened.
+outputs:
+  - name: audit
+    type: report
+    description: Where the route was wrong, including where it was wrong despite the outcome being right.
+dependencies: []
+cannot: []
+will_not:
+  - grade the final answer
+  - invent a timing or an argument the record does not carry
+  - drop a step from the audit because it succeeded
+
+risk_markers: []
+
+version: 1.0.0
+author: autogen

@@ -1,0 +1,44 @@
+id: dynamic-repriority
+name: Dynamic Repriority
+type: decision
+
+action: >-
+  Decide whether an arriving event is big enough to disturb the queue, and record the decision where
+  a fork can read it.
+spec: >-
+  An event has arrived while a queue is already in flight. Decide whether it changes the order.
+  Say `reorder` when the event makes something in the queue urgent that was not, when it blocks an
+  item currently near the top, or when it makes an item pointless. Say `hold` for everything else,
+  and mean it: a queue that is rebuilt on every event is not a queue, and the cost of reordering is
+  paid by whatever was about to run. Emit the event on `routed` unchanged either way. Record the
+  decision in your status file: put `repriority` in `context_updates`, set to the value you chose,
+  so the fork downstream can branch on `context.repriority`. A run that leaves that key unwritten
+  reads back as the empty string, so the arm that a silent run takes should be the one that leaves
+  the queue alone.
+agent: Repriority
+tools: []
+mcp: []
+params:
+  default_decision: hold
+
+inputs:
+  - name: event
+    type: event
+    description: The event that arrived while a queue was already in flight.
+outputs:
+  - name: routed
+    type: event
+    description: The event passed on unchanged, whichever way the decision went.
+dependencies: []
+cannot: []
+will_not:
+  - reorder the queue itself
+  - rebuild a queue on an event that changes nothing
+
+risk_markers: []
+notes: >-
+  A `decision` card runs as a no-op that writes no preferred label, so the fork reading this node
+  must branch on the context key the spec sets. Put the negation arm on holding the queue.
+
+version: 1.0.0
+author: autogen

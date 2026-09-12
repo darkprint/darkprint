@@ -21,7 +21,7 @@ import {
 } from "@/lib/core";
 import { communityFor } from "@/lib/data/community";
 import { BUNDLE_VOCABULARY, localTermsUsed } from "./bundle-export";
-import { contentOntology, contentVocabulary, readContent } from "./read";
+import { contentCardLibrary, contentOntology, contentVocabulary, readContent } from "./read";
 import { toBlueprintView } from "./view";
 
 /** The raw text behind a bundle, for the "source" panels. */
@@ -55,6 +55,7 @@ let content: Content | undefined;
 
 function build(): Content {
   const loaded = readContent();
+  const library = contentCardLibrary();
 
   const blueprints = loaded
     .map((entry) =>
@@ -98,13 +99,13 @@ function build(): Content {
         });
       }
     }
-    // A card shared by two blueprints is one file in the library, so the second write
-    // is the same bytes as the first (§4: a published version is immutable).
-    for (const card of entry.cardFiles) {
-      const ref = card.file.replace(/^cards\//, "").replace(/\.yaml$/, "");
-      cardText.set(ref, card.text);
-    }
   }
+
+  /* The whole library rather than the union of the pins: a card published on its own has a
+     node page that shows its source like any other, and its bytes come from the same read.
+     A card shared by two blueprints is one file here, so nothing is written twice (§4: a
+     published version is immutable). */
+  for (const entry of library) cardText.set(entry.ref, entry.text);
 
   return {
     blueprints,

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cx } from "@/lib/format";
 
-type Variant = "primary" | "outline" | "ghost";
+type Variant = "primary" | "outline" | "ghost" | "card";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
@@ -23,6 +23,17 @@ const VARIANTS: Record<Variant, string> = {
   outline:
     "border border-line-bright text-fg hoverable:hover:border-cyan hoverable:hover:text-cyan bg-transparent",
   ghost: "text-muted hoverable:hover:text-fg bg-transparent",
+  /* `outline`'s shape in the card register (globals.css, amber job 3): the hue answers WHICH
+     document this control is about, and the affordance still comes from the shape, the height
+     and the hover, exactly as the card page's download trigger argues.
+
+     Bordered and transparent, NEVER filled. A filled amber shape is how this site spells an
+     honesty claim — `ComingSoonBadge` is one — so a filled amber button would read as a
+     status about itself rather than as the register. Amber on a word is the register; amber
+     around a word is what the claim wears. Named for the register and not for the hue, so a
+     control that is about neither a card nor a claim has no variant to reach for here. */
+  card:
+    "border border-amber/70 text-amber bg-transparent hoverable:hover:border-amber-bright hoverable:hover:text-amber-bright",
 };
 
 const SIZES: Record<Size, string> = {
