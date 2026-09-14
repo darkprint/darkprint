@@ -337,10 +337,16 @@ Vectors are written at publish, inside the transaction, stamped with `embedded_i
 sha256(model sha256 + "\n" + document)`, and rewritten only when the stamp disagrees. `npm run
 db:reembed [-- --dry-run] [-- --allow-absent]` sweeps the archive and exits 1 without the
 encoder unless `--allow-absent`. `npm run eval:rag -- <file.json>` runs a query file through the
-same searchers. Measured on a held-out set against a database seeded from `content/` only (18
-blueprint queries, 4 negatives, 12 card queries): blueprints top-1 12/18, top-3 18/18; cards
-top-1 9/12, top-3 12/12; negatives 3/4 below the floor. A card-fusion variant was measured and
-reverted for no gain in the full ranking. Routes: `GET /api/search/blueprints`,
+same searchers; `--json`, `--baseline <file>` (exit 1 when a metric falls) and `--require-encoder`
+(exit 2 with no encoder, because "search got worse" and "search is not running" are different
+failures) make it usable as a gate. `scripts/rag-eval.golden.json` is the set to run: 48 probes
+written against what each blueprint does rather than what its manifest says, so it can see an
+encoder outage the smoke set beside it scores identically with or without. recall@5 is the
+headline, since `FIND_DEFAULT_LIMIT` is 5 and a hit at rank 6 reaches no agent.
+`scripts/rag-eval.baseline.json` records the numbers to argue from, measured against production
+at 6068e9b0: blueprints recall@5 32/32, top-1 25/32, MRR 0.868; cards recall@5 10/12, top-1
+4/12, MRR 0.499; negatives 4/4 quiet. A card-fusion variant was measured and reverted for no gain
+in the full ranking. Routes: `GET /api/search/blueprints`,
 `/api/search/cards`, `/api/search/terms` (`q` plus the filters `searchParams` accepts).
 
 ## 9. MCP
@@ -349,13 +355,24 @@ Seven tools (`packages/mcp/src/definitions.ts`), the same table on both transpor
 
 | Tool | Answers |
 | --- | --- |
-| `find_blueprints` | ranked hits for a task in prose: `ref` (`owner/slug`), author, current digest, score, similarity, evidence, node count, human-gate ids, autonomy class, security level, phases; `encoder` on the response; `include_forks` off by default |
-| `find_cards` | ranked cards, one per id: `ref` (`id@version`), digest, name, type, action, phases, tools, risk markers, `usedIn`, score, similarity, evidence |
+| `find_blueprints` | ranked hits for a task in prose: `ref` (`owner/slug`), author, current digest, score, similarity, evidence, node count, human-gate ids, autonomy class, security level, phases; `encoder` and `ordered` on the response; `include_forks` off by default |
+| `find_cards` | ranked cards, one per id: `ref` (`id@version`), digest, name, type, action, phases, tools, risk markers, `usedIn`, score, similarity, evidence; `encoder` and `ordered` on the response |
 | `get_blueprint` | every file of one release, its manifest, scorecard, provenance, numbered instantiation notes for `claude-code`, `codex` or `generic`, and `run`: the contract for executing the graph, which does NOT vary by harness and is returned whether or not one is named. `run` says to get the person's agreement against the scorecard first, to give each node its own context and only its declared inputs, to honour `will_not`, `cannot`, `tools` and `mcp`, to bound a loop by `max_retries`, and to stop at every human gate. Held by `lib/server/mcp/guidance.test.ts`, which exists because both safety sentences were once emitted only when a caller named a non-default harness. The current release without `digest` |
 | `read_card` | one card version as published, verbatim YAML |
 | `inspect_provenance` | who published a blueprint, what it was forked from, every release with version and digest |
 | `fetch_release` | the file names of one exact release by digest |
 | `export_pipeline` | one release compiled to Attractor DOT, with a header naming every attribute a blueprint cannot set |
+
+The two find verbs answer `ordered` beside `encoder`, and it is the stronger of the two.
+`encoder` is a fact about the process; `ordered` is a fact about the rows that came back, true
+only when every hit both explains itself and carries a `similarity`. They come apart in the case
+that matters: a release published while the encoder was down keeps its missing vector into a
+process that has one, and its lexical score cannot be compared with an embedded neighbour's.
+An agent gating on `encoder` alone ranks across two scales without being told. `orderedOf` in
+`lib/server/mcp/find.ts` computes it; `tests/server/t220/find-degraded.test.ts` holds the arm
+where both flags are false and `find.test.ts` the arm where only `ordered` is. `/api/search`
+keeps the search module's weaker `Results.ordered`, which asks only whether the archive produced
+an order at all, because a browser shelf shows its own evidence next to every row.
 
 `POST /api/mcp` is Streamable HTTP in its stateless form: one JSON-RPC message or a batch per
 POST (`initialize`, `notifications/initialized`, `tools/list`, `tools/call`), answered as JSON;

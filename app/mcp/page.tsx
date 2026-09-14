@@ -74,7 +74,7 @@ const NOTES = [
   {
     label: "order",
     body:
-      "Results come back ranked by how close each blueprint or card is to the task you described, best match first: the cosine similarity between your task and the document DarkPrint keeps for it, plus a small bonus for words that match. Each hit shows its score and lists every field a word matched, so you can check the order against the documents. The score is a similarity and says nothing about quality. When the vector channel is unavailable the response says encoder: absent and the order is word matches alone.",
+      "Results come back ranked by how close each blueprint or card is to the task you described, best match first: the cosine similarity between your task and the document DarkPrint keeps for it, plus a small bonus for words that match. Each hit shows its score and lists every field a word matched, so you can check the order against the documents. The score is a similarity and says nothing about quality. When the vector channel is unavailable the response says encoder: absent and the order is word matches alone. The response also carries ordered, which reads false whenever any hit in the answer arrived without a similarity, so an agent knows when the positions are not comparable.",
   },
   {
     label: "what a hit contains",

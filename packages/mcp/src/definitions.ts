@@ -52,7 +52,10 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
       "current release, a `score`, the `similarity` when the vector channel was available, the " +
       "`evidence` naming every field a word matched, and a scorecard summary: node count, the " +
       "human-gate node ids, autonomy class, security level and covered phases. The response's " +
-      "`encoder` field reads `absent` when the order is lexical coverage alone. Call this " +
+      "`encoder` field reads `absent` when the order is lexical coverage alone, and `ordered` " +
+      "reads false whenever any hit came back without a `similarity`, which happens to a " +
+      "blueprint published while the encoder was down. Read an unordered answer as a set of " +
+      "candidates and rank it yourself on the evidence. Call this " +
       "first, then `get_blueprint` on the ref you choose. A score is a similarity and says " +
       "nothing about quality.",
     inputSchema: {
@@ -77,7 +80,8 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
       "highest-scoring version, and on a tie the highest version number. Each hit carries its " +
       "`ref`, written `id@version`, plus `digest`, `name`, `type`, `action`, `phases`, `tools`, " +
       "`riskMarkers`, the blueprints that pin it in `usedIn`, a `score`, the `similarity` when " +
-      "available and the `evidence`. Use `read_card` on a ref to get the whole document.",
+      "available and the `evidence`. The response carries `encoder` and `ordered` with the same " +
+      "meaning they have on `find_blueprints`. Use `read_card` on a ref to get the whole document.",
     inputSchema: {
       type: "object",
       properties: {

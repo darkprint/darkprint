@@ -32,3 +32,27 @@ export function similarityOf(evidence: readonly string[]): number | undefined {
   }
   return undefined;
 }
+
+/**
+ * Whether this answer's order is a rank an agent can act on.
+ *
+ * Stronger than `Results.ordered`, which asks only whether the archive produced the order at
+ * all. Two conditions, both read off the hits the caller was handed rather than off the branch
+ * that made them, so a caller can recompute this flag from the payload it has: every hit says
+ * which field and token reached it, and every hit was placed by the vector channel.
+ *
+ * The second clause is why this is not a restatement of `encoder`. A release published while
+ * no encoder was provisioned carries no vector until `db:reembed` sweeps it, and it then ranks
+ * in a process whose encoder IS present: its score cannot exceed `LEXICAL_BOOST` while an
+ * embedded neighbour clears that on similarity alone, so one such hit in the slice puts two
+ * scoring scales in one list and the ranks are not comparable across them. `encoder` is a fact
+ * about the process; this is a fact about the rows that came back.
+ *
+ * `every` over an empty slice is `true`, which is the convention `Results.ordered` keeps: an
+ * answer with nothing in it has no order it failed to explain.
+ */
+export function orderedOf(
+  hits: readonly { evidence: readonly string[]; similarity?: number }[],
+): boolean {
+  return hits.every((hit) => hit.evidence.length > 0 && hit.similarity !== undefined);
+}

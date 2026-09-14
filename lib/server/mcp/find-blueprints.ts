@@ -12,7 +12,7 @@ import type { Db } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
 import { scoresFor, type BlueprintSummary, type Scores } from "@/lib/server/registry";
 import { searchBlueprints, type Hit } from "@/lib/server/search";
-import { clampLimit, similarityOf } from "./find";
+import { clampLimit, orderedOf, similarityOf } from "./find";
 import { withMcpStore } from "./store";
 import type { McpBlueprintHit, McpFindResult } from "./types";
 
@@ -53,7 +53,7 @@ export async function mcpFindBlueprints(
     return {
       task,
       encoder: results.encoder,
-      ordered: hits.every((hit) => hit.evidence.length > 0),
+      ordered: orderedOf(hits),
       hits,
     };
   });

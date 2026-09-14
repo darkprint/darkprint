@@ -67,9 +67,18 @@ export interface McpCardHit extends McpHitBase {
 }
 
 /**
- * A find answer. `ordered` is the search module's own law composed through: true when every
- * hit carries evidence, and true over zero hits. `encoder` says whether this process could
- * encode the task; when it is `absent` no hit carries a similarity and the order is lexical.
+ * A find answer.
+ *
+ * `ordered` is STRONGER than the search module's `Results.ordered` and is computed here by
+ * `orderedOf`: true when every hit both explains itself and was placed by the vector channel.
+ * `GET /api/search/blueprints` still publishes the weaker flag under the same field name, so
+ * two live endpoints can answer differently for one query; that divergence is deliberate and
+ * is recorded in `docs/ARCHITECTURE.md` rather than resolved by a rename, because the field is
+ * already published in `darkprint` on npm.
+ *
+ * `encoder` says whether this PROCESS could encode the task. It is not the same question: a
+ * release published during an outage carries no vector and still ranks in a process whose
+ * encoder is present, which `encoder` cannot report and `ordered` can.
  */
 export interface McpFindResult<H> {
   task: string;

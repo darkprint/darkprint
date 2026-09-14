@@ -78,7 +78,9 @@ describe("find blueprints", () => {
     expect(hits.length).toBeLessThanOrEqual(5);
     expect(hits.map((hit) => hit.ref)).toEqual(oracle.hits.slice(0, 5).map(blueprintRef));
     expect(hits.map((hit) => hit.score)).toEqual(oracle.hits.slice(0, 5).map((hit) => hit.score));
-    expect(result.ordered).toBe(hits.every((hit) => hit.evidence.length > 0));
+    expect(result.ordered).toBe(
+      hits.every((hit) => hit.evidence.length > 0 && hit.similarity !== undefined),
+    );
 
     for (const hit of hits) {
       expect(hit.kind).toBe("blueprint");
@@ -119,6 +121,67 @@ describe("find blueprints", () => {
     expect(two.hits).toHaveLength(2);
     expect(many.hits).toHaveLength(Math.min(20, shelf));
     expect(none.hits, "a limit below one is one, never zero").toHaveLength(1);
+  });
+
+  /* ── the mixed world ──
+     `encoder` is a fact about the PROCESS and `ordered` a fact about the ROWS, and the two
+     come apart exactly here: a release published during an outage keeps its missing vector
+     into a process that has an encoder. `find-degraded.test.ts` beside this file has both
+     flags false at once, which cannot tell the two apart; this cell holds `encoder` at
+     "present" and moves `ordered` alone, so the new clause is the only thing that can be
+     doing the work. The row is put back in a `finally` because the world is shared. */
+  it("withdraws the rank for one unembedded release while the process keeps its encoder", async () => {
+    const w = await world();
+    const token = knownToken();
+    const find = await verb("mcpFindBlueprints");
+
+    const before = (await find(w.scratch.db, anonymous, token, { limit: 20 })) as FindResult<BlueprintHit>;
+    expect(before.encoder, "this cell needs the encoder this process has").toBe("present");
+    expect(before.hits.length, "no hits is not a rank, it is no answer").toBeGreaterThan(0);
+    expect(before.ordered, "the control: an unstripped world ranks, so the false below is the strip").toBe(true);
+
+    const digest = before.hits[0].digest;
+    const saved = await w.scratch.query(
+      `delete from release_embedding
+         where release_id in (select id from "release" where digest = $1)
+         returning release_id, embedding::text as embedding, created_at, embedded_input_sha256`,
+      [digest],
+    );
+    expect(saved.length, "the hit's digest names no release, so nothing was stripped").toBeGreaterThan(0);
+
+    try {
+      const after = (await find(w.scratch.db, anonymous, token, { limit: 20 })) as FindResult<BlueprintHit>;
+      expect(
+        after.hits.map((hit) => hit.digest),
+        "the stripped release left the answer, so nothing in it is unranked",
+      ).toContain(digest);
+      expect(after.encoder, "the process still has an encoder and that flag cannot see this").toBe("present");
+      expect(
+        after.hits.every((hit) => hit.evidence.length > 0),
+        "every hit still explains itself, which is all the old law ever asked",
+      ).toBe(true);
+      expect(after.ordered).toBe(false);
+
+      /* THE DIVERGENCE, and it is deliberate. The search module's own law is
+         `every(evidence.length > 0)`, so on this same data it still says `true`, and
+         `/api/search` keeps that: a browser shelf prints the evidence beside every row and a
+         reader can see for herself that one has no similarity. An agent gets a list and a
+         number, so the MCP owes it the stronger flag. A red here means the two surfaces
+         quietly converged and one of them is now lying to its own reader. */
+      const oracle = await searchBlueprints(w.scratch.db as never, anonymous, { q: token });
+      expect(
+        oracle.ordered,
+        "the search module's weaker law, held on the very data the verb calls unordered",
+      ).toBe(true);
+    } finally {
+      for (const row of saved) {
+        await w.scratch.query(
+          `insert into release_embedding (release_id, embedding, created_at, embedded_input_sha256)
+             values ($1, $2::vector, $3, $4)`,
+          [row.release_id, row.embedding, row.created_at, row.embedded_input_sha256],
+        );
+      }
+    }
   });
 
   it("lists the public shelf unranked for an empty task and says so", async () => {
@@ -171,6 +234,9 @@ interface CardHit {
   riskMarkers: unknown;
   usedIn: string[];
   score: number;
+  /* Optional on the wire and optional here: a hit whose version carries no stored vector
+     arrives without it, which is the state `ordered` exists to report. */
+  similarity?: number;
   evidence: readonly string[];
 }
 
@@ -205,7 +271,9 @@ describe("find cards", () => {
 
     expect(hits.map((hit) => hit.ref)).toEqual(expected);
     expect(new Set(hits.map((hit) => hit.ref.split("@")[0])).size).toBe(hits.length);
-    expect(result.ordered).toBe(hits.every((hit) => hit.evidence.length > 0));
+    expect(result.ordered).toBe(
+      hits.every((hit) => hit.evidence.length > 0 && hit.similarity !== undefined),
+    );
     for (const hit of hits) {
       expect(hit.kind).toBe("card");
       expect(hit.ref).toMatch(/@/);

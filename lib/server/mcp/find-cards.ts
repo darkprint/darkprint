@@ -13,7 +13,7 @@ import type { Db } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
 import type { CardSummary } from "@/lib/server/registry";
 import { searchCards, type Hit } from "@/lib/server/search";
-import { clampLimit, similarityOf } from "./find";
+import { clampLimit, orderedOf, similarityOf } from "./find";
 import { withMcpStore } from "./store";
 import type { McpCardHit, McpFindResult } from "./types";
 
@@ -42,7 +42,7 @@ export async function mcpFindCards(
     return {
       task,
       encoder: results.encoder,
-      ordered: hits.every((hit) => hit.evidence.length > 0),
+      ordered: orderedOf(hits),
       hits,
     };
   });
