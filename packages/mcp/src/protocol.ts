@@ -34,7 +34,7 @@ export const SUPPORTED_PROTOCOL_VERSIONS: readonly string[] = [
  * copy is held to the manifest by `protocol.test.ts`, which reads both, because it had
  * already drifted two releases behind before anything looked.
  */
-export const SERVER_INFO = { name: "darkprint", title: "DarkPrint registry", version: "0.1.3" };
+export const SERVER_INFO = { name: "darkprint", title: "DarkPrint registry", version: "0.1.4" };
 
 /** Runs one named tool with its arguments and answers the text the model reads. */
 export type ToolExecutor = (name: string, args: Record<string, unknown>) => Promise<string>;

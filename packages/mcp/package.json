@@ -1,6 +1,6 @@
 {
   "name": "darkprint",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": false,
   "description": "The DarkPrint registry from your terminal and from an agent session: clone, validate, export and import blueprints, report runs, serve the registry over MCP on stdio, and carry the blueprint-writing skill.",
   "license": "MIT",
