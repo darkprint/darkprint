@@ -1,0 +1,23 @@
+{
+  "encoder": "present",
+  "blueprints": {
+    "n": 32,
+    "recallAt5": 32,
+    "top1": 25,
+    "top3": 30,
+    "mrr": 0.8682
+  },
+  "cards": {
+    "n": 12,
+    "recallAt5": 10,
+    "top1": 4,
+    "top3": 7,
+    "mrr": 0.4986
+  },
+  "negatives": {
+    "n": 4,
+    "quiet": 4
+  },
+  "measuredAgainst": "production (16 blueprints, 119 card versions) at commit 6068e9b0, encoder present",
+  "note": "recall@5 is the headline: FIND_DEFAULT_LIMIT is 5, so a hit at rank 6 is one no agent is shown. A CI run against a freshly seeded local database will differ from this \u2014 production carries forks this file does not."
+}

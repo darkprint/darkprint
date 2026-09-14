@@ -1,0 +1,89 @@
+{
+  "about": [
+    "The task-shaped set. Two probes per blueprint: one a reader would type into a box, one a",
+    "sentence an agent would carry from a user. Written against what each blueprint DOES rather",
+    "than what its manifest SAYS, and deliberately avoiding the archive's own vocabulary — the",
+    "smoke set beside this one scores identically with the encoder present and absent because",
+    "every query there shares content words with its target, which makes it blind to the exact",
+    "outage it would be run to catch.",
+    "",
+    "The near-miss groups are the point of the blueprint half. On a sixteen-item corpus recall@5",
+    "is won or lost between guarded-merge-bot / guarded-assistant-line / delegation-broker,",
+    "between adversarial-consensus-line / producer-critic-refinery / hypothesis-tournament,",
+    "between incident-commander / frontline-triage, and between nightly-data-janitor /",
+    "schema-forge-etl / checkpoint-resume-runner. Each probe below has to beat its own group.",
+    "",
+    "HELD-OUT HONESTY: the author of these probes had read the corpus. `lexicalOverlap` is",
+    "reported per query for that reason — a set that drifts lexically announces itself instead",
+    "of quietly becoming the smoke set again."
+  ],
+  "blueprints": [
+    { "query": "two opinions then settle on one", "expected": "adversarial-consensus-line" },
+    { "query": "I want two independent attempts at the same question and something to reconcile them into a single answer", "expected": "adversarial-consensus-line" },
+
+    { "query": "cheap model unless it is hard", "expected": "budget-aware-router" },
+    { "query": "send easy questions to a small fast model and only pay for the expensive one when it is actually needed", "expected": "budget-aware-router" },
+
+    { "query": "resume after a crash", "expected": "checkpoint-resume-runner" },
+    { "query": "a long job that saves progress as it goes so a failure halfway through does not mean starting over", "expected": "checkpoint-resume-runner" },
+
+    { "query": "hand work to an outside agent", "expected": "delegation-broker" },
+    { "query": "find some third party service that can do this, give it the job, and do not trust what comes back", "expected": "delegation-broker" },
+
+    { "query": "answer customer tickets", "expected": "frontline-triage" },
+    { "query": "sort incoming customer messages, handle the easy ones automatically, and pass the rest to a person", "expected": "frontline-triage" },
+
+    { "query": "research with real sources", "expected": "grounded-research-desk" },
+    { "query": "look something up across several places and keep checking until every statement has evidence behind it", "expected": "grounded-research-desk" },
+
+    { "query": "screen what users send the model", "expected": "guarded-assistant-line" },
+    { "query": "put safety checks around a chatbot so nothing unsafe reaches it and nothing unsafe comes back out", "expected": "guarded-assistant-line" },
+
+    { "query": "review pull requests", "expected": "guarded-merge-bot" },
+    { "query": "have something look at code changes and run the tests, but a person signs off before anything lands", "expected": "guarded-merge-bot" },
+
+    { "query": "try many ideas and keep the best", "expected": "hypothesis-tournament" },
+    { "query": "produce lots of candidate ideas, score them against each other, and carry the winners forward", "expected": "hypothesis-tournament" },
+
+    { "query": "handle production alerts", "expected": "incident-commander" },
+    { "query": "when something breaks in production work out what to do, and get a person involved if it looks risky", "expected": "incident-commander" },
+
+    { "query": "overnight data cleanup", "expected": "nightly-data-janitor" },
+    { "query": "a scheduled job that tidies up records every night with nobody watching it", "expected": "nightly-data-janitor" },
+
+    { "query": "keep work pointed at a goal", "expected": "objective-tracker" },
+    { "query": "one person says what we are trying to achieve and another says how we will know, and the worker must not see the second", "expected": "objective-tracker" },
+
+    { "query": "monitor a pipeline I already have", "expected": "pipeline-observability" },
+    { "query": "add tracing and alerting to a workflow that already exists without rewriting any of it", "expected": "pipeline-observability" },
+
+    { "query": "draft then grade the draft", "expected": "producer-critic-refinery" },
+    { "query": "one thing writes and another grades it, and the writer must never learn what it is being graded on", "expected": "producer-critic-refinery" },
+
+    { "query": "clean up messy documents", "expected": "schema-forge-etl" },
+    { "query": "take unstructured files, force them into a fixed shape, and fix whatever fails the check", "expected": "schema-forge-etl" },
+
+    { "query": "build a feature end to end", "expected": "starter-software-factory" },
+    { "query": "the basic line that plans a change, writes it, tests it, fixes what broke and ships it", "expected": "starter-software-factory" }
+  ],
+  "cards": [
+    { "query": "grade one answer against a rubric", "expected": "llm-judge" },
+    { "query": "run a python script somewhere it cannot hurt anything", "expected": "sandboxed-python-runner" },
+    { "query": "reorder a queue of work as things change", "expected": "dynamic-repriority" },
+    { "query": "decide what to work on next", "expected": "queue-scheduler" },
+    { "query": "score how important a piece of work is", "expected": "priority-scorer" },
+    { "query": "check what an agent actually did step by step", "expected": "trajectory-auditor" },
+    { "query": "split work across several workers at once", "expected": "panel-fanout" },
+    { "query": "gather the parallel results back together", "expected": "panel-fan-in" },
+    { "query": "ask a person to approve before it goes ahead", "expected": "maintainer-approval" },
+    { "query": "run the project's tests and say what broke", "expected": "test-runner" },
+    { "query": "write the code for the planned change", "expected": "code-builder" },
+    { "query": "work out why a test is failing and fix it", "expected": "targeted-debugger" }
+  ],
+  "negatives": [
+    { "query": "book a table for four at an italian restaurant on friday night" },
+    { "query": "how do I convert celsius to fahrenheit" },
+    { "query": "what is the capital of portugal" },
+    { "query": "remind me to call my mother on sunday" }
+  ]
+}

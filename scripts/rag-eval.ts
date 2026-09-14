@@ -49,7 +49,16 @@ interface EvalFile {
 /** How far above the floor a negative's best score may sit and still read as "nothing here". */
 const NEGATIVE_MARGIN = 0.05;
 
-const path = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
+const argv = process.argv.slice(2);
+const asJson = argv.includes("--json");
+const requireEncoder = argv.includes("--require-encoder");
+/* `--baseline <file>`, taking the value as the next argument so a path with an `=` in it is
+   not split by one. */
+const baselineAt = argv.indexOf("--baseline");
+const baselinePath = baselineAt === -1 ? undefined : argv[baselineAt + 1];
+/* `baselineAt + 1` is the VALUE of `--baseline` and is not the eval file. Guarded on
+   `baselineAt !== -1`, because without the flag that index is 0 — which is the eval file. */
+const path = argv.find((arg, i) => !arg.startsWith("--") && !(baselineAt !== -1 && i === baselineAt + 1));
 if (path === undefined) {
   console.error("usage: npm run eval:rag -- <file.json>");
   process.exit(2);
@@ -82,7 +91,7 @@ function distinct(hits: readonly { evidence: readonly string[]; score: number }[
   return { keys, scoreOf, similarityOf, encoder };
 }
 
-function rankLine(label: string, query: string, expected: string, ranked: Ranked): { top1: boolean; top3: boolean } {
+function rankLine(label: string, query: string, expected: string, ranked: Ranked): { rank: number | undefined } {
   const rank = ranked.keys.indexOf(expected);
   const found = rank !== -1;
   const score = found ? ranked.scoreOf.get(expected)?.toFixed(4) : "-";
@@ -91,7 +100,36 @@ function rankLine(label: string, query: string, expected: string, ranked: Ranked
     `  ${label} rank ${found ? String(rank + 1).padStart(2) : " -"}  score ${String(score).padEnd(6)}  sim ${similarity.padEnd(4)}  ` +
       `${JSON.stringify(query)}\n      expected ${expected}; top: ${ranked.keys.slice(0, 3).join(", ") || "(nothing)"}`,
   );
-  return { top1: rank === 0, top3: found && rank < 3 };
+  return { rank: found ? rank + 1 : undefined };
+}
+
+/**
+ * The headline metric, and it is `@5` for one reason: `FIND_DEFAULT_LIMIT` is 5 and both MCP
+ * find verbs slice with `clampLimit`, so a hit at rank 6 is a hit no agent is ever shown.
+ * top-1 and MRR sit beside it because a set can hold recall while losing the order.
+ */
+function summarise(ranks: readonly (number | undefined)[]): Summary {
+  const found = ranks.filter((r): r is number => r !== undefined);
+  return {
+    n: ranks.length,
+    recallAt5: found.filter((r) => r <= 5).length,
+    top1: found.filter((r) => r === 1).length,
+    top3: found.filter((r) => r <= 3).length,
+    mrr: Number((ranks.reduce<number>((sum, r) => sum + (r === undefined ? 0 : 1 / r), 0) / (ranks.length || 1)).toFixed(4)),
+  };
+}
+
+interface Summary {
+  n: number;
+  recallAt5: number;
+  top1: number;
+  top3: number;
+  mrr: number;
+}
+
+/** `a/b` with the ratio, so a run reads without arithmetic. */
+function line(label: string, s: Summary): string {
+  return `${label}: recall@5 ${s.recallAt5}/${s.n}, top-1 ${s.top1}/${s.n}, top-3 ${s.top3}/${s.n}, MRR ${s.mrr.toFixed(3)}`;
 }
 
 const client = createDbClient();
@@ -100,16 +138,13 @@ try {
   let encoder = "unknown";
 
   const blueprints = file.blueprints ?? [];
-  let top1 = 0;
-  let top3 = 0;
+  const blueprintRanks: (number | undefined)[] = [];
   if (blueprints.length > 0) console.log(`blueprints (${blueprints.length}):`);
   for (const row of blueprints) {
     const results = await searchBlueprints(db, anonymous, { q: row.query, forks: "all" });
     encoder = results.encoder;
     const ranked = distinct(results.hits, (i) => results.hits[i].item.slug, results.encoder);
-    const outcome = rankLine("bp  ", row.query, row.expected, ranked);
-    if (outcome.top1) top1 += 1;
-    if (outcome.top3) top3 += 1;
+    blueprintRanks.push(rankLine("bp  ", row.query, row.expected, ranked).rank);
   }
 
   const negatives = file.negatives ?? [];
@@ -130,25 +165,57 @@ try {
   }
 
   const cards = file.cards ?? [];
-  let cardTop1 = 0;
-  let cardTop3 = 0;
+  const cardRanks: (number | undefined)[] = [];
   if (cards.length > 0) console.log(`cards (${cards.length}):`);
   for (const row of cards) {
     const results = await searchCards(db, anonymous, { q: row.query });
     encoder = results.encoder;
     const ranked = distinct(results.hits, (i) => results.hits[i].item.id, results.encoder);
-    const outcome = rankLine("card", row.query, row.expected, ranked);
-    if (outcome.top1) cardTop1 += 1;
-    if (outcome.top3) cardTop3 += 1;
+    cardRanks.push(rankLine("card", row.query, row.expected, ranked).rank);
   }
+
+  const report = {
+    encoder,
+    blueprints: summarise(blueprintRanks),
+    cards: summarise(cardRanks),
+    negatives: { n: negatives.length, quiet },
+  };
 
   console.log("");
   console.log(`encoder: ${encoder}`);
-  if (blueprints.length > 0) console.log(`blueprints: top-1 ${top1}/${blueprints.length}, top-3 ${top3}/${blueprints.length}`);
+  if (blueprints.length > 0) console.log(line("blueprints", report.blueprints));
   if (negatives.length > 0) {
     console.log(`negatives: ${quiet}/${negatives.length} empty or below ${(MIN_SIMILARITY + NEGATIVE_MARGIN).toFixed(2)}`);
   }
-  if (cards.length > 0) console.log(`cards: top-1 ${cardTop1}/${cards.length}, top-3 ${cardTop3}/${cards.length}`);
+  if (cards.length > 0) console.log(line("cards     ", report.cards));
+
+  if (asJson) console.log(`\n${JSON.stringify(report, null, 2)}`);
+
+  /* An absent encoder is a DIFFERENT failure from a bad ranking and exits differently, so a
+     caller can tell "search got worse" from "search is not running". */
+  if (requireEncoder && encoder !== "present") {
+    console.error(`\n--require-encoder: the encoder is ${encoder}; every number above is lexical.`);
+    process.exitCode = 2;
+  } else if (baselinePath !== undefined) {
+    const before = JSON.parse(readFileSync(baselinePath, "utf8")) as typeof report;
+    const falls: string[] = [];
+    for (const half of ["blueprints", "cards"] as const) {
+      for (const metric of ["recallAt5", "top1", "top3"] as const) {
+        const was = before[half][metric];
+        const now = report[half][metric];
+        if (now < was) falls.push(`${half}.${metric} ${was} -> ${now}`);
+      }
+    }
+    if (before.negatives.quiet > report.negatives.quiet) {
+      falls.push(`negatives.quiet ${before.negatives.quiet} -> ${report.negatives.quiet}`);
+    }
+    if (falls.length > 0) {
+      console.error(`\nagainst ${baselinePath}, ${falls.length} metric(s) fell:\n  ${falls.join("\n  ")}`);
+      process.exitCode = 1;
+    } else {
+      console.log(`\nagainst ${baselinePath}: nothing fell.`);
+    }
+  }
 } finally {
   await client.close();
 }
