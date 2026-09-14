@@ -1457,10 +1457,14 @@ describe("validateCard, params", () => {
   });
 
   it("loads a deeply nested JSON card as diagnostics rather than throwing", () => {
-    const doc = JSON.stringify({
-      ...minimal(),
-      params: { deep: JSON.parse("[".repeat(10000) + "]".repeat(10000)) as unknown },
-    });
+    /* The nesting is spliced in as TEXT rather than built by `JSON.stringify`ing a deep
+       value, because that call is the runtime's business and not this cell's: V8 stringifies
+       recursively on Node 24 and iteratively on Node 26, so the FIXTURE threw
+       `RangeError: Maximum call stack size exceeded` on the CI runner while the same line
+       passed on a developer's machine. A `.json` card is bytes on disk, which is what
+       `loadCard` is being handed here, so the document is written as bytes. */
+    const nested = `${"[".repeat(10000)}${"]".repeat(10000)}`;
+    const doc = JSON.stringify({ ...minimal(), params: { deep: 0 } }).replace('"deep":0', `"deep":${nested}`);
     const { card, diagnostics } = loadCard(doc, { ...opts, format: "json" });
 
     expect(card).toBeUndefined();

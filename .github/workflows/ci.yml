@@ -55,16 +55,31 @@ jobs:
       # A service container cannot be given a command, and the official MinIO image needs
       # `server /data`, so it is started by hand with the same image, command and bucket
       # init as `compose.yaml`.
+      #
+      # quay.io, not Docker Hub: `minio/minio` and `minio/mc` no longer exist there, and a
+      # pull answers "repository does not exist or may require 'docker login'" — which reads
+      # like a credential problem and is not one. quay.io is MinIO's own registry.
       - name: start MinIO
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=darkprint -e MINIO_ROOT_PASSWORD=darkprint123 \
-            minio/minio:latest server /data
+            quay.io/minio/minio:latest server /data
+
+          # The wait has to be able to FAIL. Written as a bare `curl && break` it fell out of
+          # the loop after 60s either way, and the red then landed on the bucket step with a
+          # message about `mc` rather than about the server that never came up.
+          ready=""
           for _ in $(seq 1 30); do
-            curl -sf http://localhost:9000/minio/health/live && break
+            if curl -sf http://localhost:9000/minio/health/live >/dev/null; then ready=1; break; fi
             sleep 2
           done
-          docker run --rm --network host --entrypoint /bin/sh minio/mc:latest -c \
+          if [ -z "$ready" ]; then
+            echo "::error::MinIO did not answer /minio/health/live within 60s"
+            docker logs minio || true
+            exit 1
+          fi
+
+          docker run --rm --network host --entrypoint /bin/sh quay.io/minio/mc:latest -c \
             "mc alias set local http://localhost:9000 darkprint darkprint123 && mc mb --ignore-existing local/darkprint"
 
       - uses: actions/setup-node@v4

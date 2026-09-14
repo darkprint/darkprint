@@ -15,8 +15,12 @@ services:
       timeout: 3s
       retries: 30
 
+  # quay.io, not Docker Hub: `minio/minio` and `minio/mc` no longer exist there. A pull
+  # answers "repository does not exist or may require 'docker login'", which reads like a
+  # credential problem and is not one. quay.io is MinIO's own registry and serves both
+  # anonymously.
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: darkprint
@@ -35,7 +39,7 @@ services:
   # Bytes are keyed by digest under one bucket (B-01); the bucket has to exist before
   # lib/db/storage.ts's client can PUT into it, and MinIO does not create one on its own.
   minio-init:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:latest
     depends_on:
       minio:
         condition: service_healthy
