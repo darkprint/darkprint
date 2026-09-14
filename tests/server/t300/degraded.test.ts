@@ -42,9 +42,12 @@ import {
 } from "../t200/fixtures";
 import { buildWorld, type World } from "../t200/world";
 
-/* The encoder's package, failing the way a missing install fails: at import. `embed.ts`
-   loads it through a dynamic import and treats a rejection as "no encoder on this machine". */
-vi.mock("@huggingface/transformers", () => {
+/* The encoder's package, failing the way a missing install fails: at import. `minilm.ts`
+   loads it through a dynamic import and `embed.ts` treats a rejection as "no encoder on this
+   machine". It is `onnxruntime-node` since the encoder stopped going through
+   `@huggingface/transformers` — the runtime is the same one, reached without the image
+   library that used to sit in front of it. */
+vi.mock("onnxruntime-node", () => {
   throw new Error("this test file has no encoder");
 });
 

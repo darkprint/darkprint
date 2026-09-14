@@ -18,6 +18,8 @@
    writes nothing and the searchers rank on lexical coverage alone.
    ============================================================ */
 
+import { createMiniLm, type MiniLm } from "./minilm";
+
 /**
  * The width. `vector(384)` is declared in the schema and pgvector refuses a row of any other
  * length; 384 is `all-MiniLM-L6-v2`'s output width.
@@ -69,12 +71,9 @@ export const MAX_HITS = 20;
 const MODEL_ID = "all-MiniLM-L6-v2";
 const MODEL_ROOT = "models";
 
-/**
- * The precision, named rather than defaulted. `models/all-MiniLM-L6-v2/onnx/` holds
- * `model_quantized.onnx` and nothing else, and the library's default for Node is fp32, so
- * the dtype selects the only file that exists.
- */
-const MODEL_DTYPE = "q8";
+/* `MODEL_DTYPE = "q8"` stood here and is gone with the library that read it. It named the
+   precision so the pipeline would pick `model_quantized.onnx` over an fp32 default; the
+   session is opened on that path by name now, so there is nothing left to select. */
 
 /** The text the width is proved against at load. Any text reaches the same 384 columns. */
 const WIDTH_PROBE = "dimension probe";
@@ -97,25 +96,8 @@ export const MODEL_FILE = `${MODEL_ROOT}/${MODEL_ID}/onnx/model_quantized.onnx`;
 /** The frozen identity of `MODEL_FILE`, and the model half of `embeddedInput`'s stamp. */
 export const MODEL_BLOB = Object.freeze({ sha256: MODEL_SHA256, bytes: MODEL_BYTES });
 
-/** The shape this module uses, written out rather than imported. See `load()`. */
-interface Encoder {
-  (text: string, options: { pooling: "mean"; normalize: boolean }): Promise<{
-    data: ArrayLike<number>;
-  }>;
-}
-
-interface TransformersModule {
-  env: {
-    allowRemoteModels: boolean;
-    allowLocalModels: boolean;
-    localModelPath: string;
-  };
-  pipeline: (
-    task: "feature-extraction",
-    model: string,
-    options: { dtype: string },
-  ) => Promise<Encoder>;
-}
+/** The shape this module uses. `createMiniLm` returns exactly it. */
+type Encoder = MiniLm;
 
 /**
  * Loaded at most once per process, absent or present.
@@ -133,24 +115,14 @@ let failure: string | undefined;
 async function load(): Promise<Encoder | undefined> {
   let extract: Encoder;
   try {
-    /* The specifier is a variable so that an absent package fails at call time and
-       degrades, rather than failing at module load and taking `lib/server/search` down
-       with it on a machine that has no encoder. */
-    const specifier = "@huggingface/transformers";
-    const mod: TransformersModule = await import(specifier);
-
-    /* With this flag off the library cannot reach the Hub even on a cache miss, so "no
-       network egress at query or publish" is a property of the configuration rather than
-       of whether some cache happened to be warm. On a fresh install it throws `file was not
-       found locally` rather than fetching. */
-    mod.env.allowRemoteModels = false;
-    mod.env.allowLocalModels = true;
-    mod.env.localModelPath = MODEL_ROOT;
-
-    extract = await mod.pipeline("feature-extraction", MODEL_ID, { dtype: MODEL_DTYPE });
+    /* `createMiniLm` reads the vendored files and opens an ONNX session; it reaches no
+       network by construction rather than by configuration, which is what the library it
+       replaced needed three `env` flags to promise. `tests/server/t300/egress.test.ts`
+       watches the socket layer either way. */
+    extract = await createMiniLm(MODEL_ROOT, MODEL_ID);
   } catch (err) {
-    /* The package is not installed, or the model directory is not provisioned: the same
-       condition from a caller's point of view. Only the load is inside this block; the
+    /* `onnxruntime-node` is not installed, or the model directory is not provisioned: the
+       same condition from a caller's point of view. Only the load is inside this block; the
        width probe below stays outside it, because an ABSENT encoder degrades and a WRONG
        one must not be able to masquerade as absent. The reason is kept for /api/health,
        because a deployment that silently ranks by words alone is the failure this module

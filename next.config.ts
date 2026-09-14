@@ -10,12 +10,16 @@ import type { NextConfig } from "next";
  * every platform's binaries unless they are excluded, and that surplus alone pushed the
  * deployment past the Hobby plan's function grouping.
  */
+/* The weights and the one native binary the session needs. No sharp: the encoder drives
+   `onnxruntime-node` directly now (`lib/server/search/minilm.ts`), and sharp was only ever
+   here because `@huggingface/transformers` static-imported an image library in front of a
+   text pipeline. That mattered far beyond its size — sharp ships as twenty-four per-platform
+   optional packages, so npm installs only the host's and a Mac building for linux/arm64 had
+   to stage one by hand; onnxruntime-node ships every platform in ONE package, so a plain
+   install already leaves the arm64 binary on disk and there is nothing left to stage. */
 const ENCODER_FILES = [
   "./models/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**",
-  /* sharp resolves its platform package through a template string the tracer cannot follow. */
-  "./node_modules/@img/sharp-linux-arm64/**",
-  "./node_modules/@img/sharp-libvips-linux-arm64/**",
 ];
 /** The route paths whose functions load the encoder: the two searchers, the MCP find tools and endpoint, publish (which re-embeds), and the health probe. */
 const ENCODER_ROUTES = [
@@ -32,9 +36,9 @@ const FOREIGN_BINARIES = [
   "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/win32/**",
-  /* `@huggingface/transformers` imports sharp at load, so sharp stays; only the builds for
-     platforms the function will never run on go. A prebuilt deploy from a Mac carries the
-     linux-arm64 pair because the release steps install them alongside the host's. */
+  /* sharp is still in the tree — `next` itself depends on it for image optimisation — so its
+     foreign builds are excluded like every other platform's. Nothing the encoder does needs
+     it any more, which is why no linux-arm64 sharp is staged and none is traced. */
   "./node_modules/@img/sharp-darwin*/**",
   "./node_modules/@img/sharp-libvips-darwin*/**",
   "./node_modules/@img/sharp-win32*/**",
