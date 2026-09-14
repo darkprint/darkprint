@@ -20,7 +20,7 @@ blueprint and instantiates it on the reader's machine. Nothing here runs a bluep
 Next.js 16.2.11 (App Router, Turbopack), React 19.2.4, TypeScript 5, Tailwind CSS 4
 (`@tailwindcss/postcss`), `@xyflow/react` 12 for the graph canvas, `animejs` 4.5 for the hero
 and flow animation, `yaml` 2.9, `drizzle-orm` 0.45 over `pg` 8.23 with pgvector,
-`@aws-sdk/client-s3` 3 for object storage, `@huggingface/transformers` 4.2 with a vendored
+`@aws-sdk/client-s3` 3 for object storage, `onnxruntime-node` 1.24 driving a vendored
 `all-MiniLM-L6-v2` quantised ONNX model under `models/` (23 MB), `@vercel/analytics` 2,
 Vitest 4.1, ESLint 9 with `eslint-config-next`, `esbuild` 0.28 for the CLI bundle,
 `opentype.js` 1.3 for the wordmark paths. Node: `.nvmrc` pins 22.18.0 and `engines` requires
@@ -534,12 +534,17 @@ tree built locally with Vercel's builder packs into four functions and is accept
 release path is prebuilt:
 
 ```
-npm install --no-save --os=linux --cpu=arm64 --libc=glibc sharp@$(node -p "require('./node_modules/sharp/package.json').version")
 npx vercel@latest pull --environment=production --yes
 npx vercel@latest build --prod --yes
 npx vercel@latest deploy --prebuilt --prod --yes
-npm ci    # restores the macOS sharp packages the first line replaced
 ```
+
+No package is staged before the build and none is restored after it. That pair of lines was
+here until the encoder stopped needing sharp, and it never worked: `vercel build` opens with
+its own `npm install`, which prunes a `--no-save` package as extraneous, so the trace ran
+against a tree the staging had already been removed from. Keep `build` and `deploy` adjacent
+all the same — `filePathMap` records source paths resolved at deploy time, so anything that
+rewrites `node_modules` between them uploads a function whose files have moved.
 
 (Drop `--prod` from the last three lines for a preview.) A prebuilt deployment's functions run
 on linux/arm64, so `next.config.ts` traces `models/**`, `onnxruntime-node`'s linux/arm64
@@ -658,13 +663,15 @@ row id and refreshed by step 14.
 
 ## 16. Known gaps
 
-- The sentence encoder does not load on Vercel yet. A prebuilt deployment carries the model, the
-  arm64 onnxruntime binding and sharp's linux-arm64 packages, and sharp still answers "Could not
-  load the sharp module using the linux-arm64 runtime"; `@huggingface/transformers` imports
-  sharp at load, so the whole encoder is absent and search ranks by words. Two ways out: a hosted
-  embedding provider (Vercel AI Gateway, `openai/text-embedding-3-small` at 384 dimensions, which
-  keeps the `vector(384)` columns), or the Pro plan, where a build made on Vercel's machines with
-  the x64 binaries is not subject to the 12-function cap.
+- ~~The sentence encoder does not load on Vercel.~~ CLOSED. It loads: `/api/health` on production
+  answers `encoder: "present"` and `merge gate` ranks `guarded-merge-bot` first at
+  `similarity:0.29`, where it sat at rank 8 in a ten-way tie while the encoder was absent. The
+  cause was never sharp's binary: `@huggingface/transformers` static-imports sharp, sharp ships
+  as twenty-four per-platform optional packages so npm installs only the host's, and the
+  `--no-save` line that staged the arm64 one was pruned by `vercel build`'s own `npm install`
+  before the trace ran. `lib/server/search/minilm.ts` drives `onnxruntime-node` directly —
+  one package carrying every platform's binary, so a plain install already has the arm64 one —
+  and sharp left the encoder's dependency graph with the whole staging problem.
 - The `write` bucket is spent by nothing, and `upload` only by `POST /api/cards`; the key-based
   bundle publish and run-report paths have no rate limit.
 - `darkprint report` still refuses `DARKPRINT_API_KEY` although the runs route accepts a
