@@ -41,7 +41,7 @@ export { searchParams } from "./params";
 export { searchBlueprints } from "./blueprints";
 export { searchCards } from "./cards";
 export { searchTerms } from "./terms";
-export { reembedRelease, reembedAll } from "./reembed";
+export { reembedRelease, reembedCard, reembedAll } from "./reembed";
 export type { ReembedSweep } from "./reembed";
 
 /* Whether this process can encode. Published for the health route, which has to say so

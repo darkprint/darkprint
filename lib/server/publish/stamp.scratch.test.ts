@@ -105,12 +105,18 @@ describe("D-260-24: a publish writes a scorecard `scoresOf` accepts", () => {
 
 describe("D-300-06 F4.2: a publish triggers re-embedding", () => {
   /**
-   * One vector per release and one per pinned card version, written by the publish itself —
-   * no suite fixture called `reembedRelease` in this world, so a row here can only have
-   * come through the wiring. 57 card files under 53 ids: `card_version_embedding` keys by
-   * card VERSION row, so 57 is the count that says every pinned document embedded.
+   * One vector per release and one per CARD VERSION — every one, not only the pinned ones.
+   * No suite fixture called `reembedRelease` or `reembedCard` in this world, so a row here
+   * can only have come through the wiring, and `card_version_embedding` keys by card version
+   * row rather than by id.
+   *
+   * The count is 111 and not the 103 a release walk reaches: eight documents in
+   * `content/cards/` are pinned by no blueprint, `runImport` stores them with `addCard`, and
+   * it embeds each one for the same reason `publishCard` embeds its own. They were the
+   * measured gap — 8 of 119 production card versions had no vector — and the difference
+   * between the two numbers is exactly that set.
    */
-  it("writes one release vector per bundle and one card vector per pinned version", async () => {
+  it("writes one release vector per bundle and one card vector per card version", async () => {
     const [releases] = await db
       .select({ n: sql<number>`count(*)::int` })
       .from(schema.releaseEmbedding);
@@ -118,6 +124,6 @@ describe("D-300-06 F4.2: a publish triggers re-embedding", () => {
       .select({ n: sql<number>`count(*)::int` })
       .from(schema.cardVersionEmbedding);
     expect(releases?.n, "release_embedding is empty: the reembedRelease wiring did not run").toBe(16);
-    expect(cards?.n).toBe(103);
+    expect(cards?.n, "103 is the pinned-only count: a standalone card was not embedded").toBe(111);
   });
 });

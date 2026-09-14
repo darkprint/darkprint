@@ -89,6 +89,44 @@ export async function reembedRelease(db: Db, bundleId: string, digest: string): 
 }
 
 /** What a sweep did, or in a dry run what it would do. Counts are over distinct vector rows. */
+/**
+ * Embed ONE card version, by row id. For the publish path, where a card arrives with no
+ * release behind it.
+ *
+ * `reembedRelease` walks a release and its pins, which reaches every card a blueprint uses
+ * and no card it does not. A card published on its own through `POST /api/cards` is never
+ * pinned by anything, so nothing reached it and it stayed unvectorised — stored, listed, and
+ * invisible to the one ranking that would have found it from a task description. Measured on
+ * production before this existed: 8 of 119 card versions had no row in
+ * `card_version_embedding`, and all 8 were the standalone ones.
+ *
+ * Idempotent by the same stamp every other writer uses, so calling it on a card that already
+ * matches is a read and nothing else. Returns quietly when the row is gone or the process has
+ * no encoder: a publish must not fail because search cannot index yet, which is the rule
+ * `syncRelease` already follows for the same reason.
+ */
+export async function reembedCard(db: Db, cardVersionId: string): Promise<void> {
+  const [row] = await db
+    .select({
+      id: schema.cardVersion.id,
+      cardId: schema.cardVersion.cardId,
+      version: schema.cardVersion.version,
+      body: schema.cardVersion.body,
+      source: schema.cardVersion.source,
+      input: schema.cardVersionEmbedding.embeddedInputSha256,
+    })
+    .from(schema.cardVersion)
+    .leftJoin(schema.cardVersionEmbedding, eq(schema.cardVersionEmbedding.cardVersionId, schema.cardVersion.id))
+    .where(eq(schema.cardVersion.id, cardVersionId));
+  if (row === undefined) return;
+
+  /* The bare core vocabulary, matching `syncRelease`: a card version is one row that any
+     number of releases may pin, and labelling it through one release's overlay would give it
+     a document that the next release rewrites. */
+  const core = openView();
+  await syncCardVector(db, row, cardText(cardBody(row.body), (id) => core.get(id)?.label ?? id), false);
+}
+
 export interface ReembedSweep {
   /** Releases the sweep resolved. */
   releases: number;
@@ -133,6 +171,34 @@ export async function reembedAll(
       sweep.written += outcome.written;
       sweep.unchanged += outcome.unchanged;
     }
+    /* Then every card no release pins, which the walk above cannot reach by construction: it
+       visits cards THROUGH the release that pins them. `publishCard` embeds its own card at
+       the write, so this arm is the repair for a card written while the encoder was absent —
+       and for the archive's standalone documents, which the seed stores with `addCard`.
+       `seenCards` carries over, so a pinned card is not read twice. */
+    const loose = await db
+      .select({
+        id: schema.cardVersion.id,
+        cardId: schema.cardVersion.cardId,
+        version: schema.cardVersion.version,
+        body: schema.cardVersion.body,
+        source: schema.cardVersion.source,
+        input: schema.cardVersionEmbedding.embeddedInputSha256,
+      })
+      .from(schema.cardVersion)
+      .leftJoin(schema.cardVersionEmbedding, eq(schema.cardVersionEmbedding.cardVersionId, schema.cardVersion.id))
+      .orderBy(asc(schema.cardVersion.cardId), asc(schema.cardVersion.version));
+
+    const core = openView();
+    const labelOf = (id: string): string => core.get(id)?.label ?? id;
+    for (const row of loose) {
+      if (seenCards.has(row.id)) continue;
+      seenCards.add(row.id);
+      const state = await syncCardVector(db, row, cardText(cardBody(row.body), labelOf), dryRun);
+      if (state === "absent") break;
+      count(sweep, state);
+    }
+
     sweep.encoder = await encoderState();
     return sweep;
   });

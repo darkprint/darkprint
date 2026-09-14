@@ -29,6 +29,7 @@ import { changeHandle, updateProfile, upsertFromGitHub } from "@/lib/server/acco
 import { getBundle, getRelease } from "@/lib/server/archive";
 import type { Actor } from "@/lib/server/policy";
 import { addCard, getCard } from "@/lib/server/cards";
+import { reembedCard } from "@/lib/server/search";
 import { PublishRefusedError, publish } from "@/lib/server/publish";
 import { REGISTRY_HANDLE, SEED_RELEASE_VERSION, type ImportPlan } from "./plan";
 
@@ -198,7 +199,7 @@ export async function runImport(
      §4 asks of a published version. */
   for (const entry of options.only === undefined ? loose : []) {
     if ((await getCard(db, registry, entry.card.id, entry.card.version)) !== undefined) continue;
-    await addCard(db, {
+    const stored = await addCard(db, {
       cardId: entry.card.id,
       version: entry.card.version,
       ownerId: registry.accountId,
@@ -206,6 +207,10 @@ export async function runImport(
       source: entry.text,
       visibility: "public",
     });
+    /* `publish` embeds the cards a release pins; nothing pins these, so they are embedded
+       here for the same reason `publishCard` embeds its own. Without it the import stores a
+       card the searchers cannot rank. */
+    await reembedCard(db, stored.id);
   }
 
   return { ...plan, created, skipped };

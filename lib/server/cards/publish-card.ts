@@ -53,6 +53,7 @@ import { getAccount } from "@/lib/server/accounts";
 import { validateCardSource } from "@/lib/server/engine";
 import { MAX_NAME_LENGTH, validateCardId, validateNamespace } from "@/lib/server/naming";
 import type { Actor } from "@/lib/server/policy";
+import { reembedCard } from "@/lib/server/search";
 import type { NodeCard } from "@/lib/server/types";
 import { addCard } from "./add-card";
 import { cardIdHeldByOther } from "./card-id-held-by-other";
@@ -160,6 +161,16 @@ export async function publishCard(db: Db, actor: Actor, input: PublishCardInput)
       body,
       source,
     });
+
+    /* Index it now, because nothing else will. `reembedRelease` reaches a card through the
+       release that pins it, and a card published here is pinned by nothing — so without this
+       line it is stored, listed, and invisible to the semantic ranking that would have found
+       it from a task description. `publish()` does the same for a bundle at its own write.
+
+       Outside the refusals above and deliberately not inside a transaction with the insert:
+       an encoder that is absent, slow or broken must not lose somebody their card. The stamp
+       makes it idempotent, and `npm run db:reembed` is the sweep that repairs a miss. */
+    await reembedCard(db, card.id);
     return { ok: true, card };
   } catch (cause) {
     /* The race the check above cannot close: if the version is there NOW, somebody got

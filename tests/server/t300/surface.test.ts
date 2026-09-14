@@ -47,7 +47,7 @@ const ENCODER_NAMES = [
 ] as const;
 
 describe("the published block", () => {
-  it("publishes exactly the four verbs, the two transport helpers, the boundary, the sweep and the two encoder probes", async () => {
+  it("publishes exactly the four verbs, the two transport helpers, the boundary, the two re-embed writers and the two encoder probes", async () => {
     const mod = await loadSearch();
     const exported = Object.keys(mod).sort();
     const expected = [
@@ -56,6 +56,10 @@ describe("the published block", () => {
       "SearchStoreError",
       "withSearchStore",
       "reembedAll",
+      /* The single-card writer, published because `publishCard` is outside this module and
+         has to reach it: a card with no release behind it is pinned by nothing, so the
+         release walk cannot index it and the publish path must. */
+      "reembedCard",
       "encoderAvailable",
       "encoderFailure",
     ].sort();
