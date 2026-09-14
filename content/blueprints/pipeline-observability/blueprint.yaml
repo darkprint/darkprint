@@ -14,8 +14,6 @@ description: |-
   The records are `json` and the report is a `report`, both under `structured` in the data lattice, and `alert-dispatch` lists `structured` under `cannot`, so the resolver refuses any edge that would carry either of them to the sender. What reaches the channel is the gate's `event`, naming the step, the metric, the threshold and the figure.
 
   The loop is bounded. A report the gate cannot judge goes back to the summariser to be rebuilt, at most twice, and the cap is `max_retries` on the gate's card, where the security analyzer reads it. The one marker the blueprint carries is `irreversible-action` on the sender, because a posted alert cannot be unsent.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Operations
 tags:
   - observability

@@ -5,8 +5,6 @@ summary: >-
   rules, and escalates to on-call when risk is high.
 description: |-
   A first responder for production incidents. Anything risky escalates to on-call with a full context pack rather than acting unilaterally, which buys the on-call engineer the ten minutes that matter without letting an agent take down production on a hunch.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Operations
 tags:
   - incident-response

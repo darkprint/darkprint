@@ -17,8 +17,6 @@ description: |-
 
   The assistant holds no tools and no servers. That is the tool restriction stated where the
   engine can see it, rather than in an instruction the model may or may not follow.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Safety
 tags:
   - guardrails

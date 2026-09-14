@@ -16,8 +16,6 @@ description: |-
   The negation arm of the fork points at the capable model on purpose. A missing context key reads
   back as the empty string, so a run where the classifier wrote nothing takes the `deep` arm: the
   failure mode is an expensive answer rather than a bad one.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Efficiency
 tags:
   - routing

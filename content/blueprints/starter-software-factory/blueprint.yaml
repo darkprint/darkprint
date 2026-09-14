@@ -9,8 +9,6 @@ description: |-
   The thing worth studying is the edge that is missing. The planner writes the acceptance criteria and hands them to the tester alone. The builder never receives them, and its spec never restates them either, because isolation is more than a missing arrow in the DOT: a card that paraphrases the criteria in its prose is isolated on the diagram and leaking in practice. Both halves of the check have something to bite on here and both stay quiet, which is what makes this bundle the reference for a clean result.
 
   Add `planner -> builder` to the DOT and watch the security score fall from 4 to 2 with the builder named as the reason. That is the whole argument for typed graphs over prompt collections, in one edge.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Software
 tags:
   - starter

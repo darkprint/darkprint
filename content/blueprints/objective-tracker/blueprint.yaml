@@ -16,8 +16,6 @@ description: |-
   The two entry nodes are `human-input` rather than `human-gate`, and the distinction is load
   bearing: a gate approves work that already exists, an input originates something that did not.
   Nothing upstream produces an objective.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Reliability
 tags:
   - goal-setting

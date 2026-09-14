@@ -7,8 +7,6 @@ description: |-
   Long agent jobs fail halfway, when a tool times out or a stage produces garbage. Each checkpoint records the stage's inputs, outputs and the decisions taken, and the resume node restores the most recent valid one when a downstream stage fails.
 
   That turns a brittle linear pipeline into one you can run unattended overnight. The verifier gates the final ship, and the checkpoint store doubles as an audit trail of exactly what each stage did.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Reliability
 tags:
   - reliability

@@ -19,8 +19,6 @@ description: |-
 
   The fork's negation arm is the local solver. A run that resolved no remote agent does the work
   here rather than delegating into the void.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Coordination
 tags:
   - delegation

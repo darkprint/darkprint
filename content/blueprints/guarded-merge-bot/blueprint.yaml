@@ -5,8 +5,6 @@ summary: >-
   suite is green. A maintainer approves before the merge lands.
 description: |-
   Some factories are drawn with a person in them on purpose, and this is one of them. Five of the six nodes run unattended and the sixth is the maintainer, which is the shape the analyzer reads off the graph and reports as a conditional class. It is published for teams that want the review work done by agents and the merge decision made by a person they can name.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Software
 tags:
   - code-review

@@ -13,8 +13,6 @@ description: |-
   and the score stops meaning anything. Both `draft-producer` and `draft-reviser` therefore refuse
   `acceptance-criteria` outright, so the prohibition is a property of the bundle rather than a
   promise in prose: draw the missing edge and the bundle stops resolving.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Quality
 tags:
   - reflection

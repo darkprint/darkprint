@@ -7,8 +7,6 @@ description: |-
   A research agent that will not ship an unsupported sentence. The fact-checker verifies each claim against the retrieved evidence and bounces anything unsupported back for another pass, so only a fully grounded report reaches the reader.
 
   The three strands are drawn as a fan-out and a runner takes one of them. `retrieval-planner` is an `agent`, so it compiles to `shape=box` and engine spec 3.3 selects a single outgoing edge, and the fan-out Attractor does define (4.8, from `shape=component`) has no wiring in the spec between the branches it runs and the fan-in that consolidates them. The strands are the design; one strand is what executes.
-
-  This blueprint was generated automatically as an example for the registry.
 category: Knowledge
 tags:
   - research
