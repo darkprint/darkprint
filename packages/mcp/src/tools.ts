@@ -44,6 +44,10 @@ export function httpExecutor(options: RegistryOptions): ToolExecutor {
             task: str(args, "task"),
             limit: limit === undefined ? undefined : String(limit),
             forks: forks === true ? "all" : undefined,
+            phase: optionalStr(args, "phase"),
+            autonomy: optionalStr(args, "autonomy"),
+            gates: optionalStr(args, "gates"),
+            df: optionalBool(args, "dark_factory") === true ? "1" : undefined,
           })}`,
         );
       }

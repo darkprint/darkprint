@@ -349,13 +349,22 @@ at 6068e9b0: blueprints recall@5 32/32, top-1 25/32, MRR 0.868; cards recall@5 1
 in the full ranking. Routes: `GET /api/search/blueprints`,
 `/api/search/cards`, `/api/search/terms` (`q` plus the filters `searchParams` accepts).
 
+`searchBlueprints` reads `tag`, `cat`, `phase`, `autonomy`, `df`, `gates`, `forks` and `sort`;
+`searchCards` reads `type`, `phase`, `human`, `risk` and `sort`. Every enum key resolves through
+one rule, so an unrecognised value falls back instead of erroring and a stale shared link still
+answers. `gates` is the structural one an agent needs: `required` keeps blueprints with at least
+one human gate, `none` those where every node has a card and runs unattended, and a blueprint
+with a node nobody has described matches neither. It is weaker than `df`, which additionally
+wants all five lifecycle phases, and on today's sixteen it holds eleven against `df`'s six. The
+four scorecard keys are paid for in one loop that is entered only when one of them is set.
+
 ## 9. MCP
 
 Seven tools (`packages/mcp/src/definitions.ts`), the same table on both transports:
 
 | Tool | Answers |
 | --- | --- |
-| `find_blueprints` | ranked hits for a task in prose: `ref` (`owner/slug`), author, current digest, score, similarity, evidence, node count, human-gate ids, autonomy class, security level, phases; `encoder` and `ordered` on the response; `include_forks` off by default |
+| `find_blueprints` | ranked hits for a task in prose: `ref` (`owner/slug`), author, current digest, score, similarity, evidence, node count, human-gate ids, autonomy class, security level, phases; `encoder` and `ordered` on the response. Narrowed by `phase`, `autonomy`, `gates` and `dark_factory`, which are passed to the searcher rather than applied to its answer, so a filter plus a limit cannot under-report once the archive passes `MAX_HITS`; `include_forks` off by default |
 | `find_cards` | ranked cards, one per id: `ref` (`id@version`), digest, name, type, action, phases, tools, risk markers, `usedIn`, score, similarity, evidence; `encoder` and `ordered` on the response |
 | `get_blueprint` | every file of one release, its manifest, scorecard, provenance, numbered instantiation notes for `claude-code`, `codex` or `generic`, and `run`: the contract for executing the graph, which does NOT vary by harness and is returned whether or not one is named. `run` says to get the person's agreement against the scorecard first, to give each node its own context and only its declared inputs, to honour `will_not`, `cannot`, `tools` and `mcp`, to bound a loop by `max_retries`, and to stop at every human gate. Held by `lib/server/mcp/guidance.test.ts`, which exists because both safety sentences were once emitted only when a caller named a non-default harness. The current release without `digest` |
 | `read_card` | one card version as published, verbatim YAML |

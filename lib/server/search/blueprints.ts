@@ -1,19 +1,22 @@
 /* ============================================================
    DarkPrint backend — searchBlueprints
    `/blueprints` takes `q`, `tag`, `cat`, `phase`, `autonomy`,
-   `df`, `forks` and `sort`. The set is fixed by the live URLs and
+   `df`, `forks` and `sort`. That set is fixed by the live URLs and
    may not change or shared links break; every reading here is
    taken off the gallery shelf (`components/gallery/GalleryBrowser.tsx`)
-   rather than invented.
+   rather than invented. `gates` is read beside them for the MCP,
+   whose caller is an agent deciding whether a graph it is about to
+   run will stop and wait for a person.
 
    ── Where the rows come from ──
    Every registry read is made with `PUBLIC_ONLY`. `actor` is
    accepted and deliberately unused; see the parameter's own note.
 
    ── What the expensive filters cost ──
-   `scoresOf` is three queries PER BLUEPRINT, so `phase`, `autonomy`
-   and `df` are paid for only when asked, after the cheap filters
-   have narrowed the candidates.
+   The four scorecard keys are read through `scoresFor`, which is
+   three queries whatever the candidate count, and only when one of
+   them is asked for, after the cheap filters have narrowed the
+   candidates.
 
    ── How a task is ranked ──
    Every visible candidate gets a similarity (its stored vector
@@ -32,9 +35,10 @@ import {
   blueprints,
   categories,
   phases,
-  scoresOf,
+  scoresFor,
   tags,
   type BlueprintSummary,
+  type Scores,
 } from "@/lib/server/registry";
 import { MAX_HITS, embed, encoderState } from "./embed";
 import { flag, oneOf, sortKey, value } from "./params";
@@ -75,6 +79,27 @@ const SORT_KEYS = ["slug"] as const;
 const FORK_STANCES = ["all", "rolled", "originals"] as const;
 
 /**
+ * Does anybody in this graph wait for a person? An agent picking a blueprint to run in its
+ * own harness has to know before it starts, and neither `autonomy` nor `df` answers it:
+ * `autonomy` is a four-band reading of how much of the deciding runs unattended, and `df`
+ * additionally requires all five lifecycle phases, so it holds six of the sixteen while
+ * `none` holds eleven.
+ *
+ * **The two stances are not complements, and that is the point.** `required` is positive
+ * evidence: a node the bundle itself declared as human. `none` is a claim about the whole
+ * graph, so it is spelled `autonomousNodes === totalNodes` rather than "no node said human"
+ * — a node whose card is missing is in NEITHER set (`AutonomyResult.autonomousNodes`), so
+ * the second spelling would answer `none` for a bundle that has described nothing. A bundle
+ * with an unresolved node matches neither stance, which is the same answer this module
+ * already gives a blueprint whose release was never scored.
+ *
+ * `searchCards` spells a neighbouring idea `human=1`, a flag. A flag has one side and this
+ * key needs two, and the subject differs: that one asks whether a CARD wants a person, this
+ * one asks whether a GRAPH stops for one.
+ */
+export const GATE_STANCES = ["required", "none"] as const;
+
+/**
  * The fields a query is looked for in, and the names that reach the evidence.
  *
  * The gallery's own haystack (title, summary, description, category, tags, card refs) plus
@@ -103,6 +128,25 @@ function manifestOf(bp: BlueprintSummary): Partial<BundleManifest> {
 function tagsOf(bp: BlueprintSummary): readonly string[] {
   const raw = manifestOf(bp).tags;
   return Array.isArray(raw) ? raw : [];
+}
+
+/**
+ * The two stances, read off the autonomy result rather than off `humanGates`.
+ *
+ * `requiresHuman` is a per-node declaration and `resolved` says the node has a card at all,
+ * so the counts are the honest reading: `autonomousNodes` is nodes with a card and no
+ * person in them, and a node whose card is missing is in neither that set nor the human
+ * one. `totalNodes > 0` keeps an empty graph out of both answers for the same reason
+ * `isDarkFactory` keeps it out of that one.
+ */
+export function matchesGates(
+  stance: (typeof GATE_STANCES)[number],
+  autonomy: Scores["autonomy"],
+): boolean {
+  if (autonomy.totalNodes === 0) return false;
+  return stance === "none"
+    ? autonomy.autonomousNodes === autonomy.totalNodes
+    : autonomy.contributions.some((node) => node.requiresHuman);
 }
 
 /**
@@ -140,6 +184,7 @@ async function search(
   const phase = value(params, "phase");
   const autonomy = value(params, "autonomy");
   const darkFactory = flag(params, "df");
+  const gates = oneOf(params, "gates", GATE_STANCES, undefined);
 
   let candidates = all.filter((bp) => {
     if (category !== undefined && manifestOf(bp).category !== category) return false;
@@ -148,20 +193,25 @@ async function search(
   });
 
   /* The scorecard keys, paid for only when one of them is set. A blueprint whose release
-     has never been scored answers `undefined` and matches none of the three: a half-written
-     scorecard is not a scorecard, and guessing past it would be this module inventing an
-     autonomy class nobody computed. */
-  if (phase !== undefined || autonomy !== undefined || darkFactory) {
-    const scored: BlueprintSummary[] = [];
-    for (const bp of candidates) {
-      const scores = await scoresOf(db, PUBLIC_ONLY, bp.ownerHandle, bp.slug);
-      if (scores === undefined) continue;
-      if (phase !== undefined && !scores.phaseCoverage.covered.includes(phase)) continue;
-      if (autonomy !== undefined && scores.autonomy.autonomyClass !== autonomy) continue;
-      if (darkFactory && !scores.autonomy.isDarkFactory) continue;
-      scored.push(bp);
-    }
-    candidates = scored;
+     has never been scored is absent from the map and matches none of the four: a
+     half-written scorecard is not a scorecard, and guessing past it would be this module
+     inventing an autonomy class nobody computed.
+
+     Read in ONE batch rather than per candidate. `scoresFor` exists for exactly this shape
+     and says so: per-key `scoresOf` is three statements times N, and this is three whatever
+     N is. The loop below used to be the per-key form, which put 48 round trips behind a
+     single `df=1` on today's sixteen blueprints. */
+  if (phase !== undefined || autonomy !== undefined || darkFactory || gates !== undefined) {
+    const scores = await scoresFor(db, PUBLIC_ONLY, candidates);
+    candidates = candidates.filter((bp) => {
+      const card = scores.get(`${bp.ownerHandle}/${bp.slug}`);
+      if (card === undefined) return false;
+      if (phase !== undefined && !card.phaseCoverage.covered.includes(phase)) return false;
+      if (autonomy !== undefined && card.autonomy.autonomyClass !== autonomy) return false;
+      if (darkFactory && !card.autonomy.isDarkFactory) return false;
+      if (gates !== undefined && !matchesGates(gates, card.autonomy)) return false;
+      return true;
+    });
   }
 
   /* `forks=all` leaves every blueprint standing; `rolled` and `originals` both take a

@@ -79,10 +79,18 @@ async function run(
     case "find_blueprints": {
       const limit = optionalInt(args, "limit");
       const includeForks = optionalBool(args, "include_forks");
+      const phase = optionalStr(args, "phase");
+      const autonomy = optionalStr(args, "autonomy");
+      const gates = optionalStr(args, "gates");
+      const darkFactory = optionalBool(args, "dark_factory");
       return JSON.stringify(
         await mcpFindBlueprints(db, actor, str(args, "task"), {
           ...(limit === undefined ? {} : { limit }),
           ...(includeForks === undefined ? {} : { includeForks }),
+          ...(phase === undefined ? {} : { phase }),
+          ...(autonomy === undefined ? {} : { autonomy }),
+          ...(gates === undefined ? {} : { gates }),
+          ...(darkFactory === undefined ? {} : { darkFactory }),
         }),
       );
     }

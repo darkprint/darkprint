@@ -184,6 +184,106 @@ describe("find blueprints", () => {
     }
   });
 
+  /* ── the structural filters ──
+     An agent picking a blueprint to run in its own harness has one question the prose
+     cannot answer: does this stop for a person? `gates` is the key that answers it, and it
+     is the search module's rather than this verb's. That placement is the load-bearing part
+     and no cell here can see it: `searchBlueprints` caps at `MAX_HITS` and this verb then
+     slices to `limit`, so a filter applied to the ANSWER would silently under-report once
+     the archive passes twenty blueprints. Sixteen today, so both placements pass. It is
+     right by construction instead.
+
+     The empty task is deliberate. It takes the unranked path, which lists everything that
+     survives the filters, so the two stances can be checked as a PARTITION of the shelf
+     rather than as two slices of a ranking that might have cut differently. */
+  it("splits the shelf on whether the graph stops for a person", async () => {
+    const w = await world();
+    const find = await verb("mcpFindBlueprints");
+    const shelf = async (extra: Record<string, unknown>): Promise<BlueprintHit[]> =>
+      ((await find(w.scratch.db, anonymous, "", { limit: 20, ...extra })) as FindResult<BlueprintHit>).hits;
+
+    const all = await shelf({});
+    const none = await shelf({ gates: "none" });
+    const required = await shelf({ gates: "required" });
+
+    expect(none.length, "a stance that keeps nothing is not a filter").toBeGreaterThan(0);
+    expect(required.length, "a stance that keeps nothing is not a filter").toBeGreaterThan(0);
+    expect(
+      none.length + required.length,
+      "every blueprint in this world is scored and every node in it has a card, so the two stances partition the shelf",
+    ).toBe(all.length);
+
+    const refs = (hits: BlueprintHit[]): Set<string> => new Set(hits.map((hit) => hit.ref));
+    for (const ref of refs(none)) expect(refs(required).has(ref), ref).toBe(false);
+
+    /* The filter is the scorecard's, so a hit that survived it must carry one. */
+    for (const hit of none) expect(hit.humanGates, hit.ref).toEqual([]);
+    for (const hit of required) {
+      expect(Array.isArray(hit.humanGates), hit.ref).toBe(true);
+      expect((hit.humanGates as string[]).length, hit.ref).toBeGreaterThan(0);
+    }
+  });
+
+  /* `gates: none` is WEAKER than `dark_factory`, which additionally wants all five
+     lifecycle phases covered. Held as a strict containment rather than two counts: the
+     numbers move whenever the archive grows, and the relation does not. Without this a
+     reader could reasonably think the two keys say the same thing and drop one. */
+  it("keeps a dark factory inside the ungated set and not the other way round", async () => {
+    const w = await world();
+    const find = await verb("mcpFindBlueprints");
+    const shelf = async (extra: Record<string, unknown>): Promise<BlueprintHit[]> =>
+      ((await find(w.scratch.db, anonymous, "", { limit: 20, ...extra })) as FindResult<BlueprintHit>).hits;
+
+    const ungated = new Set((await shelf({ gates: "none" })).map((hit) => hit.ref));
+    const factories = await shelf({ darkFactory: true });
+
+    expect(factories.length, "no dark factory in the archive leaves this cell vacuous").toBeGreaterThan(0);
+    for (const hit of factories) {
+      expect(ungated.has(hit.ref), `${hit.ref} is a dark factory with somebody waiting in it`).toBe(true);
+      expect(hit.phases, hit.ref).toHaveLength(5);
+    }
+    expect(
+      ungated.size,
+      "the two keys answer the same set, so one of them is saying nothing",
+    ).toBeGreaterThan(factories.length);
+  });
+
+  /* The remaining two keys are the search module's already and are plumbed, not written.
+     One cell each, because a key that reaches the searcher under the wrong NAME narrows to
+     nothing and reads exactly like a key that reaches it correctly and matches nothing. */
+  it("passes `phase` and `autonomy` through under the names the searcher reads", async () => {
+    const w = await world();
+    const find = await verb("mcpFindBlueprints");
+    const shelf = async (extra: Record<string, unknown>): Promise<BlueprintHit[]> =>
+      ((await find(w.scratch.db, anonymous, "", { limit: 20, ...extra })) as FindResult<BlueprintHit>).hits;
+
+    const all = await shelf({});
+
+    /* The expectation comes from the unfiltered answer's OWN `phases` and `autonomy`, which
+       is a second path to the same set rather than a restatement: the filter runs on the
+       stored scorecard inside the searcher, these fields are read off the hit by
+       `blueprintHit`, and a key plumbed under the wrong name makes them disagree.
+       `planning` and `supervised` are chosen because each holds about half the archive;
+       if either ever covers all of it, pick another value rather than dropping the cell. */
+    const covers = (phase: string) => all.filter((hit) => (hit.phases as string[]).includes(phase));
+
+    const planning = await shelf({ phase: "planning" });
+    expect(covers("planning").length, "no blueprint plans, so this cell measures nothing").toBeGreaterThan(0);
+    expect(planning.length, "a filter that keeps everything is not plumbed").toBeLessThan(all.length);
+    expect(planning.map((hit) => hit.ref).sort()).toEqual(covers("planning").map((hit) => hit.ref).sort());
+
+    const supervised = await shelf({ autonomy: "supervised" });
+    const expected = all.filter((hit) => hit.autonomy === "supervised");
+    expect(expected.length, "nothing is supervised, so this cell measures nothing").toBeGreaterThan(0);
+    expect(supervised.length, "a filter that keeps everything is not plumbed").toBeLessThan(all.length);
+    expect(supervised.map((hit) => hit.ref).sort()).toEqual(expected.map((hit) => hit.ref).sort());
+
+    /* An unreadable value falls back rather than refusing, which is the one enum rule the
+       search module keeps for every key so a stale shared link still answers. */
+    const nonsense = await shelf({ gates: "banana" });
+    expect(nonsense.length, "an unrecognised stance narrows to nothing").toBe(all.length);
+  });
+
   it("lists the public shelf unranked for an empty task and says so", async () => {
     const w = await world();
     const find = await verb("mcpFindBlueprints");

@@ -21,6 +21,38 @@ export interface FindBlueprintsOptions {
   limit?: number;
   /** Also list published forks of other blueprints. Off by default, as on the site. */
   includeForks?: boolean;
+  /** Keep only blueprints whose scorecard covers this lifecycle phase. */
+  phase?: string;
+  /** Keep only blueprints in this autonomy class. */
+  autonomy?: string;
+  /** `required` keeps blueprints that stop for a person, `none` those that do not. */
+  gates?: string;
+  /** Keep only blueprints that cover all five phases with nobody waiting in them. */
+  darkFactory?: boolean;
+}
+
+/**
+ * The structural options, spelled as the query keys the search module reads by name.
+ *
+ * They are passed to the SEARCHER rather than applied to its answer, and that is the whole
+ * reason this is plumbing and not four `filter` calls here. `searchBlueprints` caps at
+ * `MAX_HITS`, then this verb slices to `limit`; filtering after either one narrows a list
+ * that was already truncated, so `gates=required` with a limit of five would start losing
+ * matches as soon as the archive passes twenty blueprints. Sixteen today, which is exactly
+ * why this has to be right by construction rather than by a cell that would still pass.
+ *
+ * An unreadable value is not an error. The search module resolves every enum key through
+ * one rule and an unrecognised value falls back, so an agent that invents an autonomy class
+ * gets the unfiltered answer rather than a refusal.
+ */
+function paramsFor(task: string, options: FindBlueprintsOptions): Record<string, string> {
+  const params: Record<string, string> = { q: task };
+  if (options.includeForks === true) params.forks = "all";
+  if (options.phase !== undefined) params.phase = options.phase;
+  if (options.autonomy !== undefined) params.autonomy = options.autonomy;
+  if (options.gates !== undefined) params.gates = options.gates;
+  if (options.darkFactory === true) params.df = "1";
+  return params;
 }
 
 /**
@@ -36,10 +68,7 @@ export async function mcpFindBlueprints(
   options: FindBlueprintsOptions = {},
 ): Promise<McpFindResult<McpBlueprintHit>> {
   return withMcpStore("mcpFindBlueprints", async () => {
-    const params: Record<string, string> = { q: task };
-    if (options.includeForks === true) params.forks = "all";
-
-    const results = await searchBlueprints(db, actor, params);
+    const results = await searchBlueprints(db, actor, paramsFor(task, options));
     const slice = results.hits.slice(0, clampLimit(options.limit));
     const scores = await scoresFor(
       db,

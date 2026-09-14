@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 const OPERATIONS = [
   {
     name: "find_blueprints",
-    takes: "the task in prose, an optional limit (1 to 20, default 5), and whether to include forks",
+    takes: "the task in prose, an optional limit (1 to 20, default 5), whether to include forks, and the structural filters phase, autonomy, gates and dark_factory",
     returns:
       "blueprints ranked best first, each with its ref, author, digest, title, summary, tags, score, similarity, evidence and a scorecard summary",
   },

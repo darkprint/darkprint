@@ -67,6 +67,32 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
           type: "boolean",
           description: "Also list published forks of other blueprints. Off by default, as on the site.",
         },
+        phase: {
+          type: "string",
+          enum: ["planning", "implementation", "testing", "debugging", "deployment"],
+          description: "Keep only blueprints whose scorecard covers this lifecycle phase.",
+        },
+        autonomy: {
+          type: "string",
+          enum: ["assisted", "supervised", "conditional", "closed-loop"],
+          description:
+            "Keep only blueprints in this autonomy class. A band describing how much of the " +
+            "deciding runs unattended, not a grade.",
+        },
+        gates: {
+          type: "string",
+          enum: ["required", "none"],
+          description:
+            "Whether the graph stops for a person. `required` keeps blueprints with at least " +
+            "one human gate, `none` keeps those where every node has a card and runs " +
+            "unattended. A blueprint with a node nobody has described matches neither.",
+        },
+        dark_factory: {
+          type: "boolean",
+          description:
+            "Keep only blueprints that cover all five lifecycle phases with nobody waiting in " +
+            "them. Narrower than `gates: none`, and a description of a shape rather than a grade.",
+        },
       },
       required: ["task"],
     },
