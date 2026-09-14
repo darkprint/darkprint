@@ -9,8 +9,8 @@
 
      1. the query shares no WORD with the target's purpose;
      2. the query reaches NO blueprint through the lexical matcher,
-        asked of the real `findWord`, which owns both the substring
-        pass and the 3-gram near-match pass;
+        asked of the real `findWord`, which owns all four passes:
+        the whole word, the prefix, the shared stem, the 3-gram;
      3. the store is non-empty;
      4. the vector tables are POPULATED, because over an un-embedded
         world the channel cannot fire and a cell that skipped this
@@ -111,9 +111,10 @@ describe("the input is separating, measured rather than asserted", () => {
     expect(
       found,
       `Word-level disjointness is not the same claim as "cannot match": \`text.ts\` runs a ` +
-        `substring pass and then a 3-gram near-match pass, which is how \`orchestration\` ` +
-        `reaches \`orchestrator\`. So the question is put to the real \`findWord\`. If this ` +
-        `reds, a criterion cell below would have reported a lexical hit as a vector one.`,
+        `prefix pass, then a shared-stem pass, then a 3-gram near-match pass, which is how ` +
+        `\`meals\` reaches \`meal\` and \`orchestration\` reaches \`orchestrator\`. So the ` +
+        `question is put to the real \`findWord\`. If this reds, a criterion cell below would ` +
+        `have reported a lexical hit as a vector one. Re-word the query, never relax the cell.`,
     ).toEqual([]);
   });
 

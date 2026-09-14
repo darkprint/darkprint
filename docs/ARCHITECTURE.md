@@ -327,7 +327,9 @@ types, `Will not:`, risk markers, dependencies.
 The encoder is `all-MiniLM-L6-v2` (quantised ONNX, `q8`, 384 dimensions, mean-pooled and
 L2-normalised, loaded from `models/` with remote models disabled). `score = similarity + 0.15 *
 coverage`: similarity is `1 - cosine distance` between the task vector and the stored vector,
-coverage the share of the task's content words found in the item's lexical fields; a hit needs
+coverage the share of the task's content words found in the item's lexical fields, each word
+looked for in four passes — the whole word, the word the query starts, the two words' shared
+stem, then a character 3-gram near-match for a misspelling; a hit needs
 similarity at or above 0.15 or coverage above zero; the sort is score, similarity, evidence,
 identity; at most 20 hits. Every hit carries `evidence` (`field:token` entries and
 `similarity:0.43`) and `score`. `Results.encoder` reads `present` or `absent`; with no encoder in
@@ -343,10 +345,11 @@ failures) make it usable as a gate. `scripts/rag-eval.golden.json` is the set to
 written against what each blueprint does rather than what its manifest says, so it can see an
 encoder outage the smoke set beside it scores identically with or without. recall@5 is the
 headline, since `FIND_DEFAULT_LIMIT` is 5 and a hit at rank 6 reaches no agent.
-`scripts/rag-eval.baseline.json` records the numbers to argue from, measured against production
-at 6068e9b0: blueprints recall@5 32/32, top-1 25/32, MRR 0.868; cards recall@5 10/12, top-1
-4/12, MRR 0.499; negatives 4/4 quiet. A card-fusion variant was measured and reverted for no gain
-in the full ranking. Routes: `GET /api/search/blueprints`,
+`scripts/rag-eval.baseline.json` records the numbers to argue from, measured against a database
+seeded from `content/`: blueprints recall@5 31/32, top-1 26/32, MRR 0.881; cards recall@5 10/12,
+top-1 5/12, MRR 0.540; negatives 4/4 quiet. The one blueprint outside recall@5 is named in that
+file, because a number that fell is the one a reader must not have to reconstruct. A card-fusion
+variant was measured and reverted for no gain in the full ranking. Routes: `GET /api/search/blueprints`,
 `/api/search/cards`, `/api/search/terms` (`q` plus the filters `searchParams` accepts).
 
 `searchBlueprints` reads `tag`, `cat`, `phase`, `autonomy`, `df`, `gates`, `forks` and `sort`;

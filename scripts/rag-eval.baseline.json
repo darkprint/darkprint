@@ -2,22 +2,22 @@
   "encoder": "present",
   "blueprints": {
     "n": 32,
-    "recallAt5": 32,
-    "top1": 25,
+    "recallAt5": 31,
+    "top1": 26,
     "top3": 30,
-    "mrr": 0.8682
+    "mrr": 0.8812
   },
   "cards": {
     "n": 12,
     "recallAt5": 10,
-    "top1": 4,
+    "top1": 5,
     "top3": 7,
-    "mrr": 0.4986
+    "mrr": 0.5403
   },
   "negatives": {
     "n": 4,
     "quiet": 4
   },
-  "measuredAgainst": "production (16 blueprints, 119 card versions) at commit 6068e9b0, encoder present",
-  "note": "recall@5 is the headline: FIND_DEFAULT_LIMIT is 5, so a hit at rank 6 is one no agent is shown. A CI run against a freshly seeded local database will differ from this \u2014 production carries forks this file does not."
+  "measuredAgainst": "a database migrated and seeded from content/ at this commit (16 blueprints, 111 card versions), encoder present. The run before the four-pass matcher reproduced the previous production-measured baseline on this corpus exactly, digit for digit, which is what says the two corpora agree on this set.",
+  "note": "recall@5 is the headline: FIND_DEFAULT_LIMIT is 5, so a hit at rank 6 is one no agent is shown. blueprints.recallAt5 fell 32 -> 31 with the four-pass matcher and the probe that left is named: \"try many ideas and keep the best\" was carried entirely by the query word `try` matching the document word `registry`, which every blueprint's boilerplate description ends on, so all sixteen scored alike and the target reached the top five on a tiebreak. It now answers nothing, because its content words are in no document and its similarity is under MIN_SIMILARITY. A coincidence removed, not a match lost. Everything else moved up: blueprints top-1 25 -> 26 and MRR 0.868 -> 0.881, cards top-1 4 -> 5 and MRR 0.499 -> 0.540, negatives unchanged at 4/4."
 }

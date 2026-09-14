@@ -90,8 +90,8 @@ describe("the token guard fires on a real collision and not on a reachable-looki
   it("throws when a document word CONTAINS a search token", () => {
     expect(
       () => assertTokensAreDiscriminating({ q: "widget" }, ["a fixture naming widgets"]),
-      "`findWord` asks `documentWord.includes(queryWord)`, so `widgets` containing `widget` " +
-        "is exactly the match a cell would make for the wrong reason.",
+      "`findWord` asks whether a document word STARTS with the query, so `widgets` starting " +
+        "with `widget` is exactly the match a cell would make for the wrong reason.",
     ).toThrow(/is inside the document word/);
   });
 
@@ -99,9 +99,10 @@ describe("the token guard fires on a real collision and not on a reachable-looki
     expect(
       () => assertTokensAreDiscriminating({ q: "qtokciywqd" }, ["ci", "git", "sql"]),
       "No cell ever queries `ci`, and `findWord` cannot reach a token from a document word " +
-        "shorter than it — the substring test runs the other way and the 3-gram channel " +
-        "needs five characters. A guard that fires here is a flake with a justification " +
-        "attached, and it fired for exactly one run of the full suite.",
+        "shorter than it — the prefix test runs the other way, the stem rules leave a word " +
+        "of four letters or fewer alone, and the 3-gram channel needs five characters. A " +
+        "guard that fires here is a flake with a justification attached, and it fired for " +
+        "exactly one run of the full suite.",
     ).not.toThrow();
   });
 

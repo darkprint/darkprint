@@ -1,10 +1,11 @@
 /* ============================================================
    DarkPrint backend — the lexical half of matching
-   Normalisation, words, and the two passes that decide whether a
-   query word is in a document: substring first, then a character
-   3-gram near-match for misspellings and inflections. The vector
-   channel lives in `embed.ts` and shares nothing with this file
-   except the query text it is handed.
+   Normalisation, words, and the four passes that decide whether a
+   query word is in a document: the whole word, the word the query
+   starts, the two words' shared stem, then a character 3-gram
+   near-match for a misspelling. The vector channel lives in
+   `embed.ts` and shares nothing with this file except the query
+   text it is handed.
 
    Everything here is a fact about the archive a caller can check:
    which word in which field matched. Nothing reads a clock, the
@@ -87,7 +88,7 @@ export const STOPWORDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Shortest word that counts toward coverage. Single letters are substrings of half the
+ * Shortest word that counts toward coverage. A single letter starts a large share of the
  * archive; two-letter words stay because `PR`, `QA`, `KB` and `CI` are content words in this
  * domain, the two-letter function words are on the stopword list instead, and `findWord`
  * matches a word this short only whole.
@@ -95,11 +96,12 @@ export const STOPWORDS: ReadonlySet<string> = new Set([
 export const MIN_COVERAGE_WORD_LENGTH = 2;
 
 /**
- * Below this length a query word is matched whole rather than as a substring: `pr` is inside
- * `prompt` and `approve`, `ci` inside `decision`, and a match like that credits a document
- * with a word the reader never meant.
+ * Below this length a query word is matched whole rather than as a prefix: `pr` still starts
+ * `prompt` and `ci` still starts `citation`, and a match like that credits a document with a
+ * word the reader never meant. A word this short reaches no later pass either, since the stem
+ * rules leave a word of four letters or fewer alone and the 3-gram pass declines below five.
  */
-const MIN_SUBSTRING_QUERY_LENGTH = 3;
+const MIN_PREFIX_QUERY_LENGTH = 3;
 
 /**
  * The query with every harness phrase removed, whitespace collapsed.
@@ -144,10 +146,10 @@ const NEAR_MATCH_MIN_LENGTH = 5;
  * How much of a query word's 3-gram set a document word must carry to count as the same
  * word misspelled or inflected.
  *
- * 0.75 rather than a looser figure because this channel may only ever ADD a match a literal
- * pass missed, and a near-match that fires on a coincidence puts an unexplained entry in
+ * 0.75 rather than a looser figure because this channel may only ever ADD a match the passes
+ * before it missed, and a near-match that fires on a coincidence puts an unexplained entry in
  * evidence whose whole contract is that it explains itself. At 0.75 `orchestration` reaches
- * `orchestrator` and `retrival` reaches `retrieval`, while `planning` does not reach `plan`.
+ * `orchestrator` and `retrival` reaches `retrieval`.
  */
 const NEAR_MATCH_RATIO = 0.75;
 
@@ -183,21 +185,86 @@ function nearMatches(queryWord: string, documentWord: string): boolean {
 }
 
 /**
+ * Shortest stem worth comparing, and the shortest a suffix rule may leave behind.
+ *
+ * A stem below this is a prefix of too much of the archive: `dining` cut to `din` would reach
+ * `diners` and `dinghy` alike, so a rule that would leave less than this does not fire and the
+ * word stands as it was written.
+ */
+const MIN_STEM_LENGTH = 4;
+
+/** A vowel, `y` included: a suffix rule may only strip what leaves a pronounceable stem. */
+const VOWEL = /[aeiouyà-ÿ]/;
+
+/** The candidate stem, or the word unchanged when the rule would leave too little behind. */
+function strip(word: string, cut: number, ending: string): string {
+  const base = word.slice(0, word.length - cut) + ending;
+  return base.length >= MIN_STEM_LENGTH && VOWEL.test(base) ? base : word;
+}
+
+/**
+ * `plann` to `plan`. A consonant doubled to keep a short vowel before `-ed` or `-ing` is
+ * spelling rather than stem, and `l`, `s` and `z` are exempt because `roll`, `pass` and `buzz`
+ * end that way on their own.
+ */
+function undouble(base: string): string {
+  const last = base[base.length - 1];
+  if (base.length <= MIN_STEM_LENGTH) return base;
+  if (last !== base[base.length - 2] || VOWEL.test(last) || "lsz".includes(last)) return base;
+  return base.slice(0, base.length - 1);
+}
+
+/**
+ * The word with one English inflection removed: plural, third person, `-ing` or `-ed`.
+ *
+ * Deliberately not a full Porter stemmer. It strips what an author and a reader disagree about
+ * when they mean the same node, `tests` against `testing` and `queries` against `query`, and
+ * leaves derivation alone, because a suffix carrying meaning is where a guess starts crediting
+ * a document for a word it does not have. Idempotent on its own answer, so two spellings of
+ * one word land on one string.
+ */
+function stem(word: string): string {
+  if (word.length <= MIN_STEM_LENGTH) return word;
+  if (word.endsWith("sses")) return strip(word, 2, "");
+  if (word.endsWith("ies")) return strip(word, 3, "y");
+  if (word.endsWith("ss") || word.endsWith("us")) return word;
+  /* `-es` comes off whole only after a sibilant, where the `e` is there to be pronounceable:
+     `batches` is `batch`, while `phases` is `phase` and keeps its own. */
+  if (word.endsWith("es") && /(x|z|ch|sh)$/.test(word.slice(0, -2))) return strip(word, 2, "");
+  if (word.endsWith("s")) return strip(word, 1, "");
+  if (word.endsWith("ing")) return undouble(strip(word, 3, ""));
+  if (word.endsWith("ed")) return undouble(strip(word, 2, ""));
+  return word;
+}
+
+/**
  * Which word of `fieldText` the query word was found in, or `undefined`.
  *
- * Substring first, because that is what the shelves do and a reader typing `agent` expects
- * `agentic` back. The 3-gram pass runs only when the substring pass found nothing, so it can
- * add a match and never remove one.
+ * Four passes, each one only ever ADDING to what the one before it found: the whole word, then
+ * the word the query starts, then the two words' shared stem, then the 3-gram near match for a
+ * misspelling. The order is the confidence order, and since the first pass to answer wins, the
+ * evidence names the closest word in the field rather than the first one scanned.
+ *
+ * What replaced a bare `includes` is the PREFIX pass, because containment was wrong in both
+ * directions. It credited a document for a word it does not have, `gate` inside `delegate` and
+ * `call` inside `automatically`, while a reader who typed the plural got nothing back, since
+ * `tests` sits inside no form of `test`. A prefix settles the first and the shared stem the
+ * second.
+ *
+ * Over the archive the prefix pass decides no match the stem pass would not also find, and it
+ * is kept for what it does decide: which document word the evidence names, and the confidence
+ * order a reader of that evidence is entitled to.
  *
  * The answer is the word from the DOCUMENT rather than the query, so the evidence says which
  * word in the archive was matched: `agent` finding `agentic` reports `title:agentic`.
  */
 export function findWord(fieldText: string, queryWord: string): string | undefined {
   const candidates = words(normalise(fieldText));
-  if (queryWord.length < MIN_SUBSTRING_QUERY_LENGTH) {
-    return candidates.find((word) => word === queryWord);
-  }
-  for (const word of candidates) if (word.includes(queryWord)) return word;
+  for (const word of candidates) if (word === queryWord) return word;
+  if (queryWord.length < MIN_PREFIX_QUERY_LENGTH) return undefined;
+  for (const word of candidates) if (word.startsWith(queryWord)) return word;
+  const root = stem(queryWord);
+  for (const word of candidates) if (stem(word).startsWith(root)) return word;
   for (const word of candidates) if (nearMatches(queryWord, word)) return word;
   return undefined;
 }

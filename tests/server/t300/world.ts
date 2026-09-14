@@ -16,9 +16,9 @@
    English a person would write, and one query per claim built to
    be SEPARATING: it shares no word with the purpose it targets and
    it cannot reach it through the merged lexical channel either —
-   `text.ts`'s substring pass and its 3-gram near-match pass both
-   have to answer nothing, and `recall.test.ts` asks the real
-   `findWord` rather than taking this file's word for it.
+   all four of `text.ts`'s passes have to answer nothing, the stem
+   pass included, and `recall.test.ts` asks the real `findWord`
+   rather than taking this file's word for it.
 
    ── the shape the mixed cells need ──
    Two of the four are NEAR each other and two are FAR from
@@ -193,14 +193,18 @@ const CARDS = {
  * AC1's queries.
  *
  * Every word here is a CONTENT word and none of them is a stopword, which is not style: the
- * merged matcher asks `documentWord.includes(queryWord)`, so a two- or three-letter word is
- * a substring of half the archive and would make "shares no literal token" a claim about a
- * word nobody meant to test. Keeping them long also keeps the 3-gram near-match pass
- * meaningful, since it declines to run below five characters.
+ * merged matcher asks whether a document word STARTS with the query, so a two- or
+ * three-letter word starts a large share of the archive and would make "shares no literal
+ * token" a claim about a word nobody meant to test. Keeping them long also keeps the 3-gram
+ * near-match pass meaningful, since it declines to run below five characters.
+ *
+ * The stem pass is why `meals` is not among them. It reaches `meal`, which `household`'s
+ * summary carries, and the fixture's own rule for that is to re-word the query rather than
+ * relax the cell.
  */
 const QUERIES = {
   /** Paraphrases `service`. Not one of these words appears in `service`'s purpose. */
-  paraphrase: "chef prepares meals guests dining",
+  paraphrase: "chef prepares dishes guests dining",
   /** Paraphrases `service`'s card. */
   cardParaphrase: "deliver cooked dishes promptly",
   /** In `service`'s title and nowhere else. */

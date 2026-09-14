@@ -181,10 +181,21 @@ export function assertTokensAreDiscriminating(
   others: readonly string[],
 ): void {
   /* Split the way the matcher splits, not the way a reader reads. `normalise` lowercases
-     and collapses every run of non-letter non-digit to a space, and `findWord` then asks
-     `documentWord.includes(queryWord)` — so the unit that can collide is the WORD inside an
-     identifier, never the identifier. Checking whole strings for containment is what let
-     `qtok-87169-3` and `taga-87169-8` both pass while sharing the word `87169`. */
+     and collapses every run of non-letter non-digit to a space, so the unit that can collide
+     is the WORD inside an identifier, never the identifier. Checking whole strings for
+     containment is what let `qtok-87169-3` and `taga-87169-8` both pass while sharing the
+     word `87169`.
+
+     Containment is neither necessary nor sufficient for a match, and the guard is DELIBERATELY
+     not the matcher. It is not sufficient because the prefix pass wants the document word to
+     START with the token; it is not necessary because the stem pass reaches `query` from
+     `queries` and the 3-gram pass has never needed containment at all. So this zero covers the
+     prefix channel and nothing else, which is the channel a minted token can realistically
+     collide on. A hazard to know rather than to guard: a token whose trailing counter spells
+     `s` is stripped by the stemmer and becomes a stem-prefix of every token sharing its
+     prefix. T200 is safe because its five tokens use five distinct prefixes, each minted
+     once, and the hazard pre-dates the stem pass — the 3-gram channel already reached that
+     pair at 8 of 10. */
   const split = (text: string): string[] =>
     text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ").filter((x) => x !== "");
 
@@ -194,10 +205,11 @@ export function assertTokensAreDiscriminating(
   for (const [name, token] of entries) {
     for (const part of split(token)) {
       for (const other of otherWords) {
-        /* ONE direction, and it is the one `findWord` actually asks:
-           `documentWord.includes(queryWord)`. A document word CONTAINING one of these
-           tokens makes a cell match something it did not mean to; a document word contained
-           INSIDE one of them cannot, because no cell ever queries a document word.
+        /* ONE direction, and it is the one a cell can be hurt by: a document word CONTAINING
+           one of these tokens makes a cell match something it did not mean to, while a
+           document word contained INSIDE one of them cannot, because no cell ever queries a
+           document word. Containment is wider than the prefix the matcher asks for, which is
+           the right way for a fixture guard to err.
 
            The reverse check was here for one round and the full suite is what removed it.
            `word()` builds from the pid, and on a pid whose base-26 spelling happened to

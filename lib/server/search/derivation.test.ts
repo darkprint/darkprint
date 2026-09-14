@@ -163,12 +163,12 @@ describe("normalisation and near matches", () => {
     expect(normalise("Pré-résolution, v2")).toBe("pré résolution v2");
   });
 
-  it("reaches a misspelling no substring match would, and no further", () => {
+  it("reaches a misspelling no earlier pass would, and no further", () => {
     expect(findWord("retrieval augmented", "retrival")).toBe("retrieval");
     expect(findWord("deployment", "planning")).toBeUndefined();
   });
 
-  it("matches a two-letter query word whole, and a longer one as a substring", () => {
+  it("matches a two-letter query word whole, and a longer one as a prefix", () => {
     expect(findWord("decision specification", "ci")).toBeUndefined();
     expect(findWord("rerun ci nightly", "ci")).toBe("ci");
     expect(findWord("approve the prompt", "pr")).toBeUndefined();
@@ -176,11 +176,75 @@ describe("normalisation and near matches", () => {
   });
 
   it("holds the short-token floor, which a natural pair cannot reach past", () => {
-    /* A four-letter query has four 3-grams and needs three of them present, which for a real
-       word almost always means the document contains the query outright, so the substring
-       pass answers first. `abcd` against `abcxcd` is the boundary made reachable: exactly
-       0.75, and not a substring. */
+    /* The assertion holds, and NOT for the reason this comment used to give. `abcd` against
+       `abcxcd` is exactly 0.75 of the query's 3-grams, so the ratio alone would admit it;
+       what refuses it is `NEAR_MATCH_MIN_LENGTH`, which is 5 and the query is 4. Mutating
+       the ratio 0.75 to 0.6 reds nothing here, while mutating the floor 5 to 4 reds this and
+       also lets `gate` reach `delegate` again through the 3-gram channel. The divergence
+       pre-dates the four passes; the cell is kept and the reason corrected. */
     expect(findWord("abcxcd", "abcd")).toBeUndefined();
+  });
+
+  it("credits a document for a word it starts, and not for one that merely contains it", () => {
+    /* The loose half of what `includes` got wrong, measured on the archive rather than
+       imagined. `gate` was found inside the pinned card ref `a2a-delegate`, and `try` inside
+       the word `registry` — which every seeded blueprint's description ends on, so one
+       nonsense match credited all sixteen equally and a query about trying things ranked
+       them by the tiebreak. `normalise` splits the hyphen, so a ref that really does carry
+       the word still answers. */
+    expect(findWord("a2a-delegate@1.0.0", "gate")).toBeUndefined();
+    expect(findWord("budget-gate@1.0.0", "gate")).toBe("gate");
+
+    const boilerplate = "This blueprint was generated automatically as an example for the registry";
+    expect(findWord(boilerplate, "call")).toBeUndefined();
+    expect(findWord(boilerplate, "try")).toBeUndefined();
+  });
+
+  it("reaches the inflection an author and a reader spell differently", () => {
+    /* The tight half, and all three shapes it was measured on: a reader typing the plural
+       used to get nothing back from the card the singular found, because `tests` sits inside
+       no form of `test`. Both sides are stemmed, since stemming only the query leaves
+       `query` unreachable from `queries` — the `ies` rule rewrites the document's last
+       letter too. */
+    expect(findWord("acceptance-tester", "tests")).toBe("tester");
+    expect(findWord("run the testing phase", "tests")).toBe("testing");
+    expect(findWord("a test runner", "tests")).toBe("test");
+
+    expect(findWord("query the store", "queries")).toBe("query");
+    expect(findWord("queries the store", "query")).toBe("queries");
+
+    /* `-es` comes off whole only after a sibilant, so `batches` is `batch` while `phases`
+       keeps the `e` that is part of the word. A doubled consonant before `-ing` or `-ed` is
+       spelling, so `planning` is `plan`, and `l` is exempt so `rolling` is `roll`. */
+    expect(findWord("batch the records", "batches")).toBe("batch");
+    expect(findWord("the phase list", "phases")).toBe("phase");
+    expect(findWord("plan the change", "planning")).toBe("plan");
+    expect(findWord("roll the dice", "rolling")).toBe("roll");
+  });
+
+  it("names the word the earliest pass reached, which is what the prefix pass decides", () => {
+    /* The prefix pass answers no query the stem pass would leave unanswered, and it is kept
+       for this: which document word the evidence names. `tests` prefixes `testsuite` and
+       stems to the same root as `testing`, and the two sit in one field. Drop the pass and
+       the evidence names `testing`, a word further from what the reader typed, while the
+       claim that the passes run in confidence order stops being true. */
+    expect(findWord("testing testsuite", "tests")).toBe("testsuite");
+
+    /* Exact beats both, whatever the field order. */
+    expect(findWord("testsuite tests testing", "tests")).toBe("tests");
+  });
+
+  it("leaves a word alone when the rule would strip it past discriminating", () => {
+    /* A stem shorter than four letters is a prefix of too much of the archive, so `dining`
+       stands as written rather than reaching for `din`. `ss` and `us` endings are not
+       plurals and keep their own spelling. */
+    expect(findWord("dining room", "dines")).toBeUndefined();
+    expect(findWord("status report", "status")).toBe("status");
+
+    /* A disclosed limit rather than a defect hidden by a passing cell: the `-es` rule fires
+       only after a sibilant, so `focuses` reduces to `focuse` and never meets `focus`. A
+       reader wanting that pair gets it from the vector channel, not from this one. */
+    expect(findWord("focus on one", "focuses")).toBeUndefined();
   });
 });
 
