@@ -54,8 +54,19 @@ import type { BundleManifest, NodeCard } from "@/lib/server/types";
 import { MODEL_BLOB, embed, encoderState } from "./embed";
 import { withSearchStore } from "./store";
 
-/** The first line of both documents. Bump it when either template changes shape. */
-export const DOCUMENT_VERSION = "v2";
+/**
+ * The first line of each document, one version per template.
+ *
+ * They are separate because the version string is INSIDE the embedded text, so bumping it
+ * rewrites every vector it prefixes and moves every one of them slightly. A single shared
+ * constant made a change to the blueprint template rewrite all 119 card vectors as well,
+ * which is work nothing asked for and a perturbation of a ranking nothing changed. Measured
+ * on the golden set, that bump alone moved card top-1 by one and card MRR by 0.048.
+ *
+ * Bump the one whose template changed, and only that one.
+ */
+export const BLUEPRINT_DOCUMENT_VERSION = "v3";
+export const CARD_DOCUMENT_VERSION = "v2";
 
 /**
  * The most characters a blueprint document may run to. The encoder truncates at 512
@@ -423,39 +434,46 @@ function storedAnalysis(release: ReleaseRecord): BlueprintAnalysis | undefined {
 }
 
 /**
- * The blueprint as one document: purpose first, then structure.
+ * The blueprint as one document: what it is called, what it is for, then what it does.
+ *
+ * ── WHAT IS DELIBERATELY NOT IN HERE ──
+ * The long `description`, the `category` and the `tags`. The graph and the cards are checked
+ * by the engine and cannot disagree with the blueprint that runs; the manifest's prose is
+ * written by hand beside them and can say anything. Every archive description ends "This
+ * blueprint was generated automatically as an example for the registry", which put the word
+ * `registry` in all sixteen documents and, through the lexical channel, made the query word
+ * `try` match every one of them.
+ *
+ * `title` and `summary` stay, and the distinction is not a compromise. They are the only
+ * statement in a blueprint of what it is FOR, in the language somebody searching would use,
+ * and the structure lines underneath are node ids, card names and type labels. Measured over
+ * the golden set, dropping the prose costs nothing outside the noise a document-version bump
+ * alone produces; dropping the purpose lines as well costs five of thirty-two top-1.
  *
  * Field order is fixed and load-bearing: a transformer reads the document as a sequence, so
  * two orderings of the same facts are two different vectors. Lists that have no natural
  * order are sorted; the graph's lists keep graph order, which is a fact about the blueprint.
  *
- * Over budget, the document gives up description sentences first, then the routing line,
- * then the actions on the step lines, in that order. The actions are the bulk of a large
- * graph, so once they go the description and the routing come back if they now fit: they
- * are short and say more about what the blueprint is for than a seventh action sentence.
- * The first four lines never go.
+ * Over budget, the document gives up the routing line first, then the actions on the step
+ * lines. The actions are the bulk of a large graph, so once they go the routing comes back
+ * if it now fits: it is short and says more about the shape than a seventh action sentence.
+ * The first three lines never go.
  */
 export function blueprintText(manifest: BundleManifest, resolved: ResolvedGraph | undefined): string {
   const head = manifestLines(manifest);
   const structure = resolved === undefined ? undefined : structureLines(resolved);
-  const render = (descriptionSentences: number, routing: boolean, actions: boolean): string =>
+  const render = (routing: boolean, actions: boolean): string =>
     [
-      DOCUMENT_VERSION,
-      ...head.fixed,
-      ...head.description.slice(0, descriptionSentences),
-      head.category,
+      BLUEPRINT_DOCUMENT_VERSION,
+      ...head,
       ...(structure === undefined ? [] : structure(routing, actions)),
     ].join("\n");
 
-  const attempts: [number, boolean, boolean][] = [
-    [2, true, true],
-    [1, true, true],
-    [0, true, true],
-    [0, false, true],
-    [2, true, false],
-    [1, true, false],
-    [0, true, false],
-    [0, false, false],
+  const attempts: [boolean, boolean][] = [
+    [true, true],
+    [false, true],
+    [true, false],
+    [false, false],
   ];
   let text = render(...attempts[0]);
   for (const attempt of attempts.slice(1)) {
@@ -465,31 +483,9 @@ export function blueprintText(manifest: BundleManifest, resolved: ResolvedGraph 
   return text;
 }
 
-function manifestLines(manifest: BundleManifest): {
-  fixed: string[];
-  description: string[];
-  category: string;
-} {
-  const title = str(manifest.title);
-  const summary = str(manifest.summary);
-  const description = str(manifest.description);
-  const category = str(manifest.category);
-  const tags = strings(manifest.tags);
-  return {
-    fixed: [`Blueprint: ${title}`, `Purpose: ${summary}`],
-    description: description === "" ? [] : [sentences(description, 2).join(" ")],
-    category: `Category: ${category === "" ? "none" : category}. Tags: ${tags.length === 0 ? "none" : tags.join(", ")}.`,
-  };
-}
-
-/** The first `count` sentences of a text, split on sentence-ending punctuation. */
-function sentences(text: string, count: number): string[] {
-  return text
-    .replace(/\s+/g, " ")
-    .trim()
-    .split(/(?<=[.!?])\s+/)
-    .filter((s) => s !== "")
-    .slice(0, count);
+/** The two manifest lines the document keeps: what it is called and what it is for. */
+function manifestLines(manifest: BundleManifest): string[] {
+  return [`Blueprint: ${str(manifest.title)}`, `Purpose: ${str(manifest.summary)}`];
 }
 
 function structureLines(resolved: ResolvedGraph): (routing: boolean, actions: boolean) => string[] {
@@ -579,7 +575,7 @@ export function cardText(card: Partial<NodeCard>, labelOf: (id: string) => strin
   const name = str(card.name);
   const type = str(card.type);
   const lines: string[] = [
-    DOCUMENT_VERSION,
+    CARD_DOCUMENT_VERSION,
     `Card: ${name}${type === "" ? "" : ` (${labelOf(type)})`}`,
     `Does: ${str(card.action)}`,
     `Instructions: ${str(card.spec)}`,

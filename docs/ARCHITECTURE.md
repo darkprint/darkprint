@@ -316,13 +316,25 @@ tombstone.
 ## 8. Search and retrieval
 
 Every release and every card version has a document and a vector. The blueprint document is
-`v2`, `Blueprint: <title>`, `Purpose: <summary>`, up to two description sentences, `Category ...
-Tags ...`, then the node list in graph order, one step line per node with its action, routing,
-loops, human gates, tools, MCP servers and models, the autonomy and security reading, phases
-covered and missing; over 1800 characters it drops description sentences, then the routing
-line, then the actions. The card document is `v2`, `Card: <name> (<type>)`, `Does:`,
+`v3`, `Blueprint: <title>`, `Purpose: <summary>`, then the node list in graph order, one step
+line per node with its action, routing, loops, human gates, tools, MCP servers and models, the
+autonomy and security reading, phases covered and missing; over 1800 characters it drops the
+routing line, then the actions. The card document is `v2`, `Card: <name> (<type>)`, `Does:`,
 `Instructions: <spec>`, phases, tools, MCP servers and skill, inputs and outputs with their
 types, `Will not:`, risk markers, dependencies.
+
+The blueprint document carries NO `description`, `category` or `tags`, and that is a rule about
+what a vector may rest on rather than a size saving. The graph and the cards are checked by the
+engine and cannot disagree with the blueprint that runs; the manifest's prose is written by hand
+beside them and is not checked against anything. Every archive description ends "This blueprint
+was generated automatically as an example for the registry", which put `registry` in all sixteen
+documents and, through the lexical channel, made the query word `try` match every one of them.
+`title` and `summary` stay because they are the only statement of what a blueprint is FOR in the
+language somebody searching would use: measured on the golden set, dropping the prose costs
+nothing outside the noise a version bump alone produces, and dropping the purpose lines as well
+costs five of thirty-two top-1. The two templates carry SEPARATE versions, because the version
+string sits inside the embedded text — one shared constant made a blueprint-template change
+rewrite all 119 card vectors and shift a ranking nothing had touched.
 
 The encoder is `all-MiniLM-L6-v2` (quantised ONNX, `q8`, 384 dimensions, mean-pooled and
 L2-normalised, loaded from `models/` with remote models disabled). `score = similarity + 0.15 *
@@ -346,7 +358,7 @@ written against what each blueprint does rather than what its manifest says, so 
 encoder outage the smoke set beside it scores identically with or without. recall@5 is the
 headline, since `FIND_DEFAULT_LIMIT` is 5 and a hit at rank 6 reaches no agent.
 `scripts/rag-eval.baseline.json` records the numbers to argue from, measured against a database
-seeded from `content/`: blueprints recall@5 31/32, top-1 26/32, MRR 0.881; cards recall@5 10/12,
+seeded from `content/`: blueprints recall@5 31/32, top-1 26/32, MRR 0.883; cards recall@5 10/12,
 top-1 5/12, MRR 0.540; negatives 4/4 quiet. The one blueprint outside recall@5 is named in that
 file, because a number that fell is the one a reader must not have to reconstruct. A card-fusion
 variant was measured and reverted for no gain in the full ranking. Routes: `GET /api/search/blueprints`,
@@ -576,20 +588,20 @@ all the same — `filePathMap` records source paths resolved at deploy time, so 
 rewrites `node_modules` between them uploads a function whose files have moved.
 
 (Drop `--prod` from the last three lines for a preview.) A prebuilt deployment's functions run
-on linux/arm64, so `next.config.ts` traces `models/**`, `onnxruntime-node`'s linux/arm64
-binding and sharp's linux-arm64 packages into the seven routes that embed (the two searchers,
-the MCP endpoint and its two find routes, publish and health) and excludes every other
-platform's binaries. A build made on Vercel's machines runs x64 instead; `/api/health` names
-the missing file when the two disagree.
+on linux/arm64, so `next.config.ts` traces `models/**` and `onnxruntime-node`'s linux/arm64
+binding into the seven routes that embed (the two searchers, the MCP endpoint and its two find
+routes, publish and health) and excludes every other platform's binaries. Sharp is not among
+them and must not be added back: it was the whole cross-compilation failure class, and the
+encoder stopped importing it. A build made on Vercel's machines runs x64 instead;
+`/api/health` names the missing file when the two disagree.
 
 `/api/health` reports `db` (latency, `migrationsHead`, `migrationsApplied`), `encoder`
 (`present` or `absent`, with `encoderFailure`), `storage`, `auth.providers`,
-`auth.sessionSecret` (`set`, `example` or `missing`) and `commit`. Measured through a
-preview's health route, production holds `migrationsHead` `0007_drafts` with 7 applied, the
-preview environment has no OAuth provider configured, and the session secret must be set before
-anyone can sign in. On the last preview the encoder was still `absent`: sharp's linux-arm64
-build refused to load even when traced, so search on Vercel ranks by words until that is
-resolved (see Known gaps).
+`auth.sessionSecret` (`set`, `example` or `missing`) and `commit`. Production answers
+`migrationsHead` `0011_tutorial_live` with 10 applied, `encoder: present`, storage configured
+and both OAuth providers live. The preview environment has no OAuth provider configured and its
+session secret must be set before anyone can sign in. Read this route after every deploy: it is
+the one place that says which commit is serving and whether that commit can encode.
 
 Production migration runbook. `$D` is the direct connection (`db.<ref>.supabase.co:5432` or
 the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transaction pooler.

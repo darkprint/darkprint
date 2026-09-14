@@ -44,7 +44,13 @@ import { cardDigest, hasErrors, loadBundle, bundleDigest, type Bundle } from "@/
 import type { Db } from "@/lib/db";
 import { openView } from "@/lib/server/ontology";
 import { reembedAll } from "@/lib/server/search";
-import { DOCUMENT_VERSION, blueprintText, cardText, embeddedInput } from "@/lib/server/search/reembed";
+import {
+  BLUEPRINT_DOCUMENT_VERSION,
+  CARD_DOCUMENT_VERSION,
+  blueprintText,
+  cardText,
+  embeddedInput,
+} from "@/lib/server/search/reembed";
 
 import { bind } from "../t200/contract";
 import {
@@ -387,8 +393,18 @@ describe("the three claims, kept apart", () => {
   });
 });
 
-describe("the document is a function of the manifest's purpose fields", () => {
-  it("two releases differing only in `category` embed differently", async () => {
+describe("the document keeps the manifest's purpose and drops its prose", () => {
+  /* ── why these two cells are inverted ──
+     They used to assert that `category` and `tags` MOVE the vector, and the change that
+     inverted them is deliberate: the graph and the cards are checked by the engine and
+     cannot disagree with the blueprint that runs, while the manifest's prose is written by
+     hand beside them. Every archive description ends "generated automatically as an example
+     for the registry", which is how the query word `try` came to match all sixteen.
+
+     An "is ignored" cell is vacuous on its own — a module that embedded nothing at all would
+     pass both — so the pure cell below carries the control: `title` and `summary` still
+     decide the document, and they are what a reader searches in. */
+  it("two releases differing only in `category` embed IDENTICALLY", async () => {
     setup.check();
     await reembed(s.db, c.withCategory.bundleId, c.withCategory.digest);
     await reembed(s.db, c.plainCategory.bundleId, c.plainCategory.digest);
@@ -398,13 +414,13 @@ describe("the document is a function of the manifest's purpose fields", () => {
     expect(no, "the premise: the plain release embedded").toBeDefined();
     expect(
       yes?.embedding,
-      `the two releases differ in exactly one manifest field and in nothing else: same title, ` +
-        `same summary, same description, same card, same digest, same manifest slug. A module ` +
-        `that dropped \`category\` from the document answers the same vector twice.`,
-    ).not.toBe(no?.embedding);
+      `the two releases differ in exactly one manifest field and in nothing else, and that ` +
+        `field is no longer in the document. A module still embedding \`category\` answers two ` +
+        `vectors here and a reader would rank on a word nothing verified.`,
+    ).toBe(no?.embedding);
   });
 
-  it("two releases differing only in `tags` embed differently", async () => {
+  it("two releases differing only in `tags` embed IDENTICALLY", async () => {
     setup.check();
     await reembed(s.db, c.withTags.bundleId, c.withTags.digest);
     await reembed(s.db, c.plainTags.bundleId, c.plainTags.digest);
@@ -414,9 +430,32 @@ describe("the document is a function of the manifest's purpose fields", () => {
     expect(no, "the premise: the untagged release embedded").toBeDefined();
     expect(
       yes?.embedding,
-      `Driven SEPARATELY from \`category\`: one fixture that differs in both fields at once is ` +
-        `reddened by a module that dropped either, so it cannot say which.`,
-    ).not.toBe(no?.embedding);
+      `Driven SEPARATELY from \`category\`: one fixture differing in both at once is reddened ` +
+        `by a module that still embeds either, so it cannot say which.`,
+    ).toBe(no?.embedding);
+  });
+
+  it("reads `title` and `summary` and ignores `description`, `category` and `tags`", () => {
+    setup.check();
+    /* The control, and the reason the two cells above are not vacuous. Pure, so it needs no
+       database and no encoder: the text either carries the field or it does not. */
+    const base = manifest({ slug: "x", title: "T", summary: "S" });
+    const text = (over: Record<string, unknown>): string =>
+      blueprintText({ ...base, ...over } as never, undefined);
+
+    const plain = text({});
+    expect(text({ description: "A long paragraph nobody checked." }), "description").toBe(plain);
+    expect(text({ category: "logistics" }), "category").toBe(plain);
+    expect(text({ tags: ["overnight", "inventory"] }), "tags").toBe(plain);
+
+    /* MUST change, or "ignores three fields" is a claim about a module that embeds none. */
+    expect(text({ title: "Another" }), "title decides the document").not.toBe(plain);
+    expect(text({ summary: "Another purpose entirely." }), "summary decides it").not.toBe(plain);
+
+    expect(plain).toContain("Blueprint: T");
+    expect(plain).toContain("Purpose: S");
+    expect(plain, "the prose fields must leave no line behind").not.toContain("Category");
+    expect(plain).not.toContain("Tags");
   });
 });
 
@@ -467,9 +506,25 @@ describe("the document is a function of the graph, when the release resolves", (
 describe("the documents carry their version, and the stamp is over that text", () => {
   it("both documents start with the version line", () => {
     setup.check();
-    expect(blueprintText(manifest({ slug: "x", title: "T", summary: "S" }), undefined).split("\n")[0]).toBe(DOCUMENT_VERSION);
-    expect(cardText({ name: "N", action: "a", spec: "s" }, (id) => id).split("\n")[0]).toBe(DOCUMENT_VERSION);
-    expect(DOCUMENT_VERSION).toBe("v2");
+    expect(blueprintText(manifest({ slug: "x", title: "T", summary: "S" }), undefined).split("\n")[0]).toBe(
+      BLUEPRINT_DOCUMENT_VERSION,
+    );
+    expect(cardText({ name: "N", action: "a", spec: "s" }, (id) => id).split("\n")[0]).toBe(
+      CARD_DOCUMENT_VERSION,
+    );
+
+    /* Pinned separately, and the pair is the assertion. The version string sits INSIDE the
+       embedded text, so one shared constant made a blueprint-template change rewrite every
+       card vector and shift a ranking nothing had touched. A cell reading one constant twice
+       could not tell that apart from two that happen to agree. */
+    expect(BLUEPRINT_DOCUMENT_VERSION).toBe("v3");
+    expect(CARD_DOCUMENT_VERSION).toBe("v2");
+
+    /* There is no third cell asserting the two differ, and that is not an omission: both are
+       `const`, so TypeScript gives them literal types and refuses `===` between them with
+       TS2367. The compiler makes the claim at every call site, which is wider than one
+       runtime assertion here, and widening either side to `string` to get a cell would
+       remove exactly the guarantee it was meant to record. */
   });
 
   it("a release that does not resolve is stamped with the manifest-only document", async () => {
