@@ -50,7 +50,7 @@ jobs:
           --health-retries 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # A service container cannot be given a command, and the official MinIO image needs
       # `server /data`, so it is started by hand with the same image, command and bucket
@@ -82,7 +82,7 @@ jobs:
           docker run --rm --network host --entrypoint /bin/sh quay.io/minio/mc:latest -c \
             "mc alias set local http://localhost:9000 darkprint darkprint123 && mc mb --ignore-existing local/darkprint"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm

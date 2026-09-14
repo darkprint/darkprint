@@ -40,7 +40,7 @@ jobs:
   check-attractor-drift:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # No `npm ci`: the script imports nothing outside `node:` builtins and reads the pin
       # out of the source with a regex, so it runs against a bare checkout. Installing the
       # tree would make this job fail for reasons that have nothing to do with the spec.
