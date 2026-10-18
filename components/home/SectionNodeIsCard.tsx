@@ -27,7 +27,9 @@ export function SectionNodeIsCard() {
   if (card === undefined) return null;
 
   return (
-    <section id="node" className="bg-surface py-20 sm:py-28">
+    /* `overflow-x-clip` because the stage's bloom hangs 40px past the figure, and on a phone
+       the figure is the full column, so the bloom widened the page by 16px. */
+    <section id="node" className="overflow-x-clip bg-surface py-20 sm:py-28">
       <div className="container-page">
         {/* Centred over a centred figure, matching the beat above it. No eyebrow, because
             `.eyebrow` is rationed to one per page and the hero spends it. Amber is the card

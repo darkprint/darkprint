@@ -24,7 +24,9 @@ describe("the drawing on a touch screen", () => {
 
   it("hands the gesture back to the page while the drawing is still", () => {
     // React Flow's stylesheet sets `touch-action: none` on the pane unconditionally.
-    expect(SOURCE).toContain('pannable ? "" : "[&_.react-flow__pane]:!touch-auto "');
+    expect(SOURCE).toContain('pannable ? "" : "rf-still "');
+    const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+    expect(css).toMatch(/\.rf-blueprint\.rf-still \.react-flow__pane \{\s*touch-action: auto;/);
   });
 
   it("offers the switch, named and stateful, only to a coarse pointer", () => {

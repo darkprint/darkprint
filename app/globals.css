@@ -1095,3 +1095,9 @@ body {
 .rf-blueprint .react-flow__background {
   color: color-mix(in oklab, var(--color-blueprint-line) 14%, transparent);
 }
+/* A drawing a touch reader has not asked to move hands the gesture back to the page, since
+   React Flow's stylesheet sets `touch-action: none` on the pane whatever `panOnDrag` says.
+   A rule here rather than an arbitrary variant, which would read `__` as two spaces. */
+.rf-blueprint.rf-still .react-flow__pane {
+  touch-action: auto;
+}

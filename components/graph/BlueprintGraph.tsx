@@ -686,9 +686,9 @@ export function BlueprintGraph({
   }, [graph, nodeIndex]);
 
   /* On a touch screen a drag that starts on the drawing would pan it and never scroll the
-     page, so the drawing stays still until the reader asks to move it. React Flow's own CSS
-     sets `touch-action: none` on the pane whatever `panOnDrag` says, so a still drawing also
-     hands the gesture back to the browser. */
+     page, so the drawing stays still until the reader asks to move it. `rf-still` hands the
+     gesture back to the browser, because React Flow's own CSS sets `touch-action: none` on
+     the pane whatever `panOnDrag` says (`app/globals.css`). */
   const fine = useFinePointer();
   const [moving, setMoving] = useState(false);
   const pannable = fine || moving;
@@ -697,7 +697,7 @@ export function BlueprintGraph({
     <div
       className={`rf-blueprint overflow-hidden rounded-lg border border-line bg-surface/60 ${
         fill ? "min-h-0 flex-1 " : ""
-      }${pannable ? "" : "[&_.react-flow__pane]:!touch-auto "}${className ?? ""}`}
+      }${pannable ? "" : "rf-still "}${className ?? ""}`}
       style={fill ? { minHeight: height } : { height }}
     >
       <ReactFlow
