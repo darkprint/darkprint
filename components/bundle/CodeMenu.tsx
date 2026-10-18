@@ -79,7 +79,7 @@ export function CodeMenu({
   className?: string;
 }) {
   return (
-    <details className={cx("group relative", className)}>
+    <details className={cx("group lg:relative", className)}>
       {/* `Button`'s outline variant, spelled out, because a `<summary>` cannot be a
           `<button>`. `h-9` to match the two `ActionPill`s beside it in the band. The press
           list names `scale` explicitly: Tailwind v4 compiles `scale-[0.97]` to the standalone
@@ -99,9 +99,11 @@ export function CodeMenu({
         </span>
       </summary>
 
-      {/* Anchored to the right edge: this trigger is the last item in a row aligned to the
-          band's right edge, and a panel centred on it runs off a 390px screen. */}
-      <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 flex w-[min(26rem,calc(100vw-2rem))] flex-col gap-4 rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40">
+      {/* From `lg` the trigger ends the band's right edge, so the panel hangs from its right.
+          Below `lg` the actions sit at the left of a full-width row, so the panel hangs from
+          that row's left edge (the row is the positioned box there) and is never wider than
+          it, which keeps it on a 360px screen even when the row wraps. */}
+      <div className="absolute left-0 top-[calc(100%+0.5rem)] z-30 flex w-[min(26rem,100%)] flex-col gap-4 rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40 lg:left-auto lg:right-0 lg:w-[min(26rem,calc(100vw-2rem))]">
         {/* ---- 1. Download ---- */}
         <div className="flex flex-col gap-2">
           <p className="label-lead text-fg">Download</p>
@@ -111,7 +113,7 @@ export function CodeMenu({
             href={download.href}
             download={download.name}
             className={cx(
-              "inline-flex h-9 w-fit items-center gap-2 rounded-md border px-3 font-mono text-[12px] transition-colors",
+              "inline-flex min-h-9 w-fit max-w-full items-center gap-2 rounded-md border px-3 py-1.5 font-mono text-[12px] wrap-anywhere transition-colors",
               TONE[tone].download,
             )}
           >

@@ -130,7 +130,7 @@ function DeleteAccount({ handle }: { handle: string | null }) {
           once, imperatively, after the delete itself has already succeeded. */}
       <form ref={logoutForm} action="/api/auth/logout" method="post" hidden />
       <div className="flex flex-wrap items-center gap-5">
-        <div className="flex min-w-[280px] flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-1">
           <span className="text-sm text-fg">Delete account</span>
           <span className="text-[13px] leading-relaxed text-muted">
             Your handle is retired and nobody can claim it. Your private blueprints and
@@ -269,7 +269,7 @@ function TransferBundle({ initial }: { initial: readonly TransferableBundle[] })
   return (
     <div className="flex flex-col gap-3 rounded-md border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center gap-5">
-        <div className="flex min-w-[280px] flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-1">
           <span className="text-sm text-fg">Transfer a blueprint</span>
           <span className="text-[13px] leading-relaxed text-muted">
             Hand a blueprint to another account. Its files and release digests stay as

@@ -32,6 +32,7 @@ import { Id, SpecLink } from "@/components/spec/parts";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { NPX_INVOCATION } from "@/packages/cli/src/index";
 
 /* ============================================================
    /spec/attractor: the crosswalk, on a route of its own.
@@ -654,8 +655,9 @@ export default function SpecAttractorPage() {
               Every file <Id>darkprint export --attractor</Id> writes opens with these same
               two lists. The file will be read on a machine that has neither this page nor
               the source, so what a blueprint cannot carry has to travel with it. The command
-              ships in the darkprint package, which is not on npm yet;{" "}
-              <SpecLink href="/mcp">the MCP page</SpecLink> says what works today.
+              ships in the darkprint package on npm, so{" "}
+              <Id>{`${NPX_INVOCATION} export <dir> --attractor`}</Id> runs it with nothing
+              installed.
             </p>
           </div>
 

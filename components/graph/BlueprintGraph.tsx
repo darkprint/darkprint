@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -21,6 +21,7 @@ import {
   type EdgeTypes,
   type NodeTypes,
 } from "@xyflow/react";
+import { useFinePointer } from "@/components/ui/fine-pointer";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { AgentNode, type AgentFlowNode } from "./AgentNode";
 import { BLOCK_WIDTH } from "./block";
@@ -308,7 +309,7 @@ const edgeTypes: EdgeTypes = { schematic: SchematicEdge };
  * The selector returns a boolean, so a pan or a zoom that does not change the answer does
  * not re-render anything.
  */
-function PanHint() {
+function PanHint({ locked }: { locked: boolean }) {
   const overflowing = useStore((s) => {
     if (s.width === 0 || s.height === 0) return false;
     let minX = Infinity;
@@ -338,7 +339,7 @@ function PanHint() {
       position="bottom-right"
       className="!m-2 rounded-sm border border-line bg-surface/90 px-1.5 py-0.5 font-mono text-[11px] text-dim"
     >
-      drag to pan
+      {locked ? "tap move to pan" : "drag to pan"}
     </Panel>
   );
 }
@@ -400,7 +401,16 @@ function PanHint() {
  * back until React Flow has a width for every node, because a fit computed from unmeasured
  * boxes lands somewhere the drawing is not.
  */
-function WholeFrame({ across, className }: { across: FlowSpan; className: string }) {
+function WholeFrame({
+  across,
+  className,
+  moving,
+}: {
+  across: FlowSpan;
+  className: string;
+  /** On a touch screen, the switch that lets a finger move the drawing; absent on a mouse. */
+  moving?: { on: boolean; toggle: () => void };
+}) {
   const store = useStoreApi();
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
@@ -455,6 +465,20 @@ function WholeFrame({ across, className }: { across: FlowSpan; className: string
           <path d="M3.692 4.63c0-.53.4-.938.939-.938h5.215V0H4.708C2.13 0 0 2.054 0 4.63v5.216h3.692V4.631zM27.354 0h-5.2v3.692h5.17c.53 0 .984.4.984.939v5.215H32V4.631A4.624 4.624 0 0027.354 0zm.954 24.83c0 .532-.4.94-.939.94h-5.215v3.768h5.215c2.577 0 4.631-2.13 4.631-4.707v-5.139h-3.692v5.139zm-23.677.94c-.531 0-.939-.4-.939-.94v-5.138H0v5.139c0 2.577 2.13 4.707 4.708 4.707h5.138V25.77H4.631z" />
         </svg>
       </ControlButton>
+      {moving !== undefined && (
+        <ControlButton
+          onClick={moving.toggle}
+          aria-pressed={moving.on}
+          aria-label={moving.on ? "Stop moving the drawing" : "Move the drawing"}
+          title={moving.on ? "Stop moving the drawing" : "Move the drawing"}
+          className="aria-pressed:!text-cyan"
+        >
+          {/* Four arrows out of a centre, the usual mark for "move". */}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden>
+            <path d="M16 1l6 6h-4v7h7v-4l6 6-6 6v-4h-7v7h4l-6 6-6-6h4v-7H7v4l-6-6 6-6v4h7V7h-4z" />
+          </svg>
+        </ControlButton>
+      )}
     </Controls>
   );
 }
@@ -661,11 +685,19 @@ export function BlueprintGraph({
     });
   }, [graph, nodeIndex]);
 
+  /* On a touch screen a drag that starts on the drawing would pan it and never scroll the
+     page, so the drawing stays still until the reader asks to move it. React Flow's own CSS
+     sets `touch-action: none` on the pane whatever `panOnDrag` says, so a still drawing also
+     hands the gesture back to the browser. */
+  const fine = useFinePointer();
+  const [moving, setMoving] = useState(false);
+  const pannable = fine || moving;
+
   return (
     <div
       className={`rf-blueprint overflow-hidden rounded-lg border border-line bg-surface/60 ${
         fill ? "min-h-0 flex-1 " : ""
-      }${className ?? ""}`}
+      }${pannable ? "" : "[&_.react-flow__pane]:!touch-auto "}${className ?? ""}`}
       style={fill ? { minHeight: height } : { height }}
     >
       <ReactFlow
@@ -680,7 +712,10 @@ export function BlueprintGraph({
         maxZoom={MAX_ZOOM}
         zoomOnScroll={false}
         panOnScroll={false}
-        panOnDrag
+        panOnDrag={pannable}
+        zoomOnPinch={pannable}
+        zoomOnDoubleClick={pannable}
+        nodesDraggable={pannable}
         preventScrolling={false}
         nodesConnectable={false}
         /* The library's default screen-reader text promises moving and deleting nodes on a
@@ -717,9 +752,10 @@ export function BlueprintGraph({
 
             It is rendered by `WholeFrame` rather than here because its fit-view button has
             to run that component's framing and not React Flow's — see its docblock. */}
-        <PanHint />
+        <PanHint locked={!pannable} />
         <WholeFrame
           across={across}
+          moving={fine ? undefined : { on: moving, toggle: () => setMoving((on) => !on) }}
           className="!border !border-line !bg-surface-2 !shadow-none [&_button]:!border-line [&_button]:!bg-surface-2 [&_button]:!fill-muted hover:[&_button]:!bg-surface-3"
         />
       </ReactFlow>

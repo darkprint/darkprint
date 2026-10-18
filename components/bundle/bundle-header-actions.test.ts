@@ -106,8 +106,8 @@ describe("star, fork, download blueprint", () => {
     expect(
       at.fork,
       "the download is drawn before Fork. It is last for a reason beyond the instruction: " +
-        "`CodeMenu`'s panel is anchored `right-0`, and only the final item in a wrapping row " +
-        "is guaranteed to end where the group does.",
+        "from `lg` `CodeMenu`'s panel is anchored `right-0`, and only the final item in a " +
+        "wrapping row is guaranteed to end where the group does.",
     ).toBeLessThan(at.download);
   });
 

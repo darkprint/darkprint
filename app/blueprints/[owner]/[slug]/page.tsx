@@ -531,6 +531,7 @@ export default async function Page({
       meta={`${railSections.length} sections`}
       items={railSections}
       ariaLabel="On this blueprint"
+      compact
     >
     {/* ---------- The band, shared with `/u/<owner>/<slug>` ----------
         Owner and name, the visibility pill, the four actions and the version line, in the

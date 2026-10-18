@@ -822,6 +822,11 @@ export function NodeBrowser({
       {groups !== null && groups.length > 0 && (
         <GroupSpine
           ariaLabel="Jump to a card type"
+          /* Below `sm` the filter bar's phone disclosure is pinned at `top-16` as well, and
+             two pinned bars would stack over a phone's shelf. The row scrolls with the page
+             there; a jump still lands clear, since the header and that bar (65 + 54) sit
+             inside `SPINE_CLEARANCE`. */
+          className="max-sm:static"
           items={spineItems}
           activeId={activeGroup}
           results={results.length}

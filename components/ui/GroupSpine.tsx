@@ -88,6 +88,7 @@ export function GroupSpine({
   results,
   total,
   accent = "cyan",
+  className,
 }: {
   /** What a screen reader calls this landmark: "Jump to a card type". */
   ariaLabel: string;
@@ -99,6 +100,8 @@ export function GroupSpine({
   results: number;
   total: number;
   accent?: keyof typeof ACCENT;
+  /** The caller's own offset, for a shelf with sticky chrome of its own above this row. */
+  className?: string;
 }) {
   const tone = ACCENT[accent];
   return (
@@ -121,7 +124,10 @@ export function GroupSpine({
        scrolling under it do not show through a one-pixel gutter. */
     <nav
       aria-label={ariaLabel}
-      className="sticky top-[65px] z-30 -mx-1 flex items-center gap-3 border-b border-line bg-void/95 px-1 py-3 backdrop-blur-sm"
+      className={cx(
+        "sticky top-[65px] z-30 -mx-1 flex items-center gap-3 border-b border-line bg-void/95 px-1 py-3 backdrop-blur-sm",
+        className,
+      )}
     >
       <span
         aria-hidden

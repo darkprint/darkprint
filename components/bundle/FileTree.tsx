@@ -196,16 +196,19 @@ export function FileTree({
                 {label}
               </Link>
             );
+          /* Below `sm` the change summary drops to its own line under the name, because a
+             15rem name column and a summary do not both fit a phone's row. `ps-8` is the
+             glyph's `w-4` plus the row's `gap-x-4`, so it lines up under the name. */
           return (
             <li
               key={file.path}
-              className="flex items-center gap-4 border-b border-line px-5 py-2.5 last:border-b-0"
+              className="flex flex-wrap items-center gap-x-4 gap-y-0.5 border-b border-line px-5 py-2.5 last:border-b-0 sm:flex-nowrap"
             >
               <span aria-hidden className="w-4 shrink-0 text-center text-dim">
                 {GLYPH[file.kind]}
               </span>
-              <span className="w-[15rem] shrink-0 truncate">{name}</span>
-              <span className="min-w-0 flex-1 truncate text-[13px] text-dim">
+              <span className="min-w-0 flex-1 truncate sm:w-[15rem] sm:flex-none">{name}</span>
+              <span className="min-w-0 basis-full truncate ps-8 text-[13px] text-dim sm:flex-1 sm:basis-auto sm:ps-0">
                 {file.change}
               </span>
               <span

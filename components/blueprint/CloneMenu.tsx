@@ -94,7 +94,7 @@ export function CloneMenu({
   return (
     <details
       ref={details}
-      className={cx("group relative", className)}
+      className={cx("group lg:relative", className)}
       onToggle={(event) => {
         if (event.currentTarget.open) announceMenuOpened(id);
       }}
@@ -130,11 +130,12 @@ export function CloneMenu({
         </span>
       </summary>
 
-      {/* `right-0` rather than centred under the trigger: this is the last item in a header
-          group the page pushes to the right, so its right edge sits at the column's edge at
-          every width, and a centred panel runs off a 390px screen. `z-30` so that if a
-          reader somehow gets both panels open, the one they just asked for is readable. */}
-      <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(26rem,calc(100vw-2rem))] rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40">
+      {/* From `lg` this is the last item in a header group pushed to the right, so the panel
+          hangs from its right edge. Below `lg` the group sits at the left of a full-width row,
+          so the panel hangs from that row's left edge and is never wider than it. `z-30` so
+          that if a reader somehow gets both panels open, the one they just asked for is
+          readable. */}
+      <div className="absolute left-0 top-[calc(100%+0.5rem)] z-30 w-[min(26rem,100%)] rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40 lg:left-auto lg:right-0 lg:w-[min(26rem,calc(100vw-2rem))]">
         {body}
       </div>
     </details>

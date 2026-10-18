@@ -180,3 +180,26 @@ describe("the component's own shape", () => {
     expect(source).not.toContain("'use client'");
   });
 });
+
+/**
+ * Below `lg` the header's actions start at the left of a full-width row, so a panel hung from
+ * the trigger's right edge opens off the left of a phone. Both Get menus hang from the row
+ * there and from the trigger's right edge only from `lg`.
+ */
+describe("a panel that stays on a phone's screen", () => {
+  for (const file of ["./CodeMenu.tsx", "../blueprint/CloneMenu.tsx"]) {
+    it(`${file} anchors its panel left below lg and right from lg`, () => {
+      const source = readFileSync(new URL(file, import.meta.url), "utf8");
+      const PANEL = /className="absolute [^"]*top-\[calc\(100%\+0\.5rem\)\][^"]*"/;
+      const panel = source.match(PANEL)?.[0];
+      expect(panel, `${file} has no dropdown panel this cell can find`).toBeDefined();
+      expect(panel).toMatch(/\sleft-0\s/);
+      expect(panel).toContain("w-[min(26rem,100%)]");
+      expect(panel).toContain("lg:right-0");
+      expect(panel, "the panel is anchored right at every width").not.toMatch(/[\s"]right-0/);
+      expect(source, "the disclosure is the positioned box below lg").toContain(
+        '"group lg:relative"',
+      );
+    });
+  }
+});

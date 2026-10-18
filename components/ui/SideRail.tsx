@@ -115,9 +115,8 @@ const COLUMNS: Record<string, string> = {
  *
  * `xl` and not `lg`: the rail costs 16rem, and below 1280px that is taken out of the reading
  * column rather than out of the margin. Under that breakpoint the rail is not rendered at
- * all — it is not hidden behind a toggle — because every surface that mounts one already
- * carries its own way through the page on a phone: Learn keeps the compact sequence in each
- * page footer, and a blueprint is one scroll whose sections announce themselves.
+ * all — it is not hidden behind a toggle. Learn keeps the compact sequence in each page
+ * footer instead, and the pages a phone reader jumps around in take `compact` below.
  */
 export function SideRail({
   label,
@@ -161,16 +160,10 @@ export function SideRail({
   /**
    * Draw a compact list of the same rows above the page, below `xl`.
    *
-   * Opt-in, and the three existing callers deliberately do not take it. The rail is not
-   * rendered under `xl` at all — it costs 16rem, and below 1280px that comes out of the
-   * reading column — and every surface that mounts one was chosen for having its own way
-   * through the page on a phone: Learn keeps the compact sequence in each page footer, and
-   * a blueprint or a node is one scroll whose sections announce themselves.
-   *
-   * `/settings` is the case that has neither. Seven numbered sections, no footer sequence,
-   * and a reader on a phone met a page with no map at all — so it asks for this and the
-   * others carry on without it. A default-on version would have put a second navigation
-   * above four pages that had already decided they did not want one.
+   * Opt-in. The rail is not rendered under `xl` at all, so a page whose sections a phone
+   * reader jumps between asks for this: `/settings`, a blueprint and a node, each a long
+   * scroll with no footer sequence. Learn carries the compact sequence in each page footer
+   * and does not take it.
    */
   compact?: boolean;
 }) {

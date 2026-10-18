@@ -208,9 +208,11 @@ export function BundleHeader({
           <div className="flex shrink-0 flex-col items-start gap-2 lg:items-end">
             {/* Star, Fork, download, left to right, on the owner's instruction of 2026-09-06.
                 The download is last because it is the one control that opens a panel under
-                itself: `CodeMenu`'s dropdown is anchored `right-0`, and only the final item in
-                a wrapping row is guaranteed to end at the group's own right edge. */}
-            <div className="flex flex-wrap items-center gap-2">
+                itself: from `lg` `CodeMenu`'s dropdown is anchored `right-0`, and only the
+                final item in a wrapping row is guaranteed to end at the group's own right
+                edge. Below `lg` this row is full width and positioned, and the panel hangs
+                from its left edge. */}
+            <div className="relative flex w-full flex-wrap items-center gap-2 lg:w-auto">
               {star !== undefined ? (
                 <FavoriteStar id={saveId} star={star} />
               ) : (

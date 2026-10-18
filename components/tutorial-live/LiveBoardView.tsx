@@ -323,7 +323,7 @@ export function NextStep({ draft, liveUrl }: { draft: LiveDraft; liveUrl: string
         </p>
         <InstallTabs />
         <div className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3">
-          <pre className="min-w-0 flex-1 whitespace-pre-wrap font-mono text-xs leading-relaxed text-blueprint-line">
+          <pre className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere font-mono text-xs leading-relaxed text-blueprint-line">
             <code>{prompt}</code>
           </pre>
           <CopyButton text={prompt} ariaLabel="Copy the enrich prompt" />

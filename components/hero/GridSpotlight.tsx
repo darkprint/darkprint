@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { FINE_POINTER_QUERY } from "@/components/ui/fine-pointer";
+
 /* ============================================================
    The graph paper lights up under the pointer.
 
@@ -61,7 +63,7 @@ export function GridSpotlight() {
     const layer = ref.current;
     const section = layer?.parentElement;
     if (layer === null || section === undefined || section === null) return;
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (!window.matchMedia(FINE_POINTER_QUERY).matches) return;
 
     /* Written straight from the handler, with no `requestAnimationFrame` in between.
        ------------------------------------------------------------

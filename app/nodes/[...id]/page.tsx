@@ -1080,7 +1080,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   ];
 
   return (
-    <SideRail label="On this node" items={cardMap} ariaLabel="On this node">
+    <SideRail label="On this node" items={cardMap} ariaLabel="On this node" compact>
     <div className="container-page py-10 lg:py-12">
       {/* ---------- Header ----------
           The blueprint page's band, drawn for a card.
@@ -1181,10 +1181,11 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             that guard is concerned, and it found this one.
 
             `CloneMenu` stays last for the reason the blueprint page's copy of this comment
-            records: only the final item is guaranteed to end at the group's right edge on a
-            wrapped line, which is what its `right-0` panel is anchored to. */}
+            records: from `lg` only the final item is guaranteed to end at the group's right
+            edge on a wrapped line, which is what its `right-0` panel is anchored to. Below
+            `lg` the row is full width and positioned, and the panel hangs from its left. */}
         <div className="flex shrink-0 flex-col items-start gap-2 lg:items-end">
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <div className="relative flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
             {/* `star`, not `count`/`seeded`: T280's cross-agent pin on `FavoriteStar`
                 (`components/ui/FavoriteStar.tsx`) turns the count pill into a real toggle
                 over `POST /api/cards/{id}/star`. `id` is untouched — it still addresses
@@ -1237,7 +1238,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   <a
                     href={`data:text/yaml;charset=utf-8,${encodeURIComponent(source)}`}
                     download={`${record.ref}.yaml`}
-                    className="inline-flex h-9 w-fit select-none items-center gap-2 whitespace-nowrap rounded-md border border-amber/60 bg-transparent px-3 font-mono text-[12px] text-amber transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-amber hoverable:hover:bg-amber/10 hoverable:active:scale-[0.97]"
+                    className="inline-flex min-h-9 w-fit max-w-full select-none items-center gap-2 rounded-md border border-amber/60 bg-transparent px-3 py-1.5 font-mono text-[12px] wrap-anywhere text-amber transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-amber hoverable:hover:bg-amber/10 hoverable:active:scale-[0.97]"
                   >
                     <span aria-hidden>↓</span>
                     {record.ref}.yaml

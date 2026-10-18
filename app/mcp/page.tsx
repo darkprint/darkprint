@@ -152,7 +152,32 @@ export default function McpPage() {
           digest it was published under.
         </p>
 
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface-2">
+        {/* Below `sm` the four columns would scroll sideways inside a phone's column, so each
+            tool is a row of its own with what it takes and returns stacked under its name. */}
+        <ul className="divide-y divide-line rounded-xl border border-line bg-surface-2 sm:hidden">
+          {OPERATIONS.map((op) => (
+            <li key={op.name} className="flex flex-col gap-3 px-4 py-4">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="min-w-0 font-mono text-[13px] text-blueprint-ink wrap-anywhere">
+                  {op.name}
+                </span>
+                <span className="font-mono text-[11px] tracking-[0.06em] text-emerald">live</span>
+              </div>
+              <dl className="flex flex-col gap-2.5 text-sm leading-relaxed text-muted">
+                <div>
+                  <dt className="label">Takes</dt>
+                  <dd className="mt-1">{op.takes}</dd>
+                </div>
+                <div>
+                  <dt className="label">Returns</dt>
+                  <dd className="mt-1">{op.returns}</dd>
+                </div>
+              </dl>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden overflow-x-auto rounded-xl border border-line bg-surface-2 sm:block">
           <table className="w-full min-w-[46rem] table-fixed border-collapse text-left">
             {/* Four percentages under `table-fixed` so the tracks resolve deterministically;
                 `returns` is the widest because it carries a sentence where `takes` carries a

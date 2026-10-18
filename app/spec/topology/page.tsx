@@ -8,6 +8,7 @@ import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { DotBreakdown } from "@/components/panes/DotBreakdown";
+import { NPX_INVOCATION } from "@/packages/cli/src/index";
 
 /* ============================================================
    /spec/topology: the DOT file, and what the validator checks in it.
@@ -112,8 +113,9 @@ export default function SpecTopologyPage() {
               refuses to run it. <Id>darkprint export &lt;dir&gt; --attractor</Id> compiles
               the graph and its cards into the file a runner takes, and that file opens with
               a list of everything a blueprint has no way to say. The command ships in the
-              darkprint package, which is not on npm yet;{" "}
-              <SpecLink href="/mcp">the MCP page</SpecLink> says what works today.
+              darkprint package on npm, so{" "}
+              <Id>{`${NPX_INVOCATION} export <dir> --attractor`}</Id> runs it with nothing
+              installed.
             </p>
             <p>
               Do not write <Id>type=</Id> on a node. To Attractor, a node&rsquo;s{" "}
