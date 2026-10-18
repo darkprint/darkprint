@@ -714,6 +714,23 @@ describe("the collapsed menu stays usable", () => {
     expect(SOURCE).toContain('aria-label="Toggle menu"');
     expect(SOURCE).toContain("aria-expanded={mobileOpen}");
   });
+
+  /* Sliced from the panel because the desktop dropdown carries its own Sign out form, and
+     a check over the whole file would pass with the phone's missing. */
+  it("lets a phone sign out, closes on Escape, and keeps route handlers out of prefetch", () => {
+    const start = SOURCE.indexOf("{mobileOpen && (");
+    expect(start, "the phone panel is not where this test looks for it").toBeGreaterThan(-1);
+    const panel = SOURCE.slice(start);
+    expect(panel, "the phone panel has no Sign out").toContain('action="/api/auth/logout"');
+    expect(panel).toContain('method="post"');
+    expect(panel).toContain("Sign out");
+    expect(panel, "an /api/ row is a <Link>, which a prefetch can reach").toContain(
+      'item.href.startsWith("/api/")',
+    );
+    expect(SOURCE, "Escape does not close the phone panel").toMatch(
+      /"Escape"[\s\S]{0,160}setMobileAt\(null\)/,
+    );
+  });
 });
 
 /**

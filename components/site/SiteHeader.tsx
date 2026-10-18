@@ -290,6 +290,8 @@ export function SiteHeader() {
   const isOpen = (menu: string) => openAt?.menu === menu && openAt.at === pathname;
   const mobileOpen = mobileAt === pathname;
   const menus = useRef<HTMLElement>(null);
+  const mobilePanel = useRef<HTMLDivElement>(null);
+  const mobileToggle = useRef<HTMLButtonElement>(null);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -347,6 +349,30 @@ export function SiteHeader() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [openAt]);
+
+  /* The phone panel closes the way the desktop menus do. The toggle counts as inside, so a
+     tap on it is the toggle's own click rather than a close followed by a reopen, and Escape
+     hands focus back to it because the panel that held focus is gone. */
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!mobilePanel.current?.contains(target) && !mobileToggle.current?.contains(target)) {
+        setMobileAt(null);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMobileAt(null);
+      mobileToggle.current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOutside, true);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside, true);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileOpen]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/70 bg-void/88 backdrop-blur-md">
@@ -601,6 +627,7 @@ export function SiteHeader() {
         </nav>
 
         <button
+          ref={mobileToggle}
           type="button"
           className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hoverable:hover:text-fg lg:hidden"
           onClick={() => setMobileAt(mobileOpen ? null : pathname)}
@@ -643,29 +670,64 @@ export function SiteHeader() {
       </div>
 
       {mobileOpen && (
-        <div className="max-h-[calc(100svh-4rem)] overflow-y-auto border-t border-line bg-void lg:hidden">
+        <div
+          ref={mobilePanel}
+          className="max-h-[calc(100svh-4rem)] overflow-y-auto border-t border-line bg-void lg:hidden"
+        >
           <div className="container-page grid gap-1 py-3 sm:grid-cols-2">
             {MOBILE_GROUPS.map((group) => (
               <nav key={group.id} aria-label={group.title} className="py-2">
                 <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
                   {group.title}
                 </p>
-                {mobileLinks(group.id, account).map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileAt(null)}
-                    className={cx(
-                      "block rounded-md px-3 py-2.5 text-sm",
-                      isActive(item.href) ? "text-cyan" : "text-muted",
-                    )}
-                  >
-                    {"step" in item && item.step !== undefined && (
-                      <span className="mr-3 font-mono text-[10px] text-dim">{item.step}</span>
-                    )}
-                    {item.label}
-                  </Link>
-                ))}
+                {mobileLinks(group.id, account).map((item) => {
+                  const className = cx(
+                    "block rounded-md px-3 py-2.5 text-sm",
+                    isActive(item.href) ? "text-cyan" : "text-muted",
+                  );
+                  const content = (
+                    <>
+                      {"step" in item && item.step !== undefined && (
+                        <span className="mr-3 font-mono text-[10px] text-dim">{item.step}</span>
+                      )}
+                      {item.label}
+                    </>
+                  );
+                  /* An `/api/` row is a route handler with a side effect (the sign-in rows
+                     set a state cookie and redirect to the provider), so it is a plain
+                     anchor, the way `SignInButtons` renders it, and no prefetch reaches it. */
+                  return item.href.startsWith("/api/") ? (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileAt(null)}
+                      className={className}
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileAt(null)}
+                      className={className}
+                    >
+                      {content}
+                    </Link>
+                  );
+                })}
+                {/* Sign out is a `POST` for the reason the desktop menu's is, and a phone has
+                    no other way to end a session. */}
+                {group.id === "you" && account !== undefined && account !== null && (
+                  <form action="/api/auth/logout" method="post">
+                    <button
+                      type="submit"
+                      className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-muted"
+                    >
+                      Sign out
+                    </button>
+                  </form>
+                )}
                 {/* The Publish row that closed this group left with the wide row's button
                     (owner, 2026-08-25) — publishing is reached from the pages that own a
                     release, not from the chrome. */}
