@@ -181,7 +181,7 @@ import { BeatCaption } from "./BeatCaption";
  * 236 also spends the difference on the drawing rather than on blank sheet: the scene is
  * `w-full` at a declared ratio, so the same column draws it 12% taller.
  */
-const SCENE = { width: 400, height: 236 } as const;
+export const SCENE = { width: 400, height: 236 } as const;
 
 /**
  * Every position here is a `Point`, which this register spells `[x, y]` and not `{x, y}`.
@@ -245,6 +245,13 @@ const ROUTE_OPACITY = 0.55;
  * register puts it below, and lands on the mock's own y=96 to within a third of a unit.
  */
 const LABEL_ABOVE_DROP = 0.4;
+
+/**
+ * The goal's label, two units over `FLOW.label.size`. The scene draws 270px wide in a 360
+ * phone's sheet, and at 13 units the word rendered at 8.8px, under the 10px floor
+ * `FLOW.frame.legible` sets; 15 is the smallest whole size that clears it.
+ */
+export const GOAL_LABEL_SIZE = 15;
 
 /**
  * Three runs of one goal, each ending on its own number.
@@ -322,7 +329,7 @@ const ITERATIONS: readonly Iteration[] = [
 ];
 
 /** The three steps, in the order the graph runs them. */
-const STEPS = ["retrieve", "rank", "draft"] as const;
+export const STEPS = ["retrieve", "rank", "draft"] as const;
 
 /**
  * The ledger's hairlines: the drafting sheet's own ink, at the alpha a rule wants.
@@ -421,14 +428,25 @@ const HEAD =
  * explicitly, so the three pills are the same box: a border that grew the element would make
  * the route's three steps three different widths for no reason a reader could name.
  */
-const PILL = { width: 128, height: 42 } as const;
+export const PILL = { width: 128, height: 42 } as const;
+
+/**
+ * The right sheet's body padding either side of the route, in px: `px-4` on a phone and
+ * `px-6` from `sm`. A phone gives the route 278px at 360, so the pills shrink to fit rather
+ * than hang off a centred row whose left end no scroll can reach.
+ */
+export const ROUTE_PAD = { phone: 16, wide: 24 } as const;
 
 function Pill({ label }: { label: string }) {
   return (
     <span
-      className="flex shrink-0 items-center justify-center border border-blueprint-line text-center font-mono text-[13px] text-blueprint-ink"
+      className="flex items-center justify-center border border-blueprint-line text-center font-mono text-[13px] text-blueprint-ink"
       style={{
-        width: PILL.width,
+        /* Grows to 128 and no further, and shrinks below it on a phone: `ROUTE_PAD` says
+           why, and `beats.test.ts` holds the longest label inside the narrowest pill. */
+        flex: `1 1 ${PILL.width}px`,
+        maxWidth: PILL.width,
+        minWidth: 0,
         height: PILL.height,
         borderWidth: VIZ.stroke.base,
         borderRadius: VIZ.node.radius,
@@ -450,7 +468,7 @@ function Pill({ label }: { label: string }) {
  * from the tokens rather than from a shape typed to look about right, which is the part of
  * `FlowEdge` worth carrying across. 30 by 10 is the mock's box.
  */
-const ARROW = { width: 30, height: 10 } as const;
+export const ARROW = { width: 30, height: 10 } as const;
 
 function RouteArrow() {
   const midY = ARROW.height / 2;
@@ -559,6 +577,9 @@ export function SectionSameRun() {
             107.20px of slack, so 1280 and 1440 measure identically and are not where the
             risk is. At 1023 the grid is one column, the route stands in 914px of body, and
             nothing scrolls sideways at any of the four.
+
+            Below `sm` the pills shrink instead of standing at 128: a 360 phone leaves the
+            route 278px, which `ROUTE_PAD` derives and `beats.test.ts` checks.
 
             ── Equal heights, by subgrid ──
             Three rows shared by both figures: the panel head, the sheet, the caption block.
@@ -719,10 +740,10 @@ export function SectionSameRun() {
                     GOAL[1] -
                     ringRadius(FLOW.node.r) -
                     FLOW.label.gap +
-                    FLOW.label.size * LABEL_ABOVE_DROP
+                    GOAL_LABEL_SIZE * LABEL_ABOVE_DROP
                   }
                   textAnchor="middle"
-                  fontSize={FLOW.label.size}
+                  fontSize={GOAL_LABEL_SIZE}
                   fill={VIZ_INK}
                 >
                   goal
@@ -755,7 +776,7 @@ export function SectionSameRun() {
                   one step changed per iteration · everything else held
                 </span>
               }
-              bodyClassName="relative overflow-x-auto px-6 pt-6"
+              bodyClassName="relative overflow-x-auto px-4 pt-5 sm:px-6 sm:pt-6"
             >
               {/* ---------- the route, once ----------
                   Eleven of the old table's twelve pills existed to say "these did not
@@ -763,7 +784,7 @@ export function SectionSameRun() {
                   information with the repetition taken out, and it puts the thing a reader
                   is meant to read — the tuning — in a block of its own. */}
               <div className="flex flex-col items-center gap-3.5 pb-[22px]">
-                <div className="flex items-center gap-0">
+                <div className="flex w-full items-center justify-center">
                   {STEPS.map((step, i) => (
                     <Fragment key={step}>
                       {i > 0 && <RouteArrow />}
@@ -792,9 +813,9 @@ export function SectionSameRun() {
               {/* A rule across the whole sheet, not across the table. The route above and
                   the ledger below are two blocks rather than a heading and its content, and
                   a rule inset by the body's own padding reads as a table border with a
-                  paragraph sitting on top of it. `-mx-6` is that padding, spent back, which
-                  is the mock's `margin: 22px -24px 0`. */}
-              <div className="-mx-6 border-t" style={{ borderColor: RULE }} />
+                  paragraph sitting on top of it. `-mx-4 sm:-mx-6` is that padding, spent
+                  back, which is the mock's `margin: 22px -24px 0`. */}
+              <div className="-mx-4 border-t sm:-mx-6" style={{ borderColor: RULE }} />
 
               {/* ---------- the ledger ----------
                   Still a table, and for the reason it always was: four scores and three

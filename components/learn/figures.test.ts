@@ -38,13 +38,22 @@
    than on somebody's phone.
    ============================================================ */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 
-import { allBlueprints } from "@/lib/content";
+import { allBlueprints, getNodeCard } from "@/lib/content";
 import { FLOW } from "@/components/viz/flow";
-import { GraphFigure } from "@/components/learn/PartFigures";
+import {
+  CardStackFigure,
+  GraphFigure,
+  STRIP,
+  STRIP_NARROW,
+  STRIP_SWITCH_REM,
+} from "@/components/learn/PartFigures";
 
 const FLOOR = FLOW.frame.legible;
 
@@ -108,6 +117,49 @@ describe("Learn figures", () => {
     });
   }
 
+});
+
+/**
+ * The node strip over the card beat's plate, in both of its frames.
+ *
+ * The stage is a container capped at 35rem. The wide frame draws from `STRIP_SWITCH_REM` up,
+ * so its worst width is the switch itself; the narrow frame draws below it, down to a 360
+ * phone's column.
+ */
+describe("the card beat's node strip", () => {
+  const card = getNodeCard("code-builder", "1.0.0")?.card;
+  const STRIPS = [
+    { name: "wide frame at the switch", viewBox: STRIP.width, css: STRIP_SWITCH_REM * 16 },
+    {
+      name: "narrow frame in a 360 phone's column",
+      viewBox: STRIP_NARROW.width,
+      css: FLOW.frame.phone - 2 * 24,
+    },
+  ];
+
+  it("switches frames at the width the constant names", () => {
+    const source = readFileSync(join(process.cwd(), "components/learn/PartFigures.tsx"), "utf8");
+    expect(source).toContain(`"@max-[${STRIP_SWITCH_REM}rem]:hidden"`);
+    expect(source).toContain(`"hidden @max-[${STRIP_SWITCH_REM}rem]:block"`);
+  });
+
+  for (const strip of STRIPS) {
+    it(`writes no word below the legibility floor: ${strip.name}`, () => {
+      if (card === undefined) throw new Error("no code-builder@1.0.0 card");
+      const markup = renderToStaticMarkup(
+        createElement(CardStackFigure, { card, nodes: 5, size: "stage" }),
+      );
+      const frames = typeSizes(markup).filter((f) => f.viewBox === strip.viewBox);
+      expect(frames, `the stage draws no strip ${strip.viewBox} units wide`).toHaveLength(1);
+      const { sizes } = frames[0]!;
+      expect(sizes.length).toBeGreaterThan(0);
+      const rendered = (Math.min(...sizes) * strip.css) / strip.viewBox;
+      expect(
+        rendered,
+        `the smallest label renders at ${rendered.toFixed(2)}px`,
+      ).toBeGreaterThanOrEqual(FLOOR);
+    });
+  }
 });
 
 /* ============================================================

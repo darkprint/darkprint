@@ -38,7 +38,7 @@ import { allBlueprints, getNodeCard, getOntologyView } from "@/lib/content";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { SectionSameRun } from "@/components/home/SectionSameRun";
-import { GraphFigure } from "@/components/learn/PartFigures";
+import { CardStackFigure, GraphFigure } from "@/components/learn/PartFigures";
 
 import {
   clippedLabels,
@@ -104,6 +104,13 @@ function graphFigures(): React.ReactElement {
   );
 }
 
+/** The card beat's stage, which draws the node strip in its wide and its narrow frame. */
+function cardStage(): React.ReactElement {
+  const card = getNodeCard("code-builder", "1.0.0")?.card;
+  if (card === undefined) throw new Error("code-builder@1.0.0 is not in the archive");
+  return createElement(CardStackFigure, { card, nodes: 5, size: "stage" });
+}
+
 /* ==================== the roster ==================== */
 
 /**
@@ -154,12 +161,8 @@ const ROSTER: readonly SceneEntry[] = [
     frames: 1,
     render: () => framesOf(createElement(SectionSameRun)),
   },
-  // `components/home/SectionNodeIsCard.tsx` had an entry here and the file draws no
-  // scene now. The beat carried a lit disc with a blank document hanging off it; the
-  // author asked for the annotated listing back in its place ("reprohose in the home ...
-  // the idea reported in spec/card"), so the figure is `CardWalk`, which is DOM text and
-  // not an `<svg>`. Its labels are HTML at 11px and up, which is a floor the browser
-  // enforces, and `beats.test.ts` still holds the beat's copy.
+  // `components/home/SectionNodeIsCard.tsx` draws its scene through `CardStackFigure`, so
+  // its node strip is measured under the `PartFigures.tsx` entry below.
   {
     files: ["components/home/SectionLevels.tsx"],
     // 4, not 5. The ladder took the source's numbering on 2026-08-08 and drew its half step
@@ -208,8 +211,9 @@ const ROSTER: readonly SceneEntry[] = [
   // register left on the site, and converting it is what put it in front of this guard.
   {
     files: ["components/learn/PartFigures.tsx"],
-    frames: 2,
-    render: () => framesOf(graphFigures()),
+    // Two graph figures, and the card stage's node strip in its two frames.
+    frames: 4,
+    render: () => framesOf(createElement(Fragment, null, graphFigures(), cardStage())),
   },
   /* `components/howto/IsolationWall.tsx` (1 frame) and `components/howto/PhaseStrip.tsx`
      (4 frames) sat here until 2026-08-07. Both were mounted only on

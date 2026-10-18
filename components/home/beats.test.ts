@@ -10,9 +10,19 @@ import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionFirstBlueprint } from "@/components/home/SectionFirstBlueprint";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionRegistry } from "@/components/home/SectionRegistry";
-import { SectionSameRun } from "@/components/home/SectionSameRun";
+import {
+  ARROW,
+  GOAL_LABEL_SIZE,
+  PILL,
+  ROUTE_PAD,
+  SCENE,
+  STEPS,
+  SectionSameRun,
+} from "@/components/home/SectionSameRun";
 import { NAV } from "@/components/site/SiteHeader";
 import { plainText } from "@/components/ui/visible-text";
+import { FLOW, VIZ } from "@/components/viz";
+import { ADVANCE } from "@/components/viz/label-boxes";
 import { DEFAULT_LIMITS } from "@/lib/server/limits/config";
 
 import { LANDING_NARROW, LANDING_WIDE } from "./graph";
@@ -57,6 +67,41 @@ describe("the blueprint-first landing", () => {
      are pinned because the beat is worthless without either half: claim A on its own is a
      statement about control that nobody asked for, and claim B on its own is unintelligible
      and, worse, reads as a promise that this site measures something. */
+  /* A 360 phone, the narrowest width `FLOW.frame` lays out for: `container-page` keeps
+     1.5rem a side and each sheet spends a 1px border a side before its own padding. */
+  const PHONE_COLUMN = FLOW.frame.phone - 2 * 24;
+
+  it("fits the route inside a phone's sheet, and keeps the mock's pills from lg up", () => {
+    const body = PHONE_COLUMN - 2 - 2 * ROUTE_PAD.phone;
+    const pill = (body - (STEPS.length - 1) * ARROW.width) / STEPS.length;
+    // The pills set `text-[13px]` mono, and `ADVANCE` is the widest advance a mono face has.
+    const longest = Math.max(...STEPS.map((step) => step.length));
+    const label = longest * 13 * ADVANCE + 2 * VIZ.stroke.base;
+    expect(
+      pill,
+      `a ${pill.toFixed(1)}px pill cannot hold a ${label.toFixed(1)}px label`,
+    ).toBeGreaterThanOrEqual(label);
+    // The breakpoint note's 451px of body at a 1024 window still holds three 128px pills.
+    expect(STEPS.length * PILL.width + (STEPS.length - 1) * ARROW.width).toBeLessThanOrEqual(451);
+
+    const html = render(SectionSameRun);
+    expect([...html.matchAll(/flex:1 1 128px;max-width:128px;min-width:0/g)]).toHaveLength(
+      STEPS.length,
+    );
+    expect(html, "a pill has a fixed width again, so the row overflows a phone").not.toMatch(
+      /[;"]width:128px/,
+    );
+  });
+
+  it("draws the goal's label above the legibility floor on a phone", () => {
+    const body = PHONE_COLUMN - 2 - 2 * 20; // the left sheet's `px-5`
+    const rendered = (GOAL_LABEL_SIZE * body) / SCENE.width;
+    expect(rendered, `"goal" renders at ${rendered.toFixed(2)}px`).toBeGreaterThanOrEqual(
+      FLOW.frame.legible,
+    );
+    expect(render(SectionSameRun)).toContain(`font-size="${GOAL_LABEL_SIZE}"`);
+  });
+
   it("argues the blueprint against the prompt, in that order", () => {
     const html = render(SectionSameRun);
     const text = plainText(html);

@@ -480,7 +480,7 @@ function Field({
  * "something moves along here" and the strip's claim is only that these are the same five
  * things the graph has.
  */
-const STRIP = {
+export const STRIP = {
   /** Matches the plate, so the two align and the tether lands on the card's own edge. */
   width: 640,
   height: 108,
@@ -505,6 +505,21 @@ const STRIP = {
 } as const;
 
 /**
+ * The same strip in a narrower frame, for a phone. Scaled from 640 into a 312px column the
+ * ids rendered near 6px; 380 units keeps every label over `FLOW.frame.legible` there, and the
+ * five discs fill the frame at this pitch rather than leaving the right end open.
+ */
+export const STRIP_NARROW = { width: 380, height: 108, padX: 38, gap: 76, cy: 26 } as const;
+
+/**
+ * The container width, in rem, below which the stage draws `STRIP_NARROW`. At 31rem the wide
+ * frame's 13-unit labels render at 10.1px, just over the floor.
+ */
+export const STRIP_SWITCH_REM = 31;
+
+type StripFrame = { width: number; height: number; padX: number; gap: number; cy: number };
+
+/**
  * The route's weight and opacity, read off the mock and not off `FLOW.edge`.
  *
  * `VIZ.stroke.base` is the mock's 1.4 exactly, and it is the weight this vocabulary spends
@@ -516,7 +531,15 @@ const STRIP = {
  */
 const STRIP_EDGE_OPACITY = 0.55;
 
-function NodeStrip({ count, litId }: { count: number; litId: string }) {
+function NodeStrip({
+  count,
+  litId,
+  frame,
+}: {
+  count: number;
+  litId: string;
+  frame: StripFrame;
+}) {
   const n = Math.max(1, count);
   /* Which disc is lit is COMPOSITION, not topology, and saying so matters. The strip is a
      row; the starter graph is two rows with a return run, so no disc's position here is a
@@ -529,12 +552,12 @@ function NodeStrip({ count, litId }: { count: number; litId: string }) {
      margin, and lighting the last would put it off the frame. Clamped so a one-node graph
      lights the only disc it has. */
   const lit = Math.min(1, n - 1);
-  const spread = STRIP.padX * 2 + (n - 1) * STRIP.gap;
+  const spread = frame.padX * 2 + (n - 1) * frame.gap;
   const gap =
-    n > 1 && spread > STRIP.width
-      ? (STRIP.width - STRIP.padX * 2) / (n - 1)
-      : STRIP.gap;
-  const cx = (i: number) => STRIP.padX + i * gap;
+    n > 1 && spread > frame.width
+      ? (frame.width - frame.padX * 2) / (n - 1)
+      : frame.gap;
+  const cx = (i: number) => frame.padX + i * gap;
 
   const halo = schematicHaloRadius(FLOW.node.r);
   const ring = ringRadius(FLOW.node.r);
@@ -542,8 +565,8 @@ function NodeStrip({ count, litId }: { count: number; litId: string }) {
 
   return (
     <FlowScene
-      width={STRIP.width}
-      height={STRIP.height}
+      width={frame.width}
+      height={frame.height}
       label={`The blueprint's ${n} nodes in a row, with ${litId} lit and tethered to the card below it`}
       description={`One of the ${n} nodes is ${litId}, and the card under this strip is the card that node pins.`}
     >
@@ -555,7 +578,7 @@ function NodeStrip({ count, litId }: { count: number; litId: string }) {
           key={`run-${i}`}
           data-viz="flow-line"
           d={
-            flowRun([cx(i), STRIP.cy], [cx(i + 1), STRIP.cy], {
+            flowRun([cx(i), frame.cy], [cx(i + 1), frame.cy], {
               fromRadius: FLOW.node.r,
               toRadius: FLOW.node.r,
             }).d
@@ -574,14 +597,14 @@ function NodeStrip({ count, litId }: { count: number; litId: string }) {
           <g key={`node-${i}`}>
             <circle
               cx={cx(i)}
-              cy={STRIP.cy}
+              cy={frame.cy}
               r={halo}
               fill={tone}
               opacity={FLOW.halo.schematic.opacity * (on ? FLOW.node.litBoost : 1)}
             />
             <circle
               cx={cx(i)}
-              cy={STRIP.cy}
+              cy={frame.cy}
               r={ring}
               fill="none"
               stroke={tone}
@@ -590,7 +613,7 @@ function NodeStrip({ count, litId }: { count: number; litId: string }) {
             />
             <circle
               cx={cx(i)}
-              cy={STRIP.cy}
+              cy={frame.cy}
               r={FLOW.node.r}
               fill={tone}
               opacity={FLOW.node.core}
@@ -604,7 +627,7 @@ function NodeStrip({ count, litId }: { count: number; litId: string }) {
       <text
         data-viz="label"
         x={cx(lit)}
-        y={STRIP.cy + drop}
+        y={frame.cy + drop}
         textAnchor="middle"
         fontSize={FLOW.label.size}
         fill="var(--color-copper-ink)"
@@ -617,7 +640,7 @@ function NodeStrip({ count, litId }: { count: number; litId: string }) {
           Not `VIZ.dash.absent` — that one means "a run that is not there" everywhere on the
           site, and this run is the most present relation the beat has. */}
       <path
-        d={`M ${cx(lit)} ${STRIP.cy + drop + 10} V ${STRIP.height - 12}`}
+        d={`M ${cx(lit)} ${frame.cy + drop + 10} V ${frame.height - 12}`}
         stroke="var(--color-copper-line)"
         strokeWidth={VIZ.stroke.thin}
         strokeDasharray={VIZ.dash.leader}
@@ -632,9 +655,9 @@ function NodeStrip({ count, litId }: { count: number; litId: string }) {
       <text
         data-viz="label"
         x={cx(lit) + 18}
-        y={STRIP.height - 20}
+        y={frame.height - 20}
         textAnchor="start"
-        fontSize={11}
+        fontSize={FLOW.label.size}
         letterSpacing="0.08em"
         fill={VIZ_TONE.dim}
       >
@@ -972,7 +995,16 @@ export function CardStackFigure({
           {/* The strip and the plate are one object: the tether leaves the strip's foot and
               arrives on the plate's top edge, so the 6px between them is the mock's and is
               the only gap the tether has to cross. */}
-          <NodeStrip count={nodes} litId={card.id} />
+          {/* Two frames, and the stage's own width picks one: the box is a container capped
+              at 35rem, so a viewport breakpoint would choose by the wrong width. The 31rem is
+              `STRIP_SWITCH_REM` written out, because Tailwind only compiles a class it can
+              read in the source. */}
+          <div className="@max-[31rem]:hidden">
+            <NodeStrip count={nodes} litId={card.id} frame={STRIP} />
+          </div>
+          <div className="hidden @max-[31rem]:block">
+            <NodeStrip count={nodes} litId={card.id} frame={STRIP_NARROW} />
+          </div>
           <div className="mt-1.5">
             <StagePlate card={card} />
           </div>
