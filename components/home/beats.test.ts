@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -6,9 +9,11 @@ import { Wordmark } from "@/components/hero/Wordmark";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionFirstBlueprint } from "@/components/home/SectionFirstBlueprint";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
+import { SectionRegistry } from "@/components/home/SectionRegistry";
 import { SectionSameRun } from "@/components/home/SectionSameRun";
 import { NAV } from "@/components/site/SiteHeader";
 import { plainText } from "@/components/ui/visible-text";
+import { DEFAULT_LIMITS } from "@/lib/server/limits/config";
 
 import { LANDING_NARROW, LANDING_WIDE } from "./graph";
 import { ROLE_ABSENCE, ROLE_BOXES } from "./roles";
@@ -17,24 +22,26 @@ const render = (component: React.ComponentType) =>
   renderToStaticMarkup(createElement(component));
 
 describe("the blueprint-first landing", () => {
-  it("opens with the product, and the fold's action is the account", () => {
+  it("opens with the product, and the fold's two doors are routes", () => {
     const html = render(Wordmark);
     const text = plainText(html);
     expect(text).toContain("Reusable blueprints for agent workflows.");
+    expect(text).toContain(
+      "Find a blueprint for your task and fetch it as a folder your agent can run.",
+    );
 
-    /* The fold used to carry "Find a blueprint" / "Create a blueprint". The owner replaced
-       that pair with the sign-in choice (signed out) or the reader's own name (signed in),
-       so those two labels are no longer this component's to make — see `HeroAction`.
+    // The routes are in the static frame; only the account line waits for the session.
+    expect(html).toContain('href="/blueprints"');
+    expect(html).toContain('href="/tutorial"');
+    expect(text).toContain("Browse blueprints");
 
-       What is asserted instead is that the slot renders SOMETHING a reader can act on
-       rather than collapsing: `HeroAction`'s server-rendered frame is its `loading`
-       placeholder, deliberately claimless, so the markup carries the placeholder and not a
-       sentence about who the reader is. A component that rendered "Sign in" here would be
-       telling a signed-in reader something false for a frame, which is the failure
-       `components/upload/session.ts` documents at length. */
+    /* The account line's server frame is its claimless placeholder: a "Sign in" here would
+       tell a signed-in reader something false for a frame, the failure
+       `components/upload/session.ts` documents. */
     expect(html).toContain("animate-pulse");
     expect(text).not.toContain("Welcome,");
     expect(text).not.toContain("Sign in with");
+    expect(text.toLowerCase()).not.toContain("sign in");
   });
 
   it("keeps both loops reachable from the landing, through the header", () => {
@@ -210,22 +217,41 @@ describe("the blueprint-first landing", () => {
     expect(html).toContain('href="/spec/card"');
   });
 
-  /**
-   * The five steps, the pair at the foot, and **no links at all**.
-   *
-   * This section is the landing's ending now, so its five links are load-bearing rather
-   * than duplicative.
-   *
-   * The page used to close twice: five panels here, each with a CTA, and then
-   * `SectionDoors` asking "find one, or create one" with two buttons — a choice already
-   * inside these five. One of the two had to go, and the author cut the doors: five ways in
-   * with a picture and a sentence each beats two cards, and Learn, Use and Publish are
-   * three doors the band never had.
-   *
-   * So the case holds every panel to a link, which is the property that made cutting the
-   * doors safe. Losing one silently would leave the landing with no way out of the beat it
-   * ends on.
-   */
+  /* The registry beat is where a reader learns the site is more than a course: what can be
+     read with no account, and what signing in adds. Each figure it states is pinned to the
+     code that makes it true. */
+  it("says what the registry offers without an account, and what an account adds", () => {
+    const html = render(SectionRegistry);
+    const text = plainText(html);
+    expect(text).toContain("When you need an account");
+    expect(text).toContain("Without an account");
+    expect(text).toContain("With an account");
+    for (const href of ["/blueprints", "/nodes", "/mcp", "/settings"]) {
+      expect(html, `the registry beat lost its link to ${href}`).toContain(`href="${href}"`);
+    }
+    // The account default is public (`lib/db/schema.ts`), so no visibility is a default here.
+    expect(text).toContain("each one public or private");
+    expect(text.toLowerCase()).not.toContain("by default");
+    expect(text).toContain("raises the read limit tenfold");
+    expect(
+      DEFAULT_LIMITS.read.key.limit / DEFAULT_LIMITS.read.anonymous.limit,
+      "the landing says tenfold",
+    ).toBe(10);
+  });
+
+  it("puts the registry beat after the card and before the ending", () => {
+    const page = readFileSync(join(process.cwd(), "app/page.tsx"), "utf8");
+    const at = (tag: string) => {
+      const index = page.indexOf(tag);
+      expect(index, `app/page.tsx does not render ${tag}`).toBeGreaterThan(-1);
+      return index;
+    };
+    expect(at("<SectionNodeIsCard")).toBeLessThan(at("<SectionRegistry"));
+    expect(at("<SectionRegistry")).toBeLessThan(at("<SectionFirstBlueprint"));
+  });
+
+  /* The ending: the heading, four steps, and exactly one link. The registry and the account
+     story are the beat above, so the ending can stay one instruction. */
   it("ends the landing on the tutorial, with the path it walks spelled out", () => {
     const html = render(SectionFirstBlueprint);
     const text = plainText(html);
@@ -239,22 +265,4 @@ describe("the blueprint-first landing", () => {
     expect(html, "the ending lost its door").toContain('href="/tutorial"');
     expect([...html.matchAll(/<a\b/g)]).toHaveLength(1);
   });
-
-  /* `SectionDoors` had a case here — "closes on the same two loops without placeholder
-     status copy" — and the component is deleted. Recorded rather than dropped silently,
-     because a test disappearing with its subject is exactly the shape of an accidental
-     deletion.
-
-     Where the two halves of that claim live now, re-checked 2026-08-11 when the eyebrow this
-     note used to point at was removed:
-
-       · the two loops. This said they were "named by the section above, whose eyebrow still
-         reads One registry, two loops". That string is gone with the whole heading block,
-         and nothing on the landing says `two loops` any more. What names them is the grid
-         itself — Find and Create are two of the five panels, each with a picture, a sentence
-         and a link — which the case above asserts by title, so the claim is still held and
-         by a stronger assertion than an eyebrow. The pair at the foot names the two
-         INTERFACES, human and agent, and is asserted there too.
-       · the placeholder copy. Unchanged: covered site-wide by
-         `components/site/honesty.test.ts`. */
 });

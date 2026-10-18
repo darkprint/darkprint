@@ -1,11 +1,11 @@
 /* ============================================================
    The providers a reader may sign in with, in one place.
 
-   Three surfaces offer sign-in — `/welcome`, `/settings` and the
-   landing hero — and before this file each named GitHub directly.
-   Adding a provider to three call sites is how one of them keeps
-   offering one provider a year from now, so the list is declared
-   once and rendered from.
+   Several surfaces offer sign-in (`/welcome`, `/settings`, `/new`
+   and the header's phone menu), and before this file each named
+   GitHub directly. Adding a provider to several call sites is how
+   one of them keeps offering one provider a year from now, so the
+   list is declared once and rendered from.
 
    ── why these are not `ButtonLink`s ──
    A sign-in button is a convention before it is a control: readers
@@ -106,8 +106,7 @@ export const SIGN_IN_PROVIDERS: readonly SignInProvider[] = [
 /**
  * The sign-in choice, as the buttons readers expect.
  *
- * `size` widens the pair for the landing hero, where they stand alone above the fold,
- * without giving the hero its own copy of the markup.
+ * `size="lg"` widens the pair for a page where they stand alone as its only action.
  */
 export function SignInButtons({
   size = "md",

@@ -74,7 +74,8 @@ import {
 } from "animejs";
 
 import { Logo } from "@/components/site/Logo";
-import { HeroAction } from "./HeroAction";
+import { ButtonLink } from "@/components/ui/Button";
+import { HeroAccountLine } from "./HeroAccountLine";
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
 import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
@@ -104,24 +105,12 @@ const MARK_TONE_SPLIT = 4;
  */
 const CLAIM = "Reusable blueprints for agent workflows.";
 
-/* `SUPPORT` stood here — "DOT graphs of agent pipelines, the YAML card behind every node,
-   and a score for how much autonomy each one takes." — and the author asked it out on
-   2026-08-08.
-
-   The note that argued for it is worth keeping, because it names a risk the hero now
-   carries alone: `CLAIM` above is an abstraction, deliberately, and this line was what said
-   what the graph, the card and the score ARE. Without it the eyebrow carries that job again
-   at the bottom of the type scale, which is the state the line was written to fix. If the
-   hero ever reads as brand-name-then-abstraction, this is the element that went. */
-
-
-/* The first viewport used to print three counts ("9 blueprints · 53 node cards · 50
-   ontology terms") under the two buttons, handed down from `Hero` as a `stats` prop
-   because `PLATFORM_STATS` reaches `node:fs` and this file is `"use client"`. The author
-   removed the line; the prop, its `WordmarkCounts` shape and the `Hero` import went with
-   it rather than being left threaded through unused. `PLATFORM_STATS` itself stays —
-   `components/home/SectionDoors.tsx` still prints the same three figures on beat 5, where
-   the sentence that vouches for them ("nothing here is rounded up") lives. */
+/**
+ * What the registry is for, in one sentence under the claim. The claim is deliberately
+ * abstract, so without this line the first screen never says that a reader can take something
+ * away.
+ */
+const SUPPORT = "Find a blueprint for your task and fetch it as a folder your agent can run.";
 
 /** The rule under the name, in scene units. Tall enough for the pulse's stroke. */
 const RULE = { width: 900, height: 6 } as const;
@@ -206,7 +195,7 @@ function handle(id: string): string {
  * ── Why the second half moved forward ──
  * The claim used to land at 1400 and the way-down cue at 1980, which put the last thing a
  * reader could act on at 2.58s. Everything a reader can act on is now on screen by ~1.6s:
- * the claim at 900, the two buttons at 1080, the CLI chip 180ms behind them.
+ * the claim and the sentence under it at 900, the two buttons at 1080.
  *
  * ── Why `settle` moved back ──
  * `settle` is also when the trace overlay is pulled away (`AT.settle - 200`). At 980 that
@@ -517,41 +506,28 @@ export function Wordmark() {
         </span>
       </h1>
 
-      {/* The first viewport's two real actions.
+      {/* A sibling of the heading rather than part of it, so the accessible name stays the
+          one claim. It shares the claim's mark and therefore its beat. */}
+      <p
+        data-mark="claim"
+        className="mt-5 text-balance text-base leading-relaxed text-muted sm:text-lg"
+      >
+        {SUPPORT}
+      </p>
 
-          Measured before this: the only interactive things above the fold were a CLI chip
-          wearing a COMING SOON badge and a "what a blueprint is ↓" cue, while the two
-          buttons that open the registry sat at 90% scroll depth. On a phone the header
-          collapses into a hamburger, so viewport 1 carried no visible control at all.
+      {/* The routes are the same for every reader, so they ship in the prerendered HTML and
+          work without JS. Only the line under them depends on the session. */}
+      <div data-mark="cta" className="mt-8 flex w-full flex-col items-center gap-5">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-center">
+          <ButtonLink href="/blueprints" size="lg">
+            Browse blueprints
+          </ButtonLink>
+          <ButtonLink href="/tutorial" variant="outline" size="lg">
+            Write your first blueprint <span aria-hidden>→</span>
+          </ButtonLink>
+        </div>
 
-          The labels are `SectionDoors`' two doors, verbatim: the landing opens and closes
-          on the same two choices in the same words, which is the decision architecture the
-          page already ends on rather than a second, differently-worded offer.
-
-          `data-mark="cta"` is a COLUMN again, and the note it replaces is worth keeping
-          straight. It sat on a wrapper grouping these buttons with a line of three counts;
-          the counts were removed, and the mark moved down onto the row itself because "a
-          wrapper around one child is a box that only exists to be a timeline target". There
-          are two children again — the row and the cue under it — so the wrapper is carrying
-          its weight rather than being resurrected. The cue joins this beat rather than
-          taking one of its own: `AT` has no entry for it, so nothing about the timeline's
-          clock moves, and the last thing to arrive is still everything a reader can act on,
-          together. */}
-      <div data-mark="cta" className="mt-8 flex flex-col items-center gap-7">
-      {/* Per reader: the two providers when signed out, the reader's own name when signed
-          in. The owner's instruction, replacing the two route buttons that stood here.
-
-          Neither destination is lost: `SectionLifecycle` closes the page with five panels
-          and two of them are these exact routes, `/blueprints` and `/skill`, each with the
-          sentence and picture that say what it is. (The comment above still names
-          `SectionDoors` as the mirror; that section was deleted when the lifecycle panels
-          became the ending, and the routes moved into them.) What changes is what the FOLD
-          leads with, and for a reader with no account that is now the account.
-
-          A CLIENT component, and that is the whole reason it is one: `app/page.tsx` is
-          static and must stay static, so the session is read in the browser exactly as
-          `SiteHeader` reads it. See `HeroAction`'s own header. */}
-      <HeroAction />
+        <HeroAccountLine />
 
         {/* The way down, on the author's instruction: "add also a small arrow pointing down
             below the buttons".

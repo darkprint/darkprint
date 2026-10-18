@@ -7,4 +7,5 @@
 export { SectionSameRun } from "./SectionSameRun";
 export { SectionBlueprint } from "./SectionBlueprint";
 export { SectionNodeIsCard } from "./SectionNodeIsCard";
+export { SectionRegistry } from "./SectionRegistry";
 export { SectionFirstBlueprint } from "./SectionFirstBlueprint";

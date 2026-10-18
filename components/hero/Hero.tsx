@@ -44,14 +44,6 @@
 
    Not a client component. The section is markup; only the wordmark
    needs a timeline, and it is the only thing that ships as one.
-
-   This file used to read `PLATFORM_STATS` and hand the three counts
-   down to `Wordmark` as props, because that component is `"use
-   client"` and the constant reaches `node:fs`. The author removed the
-   counts line from the first viewport, so the section takes no data
-   at all now — the same three figures still appear on beat 5, in
-   `components/home/SectionDoors.tsx`, beside the sentence that
-   vouches for them.
    ============================================================ */
 
 import { GridPaper } from "@/components/ui/GridPaper";
@@ -146,11 +138,14 @@ export function Hero() {
           was tried first and read right at 950 and still low at 1950, which is the height
           the report was made at.
 
+          Below `sm` both pads are flat and smaller, because on a phone the job is keeping
+          the two routes above the fold rather than centring the name optically.
+
           `container-page` for the horizontal, where the mock spells 64px. It is the same
           order of gutter and it is what every other page on the site uses; the name is
           `clamp`ed off the viewport rather than off this box, so what the cap actually
           governs is the claim and the rule, both of which have their own `max-w`. */}
-      <div className="container-page relative flex flex-1 items-center justify-center pb-[20vh] pt-18">
+      <div className="container-page relative flex flex-1 items-center justify-center pb-14 pt-10 sm:pb-[20vh] sm:pt-18">
         <Wordmark />
       </div>
     </section>

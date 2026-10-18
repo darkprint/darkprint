@@ -82,15 +82,14 @@ export function SetupChips() {
                  brightening is the cell's own ground rather than a border, because the band
                  owns the only border here.
 
-                 The two outer paddings reproduce `container-page`'s gutter: `max-width:
-                 1200px` and `padding-inline: 1.5rem`, plus the cell's own `2.5rem`, which is
-                 the `4rem` below. Two breakpoints need two forms of it because the
-                 percentage resolves against the CELL: stacked, a cell is the full width, so
-                 the gutter is `(100% - 1200px) / 2`; side by side, a cell is half the width,
-                 so the same gutter is `100% - 600px`. */
+                 Side by side, the outer padding reproduces `container-page`'s gutter
+                 (`max-width: 1200px`, `padding-inline: 1.5rem`) plus the cell's own `2.5rem`,
+                 which is the `4rem` below; the percentage resolves against a cell half the
+                 width, so the gutter is `100% - 600px`. Stacked, which only happens on a
+                 phone, the label lines up with the header's text at `container-page`'s
+                 `1.5rem`. */
               className={cx(
-                "group flex items-center px-10 py-5 transition-[transform,scale,color,background-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:bg-surface-2/60 hoverable:active:scale-[0.99]",
-                "px-[calc(max((100%-1200px)/2,0px)+4rem)]",
+                "group flex items-center px-6 py-5 transition-[transform,scale,color,background-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:bg-surface-2/60 hoverable:active:scale-[0.99]",
                 i === 0
                   ? "sm:ps-[calc(max(100%-600px,0px)+4rem)] sm:pe-10"
                   : "sm:pe-[calc(max(100%-600px,0px)+4rem)] sm:ps-10",

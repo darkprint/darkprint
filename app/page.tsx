@@ -1,11 +1,13 @@
 /* ============================================================
-   The landing: five beats, and nothing else.
+   The landing: six beats, and nothing else.
 
    The hero is the claim. The reproducibility beat argues the
    blueprint against the prompt before either artefact appears,
    because "why not just a prompt?" is the objection a reader forms in
    the second after the hero. The graph beat and the card beat show
-   one concept apiece off the real starter files, and the last beat
+   one concept apiece off the real starter files. The registry beat
+   says the registry is open to read and what an account is for,
+   because the beats before it only show authoring. The last beat
    ends the page on one door: write your first blueprint.
 
    Everything technical the landing once carried lives on the page
@@ -23,6 +25,7 @@ import {
   SectionSameRun,
   SectionBlueprint,
   SectionNodeIsCard,
+  SectionRegistry,
   SectionFirstBlueprint,
 } from "@/components/home";
 
@@ -43,6 +46,7 @@ export default function HomePage() {
       <SectionSameRun />
       <SectionBlueprint />
       <SectionNodeIsCard />
+      <SectionRegistry />
       <SectionFirstBlueprint />
     </>
   );
