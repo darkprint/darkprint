@@ -174,7 +174,7 @@ export function SynchronisedPanes({
           <button
             type="button"
             onClick={() => setSelection({ nodeId: focus.node.nodeId })}
-            className="ml-auto rounded border border-line px-2 py-0.5 text-[11px] text-muted transition-colors hover:border-cyan hover:text-cyan"
+            className="ml-auto rounded border border-line px-2 py-0.5 text-[11px] text-muted transition-colors hoverable:hover:border-cyan hoverable:hover:text-cyan"
           >
             back to the whole node
           </button>

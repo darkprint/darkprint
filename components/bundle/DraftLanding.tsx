@@ -68,7 +68,7 @@ export function DraftLanding({
         note="no release yet: this bundle has an owner and a name, and nothing published under them"
         breadcrumb={
           <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
-            <Link href="/blueprints" className="transition-colors hover:text-cyan">
+            <Link href="/blueprints" className="transition-colors hoverable:hover:text-cyan">
               ← Blueprints
             </Link>
           </nav>

@@ -44,7 +44,7 @@ export const metadata: Metadata = {
 const HERE = "/tutorial";
 
 const LINK =
-  "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
+  "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan";
 
 /** The two agents the blueprint-writing skill installs into, so the MCP step shows the same two. */
 const TERMINAL_CLIENTS = MCP_CLIENTS.filter(

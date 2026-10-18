@@ -726,7 +726,7 @@ export function SectionLevels() {
                   href={s.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-medium leading-snug text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
+                  className="text-sm font-medium leading-snug text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan"
                 >
                   {s.title}
                   <span className="ml-1 font-mono text-[11px] text-dim" aria-hidden>

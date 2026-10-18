@@ -190,7 +190,7 @@ export function GroupSpine({
                 PILL,
                 active
                   ? tone.pill
-                  : "border-line text-muted hover:border-line-bright hover:text-fg",
+                  : "border-line text-muted hoverable:hover:border-line-bright hoverable:hover:text-fg",
               )}
             >
               {item.label}

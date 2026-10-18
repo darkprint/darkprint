@@ -82,7 +82,7 @@ function renderInline(nodes: Inline[]): React.ReactNode {
             key={index}
             href={node.href}
             rel="nofollow noopener noreferrer"
-            className="text-cyan underline decoration-line underline-offset-2 hover:text-cyan-bright"
+            className="text-cyan underline decoration-line underline-offset-2 hoverable:hover:text-cyan-bright"
           >
             {renderInline(node.children)}
           </a>

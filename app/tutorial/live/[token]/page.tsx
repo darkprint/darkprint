@@ -34,7 +34,7 @@ export default async function LivePage({ params }: PageProps<"/tutorial/live/[to
     <div className="container-page flex flex-col gap-10 py-16 sm:py-20">
       <div className="flex flex-col gap-6">
         <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
-          <Link href="/tutorial" className="transition-colors hover:text-cyan">
+          <Link href="/tutorial" className="transition-colors hoverable:hover:text-cyan">
             ← Back to the tutorial
           </Link>
         </nav>

@@ -42,7 +42,7 @@ function TypeCell({ type, known }: { type: string; known: boolean }) {
     <Link
       href={termHref(type)}
       aria-label={`Ontology data type: ${type}`}
-      className={cx(chip, "border-violet/40 bg-violet/10 text-violet hover:border-violet")}
+      className={cx(chip, "border-violet/40 bg-violet/10 text-violet hoverable:hover:border-violet")}
     >
       {type}
     </Link>
@@ -220,7 +220,7 @@ export function NodeInterfaces({
                       href={nodeHref(dependency.id)}
                       /* Amber on hover, the card register: every one of these
                          dependencies is another CARD, and the link lands on its page. */
-                      className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg transition-colors hover:border-amber hover:text-amber"
+                      className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg transition-colors hoverable:hover:border-amber hoverable:hover:text-amber"
                     >
                       <span
                         className="h-1 w-1 rounded-full bg-current"

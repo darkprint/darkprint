@@ -244,7 +244,7 @@ export default async function BlueprintsPage() {
             own tools.{" "}
             <Link
               href="/what-a-blueprint-is"
-              className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
+              className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hoverable:hover:text-amber-bright"
             >
               What a blueprint is <span aria-hidden>&rarr;</span>
             </Link>

@@ -59,7 +59,7 @@ function NodeTitleLink({ cardId, label }: { cardId: string; label: string }) {
       href={nodeHref(cardId)}
       aria-label={`Open the node card ${label}, ${cardId}`}
       onClick={(event) => event.stopPropagation()}
-      className="nodrag nopan inline-flex items-baseline gap-1 rounded-sm text-sm font-medium text-fg underline decoration-line-bright decoration-dotted underline-offset-4 transition-colors hover:text-cyan hover:decoration-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+      className="nodrag nopan inline-flex items-baseline gap-1 rounded-sm text-sm font-medium text-fg underline decoration-line-bright decoration-dotted underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:decoration-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
     >
       {label}
       <span aria-hidden className="font-mono text-[11px] text-dim">

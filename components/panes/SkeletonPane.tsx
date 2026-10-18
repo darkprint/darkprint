@@ -249,7 +249,7 @@ export function SkeletonPane({
           {linkToCard && card !== undefined && (
             <Link
               href={nodeHref(card.id)}
-              className="font-mono text-[11px] text-amber underline-offset-4 transition-colors hover:text-amber-bright hover:underline"
+              className="font-mono text-[11px] text-amber underline-offset-4 transition-colors hoverable:hover:text-amber-bright hoverable:hover:underline"
             >
               Open card →
             </Link>
@@ -288,7 +288,7 @@ export function SkeletonPane({
                   </span>
                   <Link
                     href={block.ref.href}
-                    className="font-mono text-[11px] text-dim underline-offset-4 transition-colors hover:text-amber hover:underline"
+                    className="font-mono text-[11px] text-dim underline-offset-4 transition-colors hoverable:hover:text-amber hoverable:hover:underline"
                   >
                     {block.ref.label} →
                   </Link>

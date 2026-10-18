@@ -262,7 +262,7 @@ function FilterChip({
            composites to 4.35:1 where the cyan one sat at 3.87:1. */
         active
           ? "border-amber/60 bg-amber/10 text-amber"
-          : !dead && "border-line text-muted hover:border-line-bright hover:text-fg",
+          : !dead && "border-line text-muted hoverable:hover:border-line-bright hoverable:hover:text-fg",
       )}
     >
       <span aria-hidden>{glyph}</span>
@@ -788,7 +788,7 @@ export function NodeBrowser({
           <button
             type="button"
             onClick={clearFilters}
-            className="cursor-pointer text-muted underline-offset-4 transition-colors hover:text-amber hover:underline"
+            className="cursor-pointer text-muted underline-offset-4 transition-colors hoverable:hover:text-amber hoverable:hover:underline"
           >
             Clear filters
           </button>
@@ -1020,7 +1020,7 @@ export function NodeBrowser({
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-1 cursor-pointer font-mono text-xs text-amber underline-offset-4 hover:underline"
+              className="mt-1 cursor-pointer font-mono text-xs text-amber underline-offset-4 hoverable:hover:underline"
             >
               Clear filters
             </button>

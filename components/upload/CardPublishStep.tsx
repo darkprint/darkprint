@@ -56,7 +56,7 @@ function targetId(handle: string | undefined, card: CardIdentity): string {
 }
 
 const DOOR =
-  "text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan";
+  "text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan";
 
 export function CardPublishStep({
   title,

@@ -50,7 +50,7 @@ export function SpecLink({
   children: React.ReactNode;
 }) {
   const className =
-    "text-cyan underline decoration-cyan/40 underline-offset-4 hover:decoration-cyan";
+    "text-cyan underline decoration-cyan/40 underline-offset-4 hoverable:hover:decoration-cyan";
 
   if (external) {
     return (

@@ -231,7 +231,7 @@ export function VersionHistory({
                                for a BLUEPRINT page, and the two registers only earn their
                                keep if a control that crosses between them says which side
                                it lands on. */
-                            className="text-muted underline-offset-4 transition-colors hover:text-cyan hover:underline"
+                            className="text-muted underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:underline"
                           >
                             {blueprint.title}
                           </Link>

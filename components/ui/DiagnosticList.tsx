@@ -123,7 +123,7 @@ export function DiagnosticList({
   if (collapsible) {
     return (
       <details className={cx("panel group px-4 py-3", className)}>
-        <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-xs text-muted transition-colors hoverable:hover:text-fg [&::-webkit-details-marker]:hidden">
           <span
             className="inline-block text-cyan transition-transform group-open:rotate-90"
             aria-hidden

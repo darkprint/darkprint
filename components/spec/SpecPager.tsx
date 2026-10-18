@@ -64,7 +64,7 @@ export function SpecCrumb({ href }: { href: string }) {
       {/* `.label` is the site's 11px/0.18em mono tier and it lives in
           `@layer components`, so the `hover:text-cyan` utility beside it wins the
           colour on hover rather than losing to the class's own `text-dim`. */}
-      <Link href={SPEC_OVERVIEW.href} className="label transition-colors hover:text-cyan">
+      <Link href={SPEC_OVERVIEW.href} className="label transition-colors hoverable:hover:text-cyan">
         <span aria-hidden>← </span>
         {SPEC_OVERVIEW.title}
       </Link>
@@ -227,7 +227,7 @@ export function SpecPager({
             ) : (
               <Link
                 href={page.href}
-                className="text-dim transition-colors hover:text-fg"
+                className="text-dim transition-colors hoverable:hover:text-fg"
               >
                 {page.step ?? "└"} {page.nav}
               </Link>

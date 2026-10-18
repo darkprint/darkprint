@@ -183,7 +183,7 @@ function WhereNext() {
                 /* Amber on hover only: `app/globals.css` reserves the colour for a box
                    whose job is to leave the page, which these are, and three amber cards
                    at rest would read as three warnings. */
-                className="group flex h-full flex-col gap-2 rounded-xl border border-line bg-surface-2/40 p-5 transition-colors hover:border-amber/60 hover:bg-amber/[0.04]"
+                className="group flex h-full flex-col gap-2 rounded-xl border border-line bg-surface-2/40 p-5 transition-colors hoverable:hover:border-amber/60 hoverable:hover:bg-amber/[0.04]"
               >
                 <span className="flex items-baseline gap-3">
                   <span className="font-mono text-[11px] tabular-nums text-dim">
@@ -198,7 +198,7 @@ function WhereNext() {
                     {layer.format}
                   </span>
                 </span>
-                <span className="text-[15px] font-medium leading-snug text-fg transition-colors group-hover:text-amber-bright">
+                <span className="text-[15px] font-medium leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
                   {layer.title} <span aria-hidden>&rarr;</span>
                 </span>
               </Link>

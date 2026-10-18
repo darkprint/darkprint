@@ -86,7 +86,7 @@ export function AuthorChip({
       className="group inline-flex items-center gap-2"
     >
       <Avatar author={author} size={size} />
-      <span className="text-sm text-muted group-hover:text-fg">
+      <span className="text-sm text-muted hoverable:group-hover:text-fg">
         {author.displayName}
         {/* 11px, and tracked like every other micro-label on the site rather than
             `tracking-wide`. It was the last piece of real text on the node card pages

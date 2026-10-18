@@ -58,7 +58,7 @@ function AttributionRefusal({ session }: { session: UploadSession }) {
         carries the handle of whoever ran it, and there is no default for that field.{" "}
         <a
           href={SIGN_IN_HREF}
-          className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
+          className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan"
         >
           Sign in with GitHub
         </a>{" "}

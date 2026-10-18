@@ -20,7 +20,7 @@ import { UploadFlow, type ExampleBundle, type PublishTarget } from "@/components
  * for, and inventing one here would put a site-wide decision in a route file.
  */
 const PROSE_LINK =
-  "text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan";
+  "text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan";
 
 export const metadata: Metadata = {
   /* One destination, one name. Every door into this route — the header, the phone panel,

@@ -15,7 +15,7 @@ function KindLink({ href, children }: { href: string; children: React.ReactNode 
   return (
     <a
       href={href}
-      className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan hover:decoration-cyan"
+      className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:decoration-cyan"
     >
       {children}
     </a>
@@ -91,7 +91,7 @@ function KindHeader({
 function KindNotes({ children }: { children: React.ReactNode }) {
   return (
     <details className="group border-t border-line">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-muted transition-colors hoverable:hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60">
         How to read this set
         <span
           aria-hidden

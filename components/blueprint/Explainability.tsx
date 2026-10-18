@@ -121,7 +121,7 @@ function tier(weight: number): { glyph: string; color: string } {
 function Hint({ text }: { text: string }) {
   return (
     <details className="group">
-      <summary className="flex cursor-pointer list-none items-baseline gap-1.5 font-mono text-xs text-dim transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-baseline gap-1.5 font-mono text-xs text-dim transition-colors hoverable:hover:text-fg [&::-webkit-details-marker]:hidden">
         <span
           className="inline-block shrink-0 text-cyan transition-transform group-open:rotate-90"
           aria-hidden
@@ -201,7 +201,7 @@ function NodeButton({
         "inline-flex cursor-pointer items-center gap-1.5 rounded border px-2 py-1 font-mono text-[11px] transition-colors",
         active
           ? "border-cyan bg-cyan/10 text-cyan"
-          : "border-line bg-surface-2 text-fg hover:border-line-bright hover:text-cyan",
+          : "border-line bg-surface-2 text-fg hoverable:hover:border-line-bright hoverable:hover:text-cyan",
       )}
     >
       <span aria-hidden className={active ? "text-cyan" : "text-dim"}>
@@ -1202,7 +1202,7 @@ function SecurityPanel({
         What this graph was charged, and for what.{" "}
         <Link
           href="/reading-the-radar"
-          className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
+          className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hoverable:hover:text-amber-bright"
         >
           How a blueprint is graded <span aria-hidden>→</span>
         </Link>

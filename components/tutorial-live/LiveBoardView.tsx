@@ -34,7 +34,7 @@ import type { BoardState } from "./poll";
    ============================================================ */
 
 const PROSE_LINK =
-  "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
+  "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan";
 
 /* --------------------- the header --------------------- */
 

@@ -2161,7 +2161,7 @@ export function UploadFlow({
                       release belongs to an account.{" "}
                       <a
                         href={SIGN_IN_HREF}
-                        className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
+                        className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan"
                       >
                         Sign in with GitHub
                       </a>{" "}

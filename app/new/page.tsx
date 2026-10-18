@@ -57,7 +57,7 @@ function HandleRequired() {
       </p>
       <Link
         href="/welcome"
-        className="w-fit text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
+        className="w-fit text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan"
       >
         Finish signing up →
       </Link>

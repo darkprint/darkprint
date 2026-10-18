@@ -607,7 +607,7 @@ export default async function Page({
       }
       breadcrumb={
         <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
-          <Link href="/blueprints" className="transition-colors hover:text-cyan">
+          <Link href="/blueprints" className="transition-colors hoverable:hover:text-cyan">
             ← Blueprints
           </Link>
           <span className="mx-2 text-faint">/</span>

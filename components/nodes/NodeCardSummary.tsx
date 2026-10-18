@@ -194,7 +194,7 @@ export function NodeCardSummary({
   return (
     <article
       className={cx(
-        "group relative flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-amber)]",
+        "group relative flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 transition-all duration-200 hoverable:hover:border-line-bright hoverable:hover:shadow-[0_12px_40px_-24px_var(--color-amber)]",
         /* `!` for the reason `DeadControl` and `DraftRow` both already carry it: `cx` is a
            plain string join (`lib/format.ts`), not a specificity-aware merge, so appending
            `border-violet/60` after `border border-line` leaves both classes in the DOM and
@@ -202,7 +202,7 @@ export function NodeCardSummary({
            site. `!important` is the one override this file can guarantee regardless of
            that order. 60% opacity measures 3.24:1 against `--color-surface`, which clears
            the 3:1 floor WCAG 1.4.11 sets for a non-text UI boundary. */
-        isPrivate && "border-violet/60! hover:border-violet!",
+        isPrivate && "border-violet/60! hoverable:hover:border-violet!",
         className,
       )}
     >
@@ -336,7 +336,7 @@ export function NodeCardSummary({
           id={titleId}
           /* `group-hover:text-amber`, with the id above it: one register per tile, and
              `app/globals.css` job 3 makes it the card's. It was copper. */
-          className="font-display text-base font-semibold leading-snug text-fg group-hover:text-amber"
+          className="font-display text-base font-semibold leading-snug text-fg hoverable:group-hover:text-amber"
         >
           {node.name}
         </h3>

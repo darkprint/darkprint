@@ -301,7 +301,7 @@ export function DeprecationMark({ term }: { term: OntologyTerm }) {
           <Link
             href={termHref(replacedBy)}
             aria-label={`Replaced by ${replacedBy}`}
-            className="normal-case tracking-normal underline underline-offset-2 transition-colors hover:text-amber-bright"
+            className="normal-case tracking-normal underline underline-offset-2 transition-colors hoverable:hover:text-amber-bright"
           >
             {replacedBy}
           </Link>
@@ -419,7 +419,7 @@ export function TermRow({
         <Link
           href={termHref(term.id)}
           className={cx(
-            "font-display text-fg transition-colors hover:text-cyan",
+            "font-display text-fg transition-colors hoverable:hover:text-cyan",
             root ? "text-[15px] font-semibold" : "text-[14px] font-medium",
           )}
         >

@@ -756,7 +756,7 @@ export function BlueprintGraph({
         <WholeFrame
           across={across}
           moving={fine ? undefined : { on: moving, toggle: () => setMoving((on) => !on) }}
-          className="!border !border-line !bg-surface-2 !shadow-none [&_button]:!border-line [&_button]:!bg-surface-2 [&_button]:!fill-muted hover:[&_button]:!bg-surface-3"
+          className="!border !border-line !bg-surface-2 !shadow-none [&_button]:!border-line [&_button]:!bg-surface-2 [&_button]:!fill-muted hoverable:hover:[&_button]:!bg-surface-3"
         />
       </ReactFlow>
     </div>

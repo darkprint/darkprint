@@ -19,7 +19,7 @@ import { SkillSetup } from "@/components/skill/SkillSetup";
    that gives a reason for making it.
    ============================================================ */
 
-const LINK = "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
+const LINK = "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan";
 
 /** The three limits, each with where the capability lives instead. */
 const NEVER: readonly { label: string; body: React.ReactNode }[] = [

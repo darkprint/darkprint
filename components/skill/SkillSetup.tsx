@@ -122,7 +122,7 @@ function FileListing({ lines }: { lines: readonly (readonly [string, string])[] 
   );
 }
 
-const LINK = "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
+const LINK = "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan";
 
 export function SkillSetup({ className }: { className?: string }) {
   return (

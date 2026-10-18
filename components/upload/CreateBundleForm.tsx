@@ -233,7 +233,7 @@ export function CreateBundleForm({
                         /* A suggestion is already slug-shaped, so it round-trips through
                            `slugify` unchanged as the name. */
                         onClick={() => setName(check.suggestion!)}
-                        className="underline decoration-amber/40 underline-offset-4 transition-colors hover:decoration-amber"
+                        className="underline decoration-amber/40 underline-offset-4 transition-colors hoverable:hover:decoration-amber"
                       >
                         Use {check.suggestion}
                       </button>

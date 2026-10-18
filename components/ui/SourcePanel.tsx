@@ -113,7 +113,7 @@ export function SourcePanel({
               className={cx(
                 "flex items-center gap-2 py-1 transition-colors",
                 labelClass,
-                "hover:text-fg",
+                "hoverable:hover:text-fg",
               )}
             >
               <span className="text-cyan" aria-hidden>
@@ -143,7 +143,7 @@ export function SourcePanel({
               /* `py-1`, not `py-0.5`: at 22.5px tall these two were standalone controls under
                the 24px minimum of WCAG 2.2 SC 2.5.8, and being adjacent to each other in
                one header bar they cannot claim the spacing exception either. */
-            className="rounded border border-line px-2 py-1 font-mono text-[11px] text-muted transition-colors hover:border-cyan hover:text-cyan"
+            className="rounded border border-line px-2 py-1 font-mono text-[11px] text-muted transition-colors hoverable:hover:border-cyan hoverable:hover:text-cyan"
             >
               download
             </a>
@@ -159,7 +159,7 @@ export function SourcePanel({
             /* `py-1`, not `py-0.5`: at 22.5px tall these two were standalone controls under
                the 24px minimum of WCAG 2.2 SC 2.5.8, and being adjacent to each other in
                one header bar they cannot claim the spacing exception either. */
-            className="rounded border border-line px-2 py-1 font-mono text-[11px] text-muted transition-colors hover:border-cyan hover:text-cyan"
+            className="rounded border border-line px-2 py-1 font-mono text-[11px] text-muted transition-colors hoverable:hover:border-cyan hoverable:hover:text-cyan"
           >
             {copied ? "copied ✓" : "copy"}
           </button>

@@ -102,7 +102,7 @@ function TermChip({ term, accent }: { term: OntologyTerm; accent: string }) {
   return (
     <Link
       href={termHref(term.id)}
-      className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg transition-colors hover:border-line-bright hover:text-cyan"
+      className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg transition-colors hoverable:hover:border-line-bright hoverable:hover:text-cyan"
     >
       <span
         className="h-1 w-1 rounded-full"
@@ -254,7 +254,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
               and then a category inside a different one. */}
           <Link
             href="/spec/card#every-term-heading"
-            className="transition-colors hover:text-cyan"
+            className="transition-colors hoverable:hover:text-cyan"
           >
             ← Vocabulary
           </Link>
@@ -313,7 +313,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   ) : (
                     <Link
                       href={termHref(replacedBy.id)}
-                      className="rounded border border-emerald/40 bg-emerald/10 px-2 py-1 text-[12px] text-emerald transition-colors hover:border-emerald"
+                      className="rounded border border-emerald/40 bg-emerald/10 px-2 py-1 text-[12px] text-emerald transition-colors hoverable:hover:border-emerald"
                     >
                       {replacedBy.id}
                     </Link>
@@ -373,7 +373,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                         ) : (
                           <Link
                             href={termHref(id)}
-                            className="rounded border border-line bg-surface-2 px-2 py-1 text-muted transition-colors hover:border-line-bright hover:text-fg"
+                            className="rounded border border-line bg-surface-2 px-2 py-1 text-muted transition-colors hoverable:hover:border-line-bright hoverable:hover:text-fg"
                           >
                             {id}
                           </Link>
@@ -444,7 +444,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                       ) : (
                         <Link
                           href={termHref(step.id)}
-                          className="rounded border border-line bg-surface-2 px-2 py-1 text-muted transition-colors hover:border-line-bright hover:text-fg"
+                          className="rounded border border-line bg-surface-2 px-2 py-1 text-muted transition-colors hoverable:hover:border-line-bright hoverable:hover:text-fg"
                         >
                           {step.id}
                         </Link>
@@ -633,7 +633,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                             href={nodeHref(record.id)}
                             className="group flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5"
                           >
-                            <span className="text-sm text-fg transition-colors group-hover:text-cyan">
+                            <span className="text-sm text-fg transition-colors hoverable:group-hover:text-cyan">
                               {record.card.name}
                             </span>
                             <code className="font-mono text-[11px] text-dim">
@@ -654,7 +654,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                             href={blueprintRecordHref(bp)}
                             className="group flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5"
                           >
-                            <span className="text-sm text-fg transition-colors group-hover:text-cyan">
+                            <span className="text-sm text-fg transition-colors hoverable:group-hover:text-cyan">
                               {bp.title}
                             </span>
                             <code className="font-mono text-[11px] text-dim">
@@ -703,7 +703,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                       ) : (
                         <Link
                           href={termHref(term.broader)}
-                          className="transition-colors hover:text-cyan"
+                          className="transition-colors hoverable:hover:text-cyan"
                         >
                           {term.broader}
                         </Link>

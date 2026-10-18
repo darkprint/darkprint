@@ -134,7 +134,7 @@ export function SiteFooter() {
             <ul className="mt-3 flex flex-col gap-2">
               {column.links.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-muted transition-colors hover:text-fg">
+                  <Link href={link.href} className="text-sm text-muted transition-colors hoverable:hover:text-fg">
                     {link.label}
                   </Link>
                 </li>
@@ -151,10 +151,10 @@ export function SiteFooter() {
         <div className="container-page flex flex-wrap items-center gap-x-4 gap-y-2 py-5 text-xs text-dim">
           <span>© 2026 DarkPrint · darkprint.io</span>
           <span aria-hidden="true">·</span>
-          <Link href="/privacy" className="transition-colors hover:text-fg">
+          <Link href="/privacy" className="transition-colors hoverable:hover:text-fg">
             Privacy
           </Link>
-          <Link href="/terms" className="transition-colors hover:text-fg">
+          <Link href="/terms" className="transition-colors hoverable:hover:text-fg">
             Terms
           </Link>
         </div>

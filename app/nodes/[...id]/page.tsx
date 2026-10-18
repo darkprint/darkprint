@@ -1705,7 +1705,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         <FieldDisclosure
                           key={row.name}
                           className="border-t border-line/70 first:border-t-0"
-                          summaryClassName="grid gap-x-4 gap-y-1 py-2 pl-[1.15rem] transition-colors hover:bg-surface-2/50 sm:grid-cols-[9rem_minmax(0,1fr)]"
+                          summaryClassName="grid gap-x-4 gap-y-1 py-2 pl-[1.15rem] transition-colors hoverable:hover:bg-surface-2/50 sm:grid-cols-[9rem_minmax(0,1fr)]"
                           bodyClassName="flex flex-col gap-3 pb-3 pl-[1.15rem] sm:pl-[10.15rem]"
                           summary={head}
                         >

@@ -127,7 +127,7 @@ export default function McpPage() {
           blueprints and cards only; a key from{" "}
           <Link
             href="/settings"
-            className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+            className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan"
           >
             Settings
           </Link>
