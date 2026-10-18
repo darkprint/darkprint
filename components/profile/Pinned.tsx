@@ -151,7 +151,7 @@ export type PinnedItem =
 export function Pinned({ items }: { items: readonly PinnedItem[] }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {items.map((item) =>
           item.kind === "blueprint" ? (
             <PinnedBlueprint key={item.blueprint.slug} blueprint={item.blueprint} />

@@ -847,7 +847,7 @@ export function NodeBrowser({
       {/* grid / empty state */}
       {results.length > 0 ? (
         groups === null ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {results.map((node) => (
               <NodeCardSummary key={node.id} node={node} />
             ))}
@@ -987,7 +987,9 @@ export function NodeBrowser({
                       rule is the same rule. */}
                   <div
                     className={cx(
-                      "grid gap-5 p-5 sm:grid-cols-2",
+                      /* `grid-cols-1` is `minmax(0, 1fr)`: without it a phone's one implicit
+                         track sizes to the widest tile's content and pushes past the panel. */
+                      "grid grid-cols-1 gap-5 p-5 sm:grid-cols-2",
                       group.nodes.length > 2 && "lg:grid-cols-3",
                     )}
                   >
