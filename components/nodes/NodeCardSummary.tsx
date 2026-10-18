@@ -287,9 +287,10 @@ export function NodeCardSummary({
             `relative z-20` for the reason `FavoriteStar` carries it: the tile's stretched
             `<Link>` sits at `z-10` over everything in plain flow, so a nested link with no
             stacking context of its own is covered and the click opens the card instead.
-            `w-fit` keeps the target on the handle. */}
+            `w-fit` keeps the target on the handle, and `max-w-full` stops a long id from
+            carrying the line past a phone's tile so its `truncate` can act. */}
         {node.author !== undefined && (
-          <span className="relative z-20 mb-1.5 flex w-fit items-center gap-2 pr-8 font-mono text-xs">
+          <span className="relative z-20 mb-1.5 flex w-fit max-w-full items-center gap-2 pr-8 font-mono text-xs">
             <Avatar author={node.author} size="sm" link />
             <Link
               href={`/u/${node.author.username}`}

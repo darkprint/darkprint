@@ -121,7 +121,7 @@ export function ContentCard({
         {/* `relative z-20` for the reason the bookmark has it: the card's stretched `<Link>`
             sits at `z-10` over everything in plain flow, so the avatar's own link would be
             covered by it and the whole tile would navigate to the blueprint instead. */}
-        <span className="relative z-20 flex w-fit items-center gap-2 pr-8 font-mono text-xs">
+        <span className="relative z-20 flex w-fit max-w-full items-center gap-2 pr-8 font-mono text-xs">
           <Avatar author={item.author} size="sm" link />
           <Link
             href={`/u/${item.author.username}`}
