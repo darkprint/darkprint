@@ -163,7 +163,7 @@ describe("the exported pipeline", () => {
     /* The starter's own demonstration switch, thrown on purpose: `code-builder` declares
        `cannot: [acceptance-criteria]` and `spec-planner` outputs one, and the edge between
        them is the edge that blueprint exists to leave out. */
-    expect(source).toContain('builder  [card="code-builder@1.0.0"]');
+    expect(source).toContain('builder  [card="code-builder@1.0.1"]');
     expect(source).not.toContain("planner  -> builder");
     writeFileSync(dot, source.replace(/\n}\s*$/, "\n  planner -> builder;\n}\n"));
 

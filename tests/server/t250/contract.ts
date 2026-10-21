@@ -67,7 +67,7 @@ export const REGISTRY_GITHUB_ID = 0;
  * `v1.1.0` is the spelling `lib/data/bundles.ts` uses and `parseSemver` refuses the `v` prefix
  * by name, which is why the wrong answer is worth naming beside the right one.
  */
-export const SEED_VERSION = "1.1.0";
+export const SEED_VERSION = "1.1.1";
 export const RELEASES_PER_BUNDLE = 1;
 
 /** D-250-08. `created` and `skipped` count BUNDLES. Cards do not fold in. */

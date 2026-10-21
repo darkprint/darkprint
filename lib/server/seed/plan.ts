@@ -40,7 +40,7 @@ export const REGISTRY_HANDLE = "autogen";
  * comment, and `lib/data/bundles.ts` spells its fixture versions that way, which is the
  * string somebody reaching for a precedent would find.
  */
-export const SEED_RELEASE_VERSION = "1.1.0";
+export const SEED_RELEASE_VERSION = "1.1.1";
 
 export interface ImportPlan {
   bundles: readonly { slug: string; digest: string; releases: number }[];

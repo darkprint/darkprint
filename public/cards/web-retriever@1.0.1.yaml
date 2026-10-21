@@ -47,9 +47,9 @@ notes: >-
   This is the only node on the line that reaches outside the process, and nothing vets what it
   pulls back before the synthesizer reads it, the fact-checker sits after synthesis, not between
   the fetch and its consumer. Treat the passages as claims about the world rather than facts until
-  the verifier has cited them. The marker for that is deliberately not declared here: doc 3 §4.1
+  the verifier has cited them. The marker for that is deliberately not declared here: the analysis
   infers `unvalidated-external-access` from the graph, and declaring it would second-guess the
   analyzer.
 
-version: 1.0.0
+version: 1.0.1
 author: autogen

@@ -45,13 +45,13 @@ notes: >-
   beyond the first, three patches in all, which is the "stop after three attempts" the spec above
   hands the agent. Engine spec §2.6 counts the attempts that follow the initial execution rather
   than the executions themselves, so the cap that reads as three is written as two, and the key is
-  spelled the way Attractor spells it. It is load-bearing twice over. Drop it and doc 3 §4.1
-  charges the blueprint 1.5 for an unbounded loop. It also bounds a slower leak doc 2 §5.5 names: every iteration reveals another slice of
+  spelled the way Attractor spells it. It is load-bearing twice over. Drop it and the security
+  analysis charges the blueprint 1.5 for an unbounded loop. It also bounds a slower leak: every iteration reveals another slice of
   the acceptance surface through the failure messages, so the cap limits how much of the criteria
   this node can reconstruct by accumulation. `acceptance-criteria` in `cannot` closes the fast
-  version of the same leak. Doc 2 §5.5 hands this node the evidence of a failure and withholds
+  version of the same leak. This node is handed the evidence of a failure and never
   the criteria themselves, and because that entry names a data type in the ontology the resolver
   enforces it: an edge carrying the criteria in raises `bundle/prohibition-violated`.
 
-version: 1.1.0
+version: 1.1.1
 author: autogen

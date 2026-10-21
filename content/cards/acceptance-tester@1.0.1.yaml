@@ -47,10 +47,10 @@ will_not:
 risk_markers: []
 notes: >-
   This is the only node that sees both halves, and the shape of `evidence` is what keeps that
-  safe. Doc 2 §5.5: seeing the criteria lets a node write work built to pass them, seeing the
-  evidence of a failure it caused only says what broke, the first is gaming, the second is
+  safe. Seeing the criteria lets a node write work built to pass them, while seeing the
+  evidence of a failure it caused only says what broke: the first is gaming, the second is
   feedback. Emitting the criterion text alongside the trace would collapse that distinction and
   hand the debugger the acceptance surface a line at a time.
 
-version: 1.0.0
+version: 1.0.1
 author: autogen

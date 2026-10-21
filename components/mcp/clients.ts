@@ -6,13 +6,22 @@
    machine. Each shape was checked against the client's own
    documentation; the docs link beside it is where to re-check.
    The host is spelled once, imported from the module that already
-   names it for the skill archive.
+   names it for the skill archive. The first prompt to ask once a
+   client is connected lives here too.
    ============================================================ */
 
 import { SKILL_SITE_ORIGIN } from "@/lib/skill";
 
 /** The one address every client below points at. */
 export const MCP_ENDPOINT_URL = `${SKILL_SITE_ORIGIN}/api/mcp`;
+
+/**
+ * What to ask once the server is connected. It asks for the graph and the scorecard first
+ * because that is the agreement `get_blueprint`'s run contract has the agent stop for.
+ */
+export const MCP_FIRST_PROMPT =
+  "Use the darkprint MCP server to find a blueprint for this task: <your task>. Show me its " +
+  "graph and scorecard before running anything.";
 
 export interface McpClientSetup {
   id: string;

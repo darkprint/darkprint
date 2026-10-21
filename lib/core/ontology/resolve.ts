@@ -381,7 +381,7 @@ export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[
             "ontology/phase-not-extensible",
             `Local term \`${term.id}\` is of kind \`phase\`, and the five phases are a closed set.`,
             {
-              hint: "Doc 3 §2 fixes them at `planning`, `implementation`, `testing`, `debugging` and `deployment`; express the distinction as a `node-type` or a `risk-marker`, the two extensible dimensions.",
+              hint: "They are `planning`, `implementation`, `testing`, `debugging` and `deployment`; express the distinction as a `node-type` or a `risk-marker`, the two extensible dimensions.",
             },
           ),
         );
@@ -399,7 +399,7 @@ export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[
               ? `Local term \`${term.id}\` declares no \`broader\`, so no term of the curated core subsumes it.`
               : `Local term \`${term.id}\` declares \`broader\` \`${term.broader}\`, which leads to no term of the curated core.`,
             {
-              hint: `Point \`${term.id}\` at the core term it specialises, directly or through another local term. Doc 3 §7: a term the core does not subsume is ignored silently by every analysis, "che è il peggior esito possibile".`,
+              hint: `Point \`${term.id}\` at the core term it specialises, directly or through another local term. A term the core does not subsume is ignored silently by every analysis, which is the worst outcome available.`,
             },
           ),
         );
@@ -434,7 +434,7 @@ export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[
               "ontology/local-marker-bad-weight",
               `Local risk marker \`${term.id}\` declares a weight of ${weight}, which is not a cost, so it counts ${DARKPRINT_CONFIG.security.unknownMarkerWeight} instead.`,
               {
-                hint: `Give \`${term.id}\` a weight of 0 or more. Doc 3 §5 subtracts every marker's weight from a starting score of 4, so a negative weight would add points back and let a local term cancel a core one.`,
+                hint: `Give \`${term.id}\` a weight of 0 or more. The security score subtracts every marker's weight from a starting score of 4, so a negative weight would add points back and let a local term cancel a core one.`,
               },
             ),
           );

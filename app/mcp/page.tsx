@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { InstallTabs } from "@/components/mcp/InstallTabs";
-import { MCP_ENDPOINT_URL } from "@/components/mcp/clients";
+import { MCP_ENDPOINT_URL, MCP_FIRST_PROMPT } from "@/components/mcp/clients";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { BUNDLE_CARDS_DIR, BUNDLE_README, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
 import { NPX_INVOCATION } from "@/packages/cli/src/index";
@@ -133,6 +134,19 @@ export default function McpPage() {
           </Link>
           , sent as a bearer token, raises the rate limit and lets the four addressed tools
           reach your own private blueprints. Nothing here runs a blueprint.
+        </p>
+        <p className="text-[15px] leading-relaxed text-muted">Then ask your agent, for example:</p>
+        <div className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3">
+          <pre className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere font-mono text-xs leading-relaxed text-blueprint-line">
+            <code>{MCP_FIRST_PROMPT}</code>
+          </pre>
+          <CopyButton text={MCP_FIRST_PROMPT} ariaLabel="Copy the first prompt" />
+        </div>
+        <p className="text-sm leading-relaxed text-dim">
+          Your agent runs the blueprint on your machine, under the{" "}
+          <code className="font-mono text-[13px] text-blueprint-ink">run</code> contract{" "}
+          <code className="font-mono text-[13px] text-blueprint-ink">get_blueprint</code>{" "}
+          returns with the files.
         </p>
       </section>
 

@@ -55,11 +55,11 @@ export interface RoleBox {
  * doc 2 §1.1 warns about.
  */
 export const ROLE_BOXES: readonly RoleBox[] = [
-  { id: "planner", label: "Planner", card: "spec-planner@1.0.0", kind: "executor" },
-  { id: "builder", label: "Builder", card: "code-builder@1.0.0", kind: "executor" },
-  { id: "tester", label: "Tester", card: "acceptance-tester@1.0.0", kind: "verifier" },
-  { id: "debugger", label: "Debugger", card: "targeted-debugger@1.1.0", kind: "executor" },
-  { id: "deployer", label: "Deployer", card: "release-gate@1.0.0", kind: "ship" },
+  { id: "planner", label: "Planner", card: "spec-planner@1.0.1", kind: "executor" },
+  { id: "builder", label: "Builder", card: "code-builder@1.0.1", kind: "executor" },
+  { id: "tester", label: "Tester", card: "acceptance-tester@1.0.1", kind: "verifier" },
+  { id: "debugger", label: "Debugger", card: "targeted-debugger@1.1.1", kind: "executor" },
+  { id: "deployer", label: "Deployer", card: "release-gate@1.0.1", kind: "ship" },
 ];
 
 /** One wire, joined to the edge the starter blueprint writes and to what it says it carries. */
@@ -83,7 +83,7 @@ export const ROLE_WIRES: readonly RoleWire[] = [
 
 /**
  * Doc 2 §5.2's absence. Nothing runs from the planner to the builder, and the reason is
- * written down: `code-builder@1.0.0` lists `acceptance-criteria` under `cannot`, that entry
+ * written down: `code-builder@1.0.1` lists `acceptance-criteria` under `cannot`, that entry
  * names a data type in the ontology, and the resolver refuses the bundle with
  * `bundle/prohibition-violated` if the edge is drawn.
  */
@@ -106,7 +106,7 @@ export const ROLE_ABSENCE = {
  * `max_iterations: 3` said four. That off-by-one is why the version moved.
  */
 export const ROLE_LOOP_CAP = {
-  card: "targeted-debugger@1.1.0",
+  card: "targeted-debugger@1.1.1",
   param: "max_retries",
   value: 2,
 } as const;
@@ -126,7 +126,7 @@ export function roleBox(id: string): RoleBox {
  *
  * The two identifiers on a `RoleBox` are different vocabularies and this is the join
  * between them. `id` is what the DOT calls the node inside this one graph (`builder`);
- * `card` is the pinned reference it resolves to (`code-builder@1.0.0`); and
+ * `card` is the pinned reference it resolves to (`code-builder@1.0.1`); and
  * `/nodes/[...id]` is one page per card id, listing its versions. A beat that linked
  * `nodeHref(box.id)` shipped `/nodes/builder`, which typechecks, renders and 404s.
  *

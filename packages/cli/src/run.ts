@@ -14,7 +14,7 @@
    verb's name.
    ============================================================ */
 
-import { hasErrors, type Diagnostic } from "../../../lib/core";
+import { hasErrors, type BlueprintAnalysis, type Diagnostic } from "../../../lib/core";
 import { bump } from "./bump";
 import { clone } from "./clone";
 import { exportPipeline } from "./export";
@@ -299,15 +299,35 @@ function runValidate(args: readonly string[], io: Io): number {
   const { positional } = parseFlags(args);
   const result = validate(positional[0] ?? ".");
 
-  if (result.diagnostics.length === 0) {
-    io.out("validate: no findings.\n");
-    return 0;
-  }
+  if (result.diagnostics.length === 0) io.out("validate: no findings.\n");
   for (const diagnostic of result.diagnostics) io.out(renderDiagnostic(diagnostic));
   /* An exit code that answers "may this be published", which is the question a caller in a
      script is asking. Warnings are findings and not failures — the same split the publish
      gate makes, where only an error severity refuses a release. */
-  return hasErrors(result.diagnostics) ? 1 : 0;
+  if (hasErrors(result.diagnostics)) return 1;
+  if (result.analysis !== undefined) io.out(renderScorecard(result.analysis));
+  return 0;
+}
+
+/**
+ * The scorecard `get_blueprint` would hand an agent for these bytes, in the same four fields.
+ *
+ * Printed only when no finding is an error, because only then can the bytes be published and
+ * carry it; a score over a bundle the gate refuses would describe a release that cannot exist.
+ */
+function renderScorecard(analysis: BlueprintAnalysis): string {
+  const gates = analysis.autonomy.contributions
+    .filter((node) => node.requiresHuman)
+    .map((node) => node.nodeId);
+  const { covered, missing } = analysis.phaseCoverage;
+  return (
+    "scorecard:\n" +
+    `  autonomy ${analysis.autonomy.autonomyClass}\n` +
+    `  security level ${analysis.security.level}\n` +
+    `  human gates ${gates.length === 0 ? "none" : gates.join(", ")}\n` +
+    `  phases covered ${covered.length === 0 ? "none" : covered.join(", ")}` +
+    `${missing.length === 0 ? "" : `; missing ${missing.join(", ")}`}\n`
+  );
 }
 
 /**
@@ -554,8 +574,12 @@ function runSkill(args: readonly string[], io: Io): number {
   const version = result.version ?? "(SKILL.md carries no version)";
   io.out(`skill: installed the DarkPrint skill ${version} to ${result.destination}\n`);
   io.out(`  ${result.files.length} files\n`);
+  io.out(`next: start a new session and ask "${SKILL_FIRST_ASK}"\n`);
   return 0;
 }
+
+/** What to ask once the skill is in place, in the words `/tutorial`'s first prompt opens with. */
+const SKILL_FIRST_ASK = "Use the DarkPrint skill to write a blueprint for this task: <your task>";
 
 /**
  * The flags that carry no value, by verb.

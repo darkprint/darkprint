@@ -6,8 +6,8 @@ digraph incident_commander {
   classify    [card="intent-router@2.1.0"];
   autoresolve [card="resolution-composer@1.0.0"];
   kb          [card="runbook-resolver@1.0.0"];
-  qa          [card="blast-radius-check@1.0.0"];
-  send        [card="runbook-executor@1.1.0"];
+  qa          [card="blast-radius-check@1.0.1"];
+  send        [card="runbook-executor@1.1.1"];
   escalate    [card="confidence-escalation@1.0.0"];
 
   ticket -> classify [in="event"];
@@ -26,7 +26,7 @@ digraph incident_commander {
   // `frontline-triage`: §10.4 resolves a missing key to the empty string, so a run with no
   // lane written takes the lookup and still reaches the composer through it.
   //
-  // `intent-router@2.1.0` is what writes the key (§11.0 Q17), through the `context_updates`
+  // `intent-router@2.1.0` is what writes the key, through the `context_updates`
   // sentence in its spec, so this guard reads a lane the run produced rather than always
   // comparing the empty string. The negation arm does not move: the spec is an instruction
   // to an agent, and the arm a silent classifier takes still has to be the one that reaches

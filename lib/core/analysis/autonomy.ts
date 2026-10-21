@@ -734,7 +734,7 @@ function unresolvedNodesDiagnostic(ids: readonly string[], totalNodes: number): 
   if (ids.length === 1) opts.location = { nodeId: ids[0] };
   return warning(
     "analysis/unresolved-node",
-    `${subject}, so nothing states how ${runs}. The fraction is taken over every node in the graph (doc 3 §6), so ${counted}.`,
+    `${subject}, so nothing states how ${runs}. The fraction is taken over every node in the graph, so ${counted}.`,
     opts,
   );
 }

@@ -64,7 +64,7 @@ export function absencesFor(
       id: "criteria-in-spec",
       label: "the criteria, in the prose",
       detail:
-        "Doc 1 §3.2: an absent edge is isolation only if the content is absent too. This spec names no criterion and quotes no threshold, so the check has nothing to find on the card either.",
+        "An absent edge is isolation only if the content is absent too. This spec names no criterion and quotes no threshold, so the check has nothing to find on the card either.",
       field: { nodeId: ABSENT_EDGE.target, key: "spec" },
     },
   ];

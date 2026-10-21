@@ -13,7 +13,7 @@ checked), `lib/core/card/parse.ts` (wire format to type).
 
 ## The reference card
 
-`content/cards/code-builder@1.0.0.yaml` is the one to read first. It carries the isolation
+`content/cards/code-builder@1.0.1.yaml` is the one to read first. It carries the isolation
 contract the entire site argues for:
 
 ```yaml
@@ -166,6 +166,6 @@ and `darkprint bump` prints the inference for a declared version.
 | **change `spec`** | it is compiled into the runner's `prompt`, and the card's digest and every release pinning it change |
 | **rename a field** | every content file under `content/cards/`, every stored `card_version.source`, and the wire-format mapping in `parse.ts` |
 
-The landing's annotated card and `/spec/card` read `code-builder@1.0.0` through
+The landing's annotated card and `/spec/card` read `code-builder@1.0.1` through
 `cardSource()`, so they cannot drift from the archive. Keep it that way; do not replace it
 with a transcription.

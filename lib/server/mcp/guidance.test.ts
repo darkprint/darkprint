@@ -20,6 +20,7 @@
 
 import { describe, expect, it } from "vitest";
 
+import { NPX_INVOCATION } from "@/packages/cli/src/index";
 import { instantiationSteps, runContract, type GuidanceInput } from "./guidance";
 import { MCP_HARNESSES, type McpHarness } from "./types";
 
@@ -51,6 +52,10 @@ describe("the run contract reaches every caller", () => {
     expect(text, "a node is not told to run in its own context").toContain("own context");
     expect(text, "the declared prohibitions are not named as refusals").toContain("will_not");
     expect(text, "the retry bound is not named, so a loop has no stated end").toContain("max_retries");
+    expect(text, "the card's model is not named, so a run drops it unsaid").toContain("`model`");
+    expect(text, "a run that cannot honour a card is not told to say so first").toContain(
+      "say which nodes",
+    );
   });
 
   /**
@@ -91,6 +96,29 @@ describe("the instantiation notes stay about files", () => {
     expect(steps).toContain("cards/x@1.0.0.yaml");
     expect(steps).toContain("readme.md");
     expect(steps).toContain("c".repeat(64));
+  });
+
+  it("has the folder written before the run, and the CLI reached through npx", () => {
+    const steps = instantiationSteps(input());
+    expect(steps[0]).toContain("./demo/ before running anything");
+    const text = joined(steps);
+    expect(text).toContain(`${NPX_INVOCATION} validate ./demo/`);
+    expect(text).toContain(`${NPX_INVOCATION} export ./demo/ --attractor`);
+    expect(text, "the notes still send a reader to a checkout of this repository").not.toContain(
+      "checkout",
+    );
+  });
+
+  /* Claude Code's Agent tool cannot narrow a subagent's tools on its own, so only those notes
+     name the agent definition that can; the other harnesses get no claim about a tool they
+     do not have. */
+  it("tells Claude Code where a node's model and tools are held, and nobody else", () => {
+    const claude = joined(instantiationSteps(input({ harness: "claude-code" })));
+    expect(claude).toContain("agent tool takes a model");
+    expect(claude).toContain(".claude/agents/");
+    for (const harness of MCP_HARNESSES.filter((name) => name !== "claude-code")) {
+      expect(joined(instantiationSteps(input({ harness }))), harness).not.toContain(".claude/agents");
+    }
   });
 
   /* The division of labour, held so a later edit cannot quietly move the safety half back

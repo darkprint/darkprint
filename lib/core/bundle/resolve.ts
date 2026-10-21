@@ -271,7 +271,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
             ? `Node \`${stmt.id}\` references \`${explicit}\`, which is not a pinned \`id@version\` reference.`
             : `Node \`${stmt.id}\` references card \`${explicit}\` without a version.`,
           {
-            hint: '§4 pins the exact version so two evaluations describe the same node: write `card="solver-a@1.2.0"`.',
+            hint: 'A pinned version makes two evaluations describe the same node: write `card="solver-a@1.2.0"`.',
             location,
           },
         ),
@@ -302,7 +302,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
             "bundle/unpinned-card",
             `Node \`${stmt.id}\` pins version \`${version}\`, which is not an exact version.`,
             {
-              hint: '§4 pins the exact version so two evaluations describe the same node: write `version="1.2.0"`.',
+              hint: 'A pinned version makes two evaluations describe the same node: write `version="1.2.0"`.',
               location,
             },
           ),
@@ -485,7 +485,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
             : `\`${to.nodeId}\` declares no input ports`;
       ds.push(
         error("bundle/port-mismatch", `Edge ${named} carries no data: ${missing}.`, {
-          hint: "An edge is an interface (§2): declare the port it carries on both cards, or remove the edge.",
+          hint: "An edge is an interface: declare the port it carries on both cards, or remove the edge.",
           location,
         }),
       );

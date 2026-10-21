@@ -80,7 +80,7 @@ The lattice is what makes port compatibility and `cannot` work. `isA` is **refle
 one-directional**: `json` satisfies a port typed `structured`; `structured` does not satisfy
 one typed `json`.
 
-`acceptance-criteria` is the term the whole site turns on: it is what `code-builder@1.0.0`
+`acceptance-criteria` is the term the whole site turns on: it is what `code-builder@1.0.1`
 declares it `cannot` receive.
 
 ### `tool`: 12

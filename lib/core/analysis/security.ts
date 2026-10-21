@@ -535,7 +535,7 @@ export function computeSecurity(
         spelling,
         node.nodeId,
         `declares \`${spelling}\`, which is not a term in this vocabulary`,
-        `Define \`${spelling}\` in your namespace with a \`broader\` pointer at a core marker and a weight, or correct the spelling. Doc 3 §7: an unrooted term is ignored, which is the worst outcome available.`,
+        `Define \`${spelling}\` in your namespace with a \`broader\` pointer at a core marker and a weight, or correct the spelling. Every analysis ignores an unrooted term without saying so.`,
       );
     }
   }
@@ -564,7 +564,7 @@ export function computeSecurity(
         MARKER_UNBOUNDED_LOOP,
         id,
         clause,
-        `Declare \`params.max_iterations\` on one of ${members.join(", ")}. Doc 2 §5.5: the cap also limits how much of the acceptance surface leaks back through repeated failure messages.`,
+        `Declare \`params.max_iterations\` on one of ${members.join(", ")}. The cap also limits how much of the acceptance surface leaks back through repeated failure messages.`,
       );
     }
   }
@@ -852,7 +852,7 @@ export function computeSecurity(
       MARKER_CRITERIA_LEAK,
       node.nodeId,
       `${routeClause(node.nodeId)} and is reachable from ${joinQuotedAnd(sorted)}, which ${sorted.length === 1 ? "produces" : "produce"} an \`acceptance-criteria\` output, so the criteria can reach the node whose work they judge`,
-      `Remove the path from ${sorted.join(", ")} to ${node.nodeId}.${cut} Doc 2 §3: whoever writes the code must never see the acceptance tests, because if they see them they game them.`,
+      `Remove the path from ${sorted.join(", ")} to ${node.nodeId}.${cut} Whoever writes the code must never see the acceptance tests, because a builder that sees them writes to pass them.`,
     );
   }
 
@@ -877,7 +877,7 @@ export function computeSecurity(
         "analysis/criteria-relayed-through-judge",
         `The \`criteria-leak\` check stops at ${joinQuotedAnd(named)} on this blueprint and does not trace past ${named.length === 1 ? "it" : "them"}: the acceptance criteria reach that validation node, and its output flows on to ${describeNode(node)}, whose own work is judged in turn. Whether what it forwards is failure evidence or the criteria themselves is a property of the prose, not of the graph.`,
         {
-          hint: `Read what ${named[0]} emits on its way to ${node.nodeId}. Doc 2 §5.5: stack traces, failed assertions and expected-against-actual are feedback, the criteria set is gaming, "se glieli passi tutti, ricomincia a fare special-casing". Keep an iteration cap on the loop too, which is what limits how much of the acceptance surface leaks across repeated failures. Nothing is charged for this: a channel the topology cannot follow is not evidence of a leak, and it is not evidence of isolation either.`,
+          hint: `Read what ${named[0]} emits on its way to ${node.nodeId}. Stack traces, failed assertions and expected-against-actual are feedback; the criteria set itself is an invitation to game, and a node handed all of it goes back to special-casing. Keep an iteration cap on the loop too, which is what limits how much of the acceptance surface leaks across repeated failures. Nothing is charged for this: a channel the topology cannot follow is not evidence of a leak, and it is not evidence of isolation either.`,
           location: { nodeId: node.nodeId },
         },
       ),
@@ -923,7 +923,7 @@ export function computeSecurity(
       MARKER_CRITERIA_LEAK,
       producer.nodeId,
       `declares an \`${CRITERIA_DATA_TYPE}\` output and also \`${first.portName}: ${first.portType}\`, which is what the validation node ${quote(first.judgeId)} reads as the artefact it judges, so one node both writes the acceptance criteria and produces the work they measure`,
-      `Split ${producer.nodeId} in two, the node that writes the acceptance criteria and the node that produces the artefact, and wire only the criteria into ${first.judgeId}. Doc 2 §3: whoever writes the code must never see the acceptance tests, because if they see them they game them.`,
+      `Split ${producer.nodeId} in two, the node that writes the acceptance criteria and the node that produces the artefact, and wire only the criteria into ${first.judgeId}. Whoever writes the code must never see the acceptance tests, because a builder that sees them writes to pass them.`,
     );
   }
 
@@ -957,7 +957,7 @@ export function computeSecurity(
         "analysis/criteria-leak-unanchored",
         `The \`criteria-leak\` check was not evaluated on this blueprint: ${joinQuotedAnd(judges)} ${judges.length === 1 ? "judges" : "judge"} the output of ${joinQuotedAnd(subjects)}, but no node declares an output port typed \`acceptance-criteria\`, so there is no criteria producer to trace a path from.`,
         {
-          hint: `Type the port that carries the acceptance criteria as \`acceptance-criteria\` on the node that produces them, doc 3 §4.1 anchors this check there, and every one of its detectors needs that port to exist. Until it does, this blueprint has no \`criteria-leak\` result at all: the absence of a finding here is silence, not a clean verdict.`,
+          hint: `Type the port that carries the acceptance criteria as \`acceptance-criteria\` on the node that produces them: this check is anchored there, and every one of its detectors needs that port to exist. Until it does, this blueprint has no \`criteria-leak\` result at all: the absence of a finding here is silence, not a clean verdict.`,
         },
       ),
     );
@@ -969,7 +969,7 @@ export function computeSecurity(
         "analysis/criteria-leak-unanchored",
         `The \`criteria-leak\` check was not evaluated on this blueprint: ${joinQuotedAnd(producers)} ${producers.length === 1 ? "declares" : "declare"} an \`acceptance-criteria\` output, but ${anyJudge ? "no node's output is read by a `validation` node" : "no node in the graph is typed `validation`"}, so the check has no generator to trace a path to.`,
         {
-          hint: `Type the node that judges the work as \`validation\` (doc 3 §3) and wire the artefact under judgement into it, doc 3 §4.1 anchors the generator set on \`G = { n | ∃ v : type(v) ⊑ validation ∧ edge(n → v) }\`, so a test runner typed \`tool\` leaves this check with an anchor and no subject. Until one exists, this blueprint has no \`criteria-leak\` result at all: the absence of a finding here is silence, not a clean verdict.`,
+          hint: `Type the node that judges the work as \`validation\` and wire the artefact under judgement into it. This check takes its generators from \`G = { n | ∃ v : type(v) ⊑ validation ∧ edge(n → v) }\`, so a test runner typed \`tool\` leaves this check with an anchor and no subject. Until one exists, this blueprint has no \`criteria-leak\` result at all: the absence of a finding here is silence, not a clean verdict.`,
         },
       ),
     );
@@ -1006,7 +1006,7 @@ export function computeSecurity(
           "analysis/criteria-out-of-band",
           `${describeNode(node)} names its acceptance criteria in \`params.${key}\` (${named.map((value) => `\`${value}\``).join(", ")}), and no node in this graph produces anything by that name, so the criteria reach it from outside the topology.`,
           {
-            hint: `Doc 2 §3 makes isolation a property of the topology, so criteria that arrive out of band cannot be checked structurally, \`criteria-leak\` is blind to this channel on ${node.nodeId}. Give the node that produces ${named.map((value) => `\`${value}\``).join(", ")} an \`acceptance-criteria\` output port and wire it, or record in the card's notes why the reference stays out of band.`,
+            hint: `Isolation is a property of the topology, so criteria that arrive out of band cannot be checked structurally: \`criteria-leak\` is blind to this channel on ${node.nodeId}. Give the node that produces ${named.map((value) => `\`${value}\``).join(", ")} an \`acceptance-criteria\` output port and wire it, or record in the card's notes why the reference stays out of band.`,
             location: { nodeId: node.nodeId },
           },
         ),
@@ -1089,7 +1089,7 @@ export function computeSecurity(
         leakedByTopology.has(nodeId)
           ? `has a spec that also repeats ${overlap}`
           : `${routeClause(nodeId)} and has a spec that repeats ${overlap}`,
-        `Rewrite the spec of ${nodeId} in its own terms. Doc 1 §3.2: isolation is not just an absent edge, it is the absence of the content from the spec.`,
+        `Rewrite the spec of ${nodeId} in its own terms. Isolation needs the content absent from the spec as well as the edge absent from the graph.`,
       );
     }
   }

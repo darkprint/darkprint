@@ -38,12 +38,12 @@ will_not:
 risk_markers: []
 notes: >-
   No `irreversible-action`, deliberately, and the same judgement call `result-delivery@1.0.0`
-  records. Doc 3 §4 prices that marker for actions that cannot be undone, publishing, sending,
+  records. The marker is priced for actions that cannot be undone, publishing, sending,
   deleting, and this node's declared destination is the run's own release target: it writes one
   tagged, digest-stamped artefact, sends nothing to a third party and deletes nothing. Applying
   the marker to every node that writes an output would make the qualifier vacuous. If the review
   decides a release target counts as publication, the marker costs this blueprint 1.5 and takes
   its security level from 4 to 3.
 
-version: 1.0.0
+version: 1.0.1
 author: autogen

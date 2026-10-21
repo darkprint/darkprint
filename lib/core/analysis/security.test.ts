@@ -946,7 +946,8 @@ describe("criteria-leak: the anchor is topological, not the phase", () => {
     ]);
     expect(result.diagnostics[0].message).toContain('stops at "tester"');
     expect(result.diagnostics[0].message).toContain("property of the prose, not of the graph");
-    expect(result.diagnostics[0].hint).toContain("Doc 2 §5.5");
+    expect(result.diagnostics[0].hint).toContain("expected-against-actual are feedback");
+    expect(result.diagnostics[0].hint).toContain("the criteria set itself is an invitation to game");
     // Warning only. Doc 3 §5 prices evidence, and a channel the topology cannot follow is
     // not evidence of a leak — nor of isolation.
     expect(result.raw).toBe(4);
@@ -1527,7 +1528,7 @@ describe("criteria-leak: out of band (analysis/criteria-out-of-band)", () => {
     const [diagnostic] = computeSecurity(outOfBand).diagnostics.filter(
       (d) => d.code === "analysis/criteria-out-of-band",
     );
-    expect(diagnostic.hint).toContain("isolation a property of the topology");
+    expect(diagnostic.hint).toContain("Isolation is a property of the topology");
     expect(diagnostic.hint).toContain("blind to this channel on verify");
   });
 

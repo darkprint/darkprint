@@ -34,7 +34,7 @@ import { NODE_CARD_ANNOTATIONS } from "./annotations";
 import { CardBreakdown } from "./CardBreakdown";
 
 const CARD = readFileSync(
-  join(process.cwd(), "content/cards/code-builder@1.0.0.yaml"),
+  join(process.cwd(), "content/cards/code-builder@1.0.1.yaml"),
   "utf8",
 ).trimEnd();
 
@@ -43,7 +43,7 @@ const CARD = readFileSync(
  * and reads `annotations.ts`'s long reference bodies straight off `note.body`.
  */
 const REFERENCE = renderToStaticMarkup(
-  createElement(CardBreakdown, { source: CARD, cardRef: "code-builder@1.0.0" }),
+  createElement(CardBreakdown, { source: CARD, cardRef: "code-builder@1.0.1" }),
 );
 
 /**
@@ -190,7 +190,7 @@ describe("the parts are picked with real buttons", () => {
 
   /** A composite the reader arrows through, with no name, is a stop that announces nothing. */
   it("names the rail and mounts the live region before it has anything to say", () => {
-    expect(REFERENCE).toContain('aria-label="Parts of code-builder@1.0.0"');
+    expect(REFERENCE).toContain('aria-label="Parts of code-builder@1.0.1"');
     expect(REFERENCE).toContain('aria-live="polite"');
   });
 
@@ -248,6 +248,6 @@ describe("the listing lays out for a phone before it lays out for a screen", () 
     expect(REFERENCE).toContain('tabindex="0"');
     expect(REFERENCE).toContain('role="region"');
     // The name states how much the scroller holds, so it moves with the file.
-    expect(REFERENCE).toContain('aria-label="code-builder@1.0.0, 51 lines"');
+    expect(REFERENCE).toContain('aria-label="code-builder@1.0.1, 51 lines"');
   });
 });

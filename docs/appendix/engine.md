@@ -102,7 +102,7 @@ because isolation is not only a missing arrow:
   the text half never moves the score on its own. A card isolated on the diagram and quoting
   the criteria in its prose is leaking in practice.
 
-Measured example: `code-builder@1.0.0` against `spec-planner@1.0.0` scores **0.0356**.
+Measured example: `code-builder@1.0.1` against `spec-planner@1.0.1` scores **0.0356**.
 
 Diagnostics: `criteria-leak-suspected`, `criteria-relayed-through-judge`,
 `criteria-out-of-band`, `criteria-leak-unanchored`.
@@ -158,7 +158,7 @@ instance, lists every reason the bump was required, which is what makes the fail
 
 `lib/core/archive/`. Content-addressed: canonical JSON, pure-TS sha256, digest. Card versions
 are **archived side by side**, never edited in place, which is what lets a page quote
-`targeted-debugger@1.1.0`'s `max_retries: 2` and know it cannot drift. When a card's meaning
+`targeted-debugger@1.1.1`'s `max_retries: 2` and know it cannot drift. When a card's meaning
 has to change, its version moves rather than its file.
 
 ---

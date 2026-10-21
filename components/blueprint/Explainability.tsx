@@ -1036,8 +1036,8 @@ function CriteriaIsolation({
           </p>
           <More summary="Why an overlap is reported and not charged">
             <p className="text-xs leading-relaxed text-dim">
-              Doc 1 §3.2: isolation is the absence of the content from the spec, and an
-              absent edge is only half of it. The comparison here is a proxy, because the
+              Isolation needs the content absent from the spec as well as the edge absent
+              from the graph. The comparison here is a proxy, because the
               acceptance criteria exist only at run time. The comparison uses
               the criteria producer&rsquo;s instructions for writing them.
             </p>

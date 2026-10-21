@@ -33,7 +33,7 @@
   },
   {
     "slug": "frontline-triage",
-    "digest": "sha256:8e227dd8d30f02dc1f1591cbdc800bc35bf2c4bb459ab78fde5dec6a4d4e5b8c",
+    "digest": "sha256:ea16da6fc2ada4bd7ade54008ee28ccbcc394d27967f6431ca5e1d9e199c5d1b",
     "autonomyClass": "supervised",
     "autonomyStatement": "6 of 7 nodes run unattended, 1 has a person in the loop. 2 of 3 control points run unattended. 0.6667 ≥ 0.50 → Supervised.",
     "securityLevel": 2,
@@ -41,7 +41,7 @@
   },
   {
     "slug": "grounded-research-desk",
-    "digest": "sha256:845ed41b13a0af93112d18117fec778c769bc1d96dfffb538f177a52eb4ddb81",
+    "digest": "sha256:5378d12cc16c2c90f1e0eef38b94a4e5f6702a77d9e8d9ad5e78004f510b66de",
     "autonomyClass": "closed-loop",
     "autonomyStatement": "8 of 8 nodes run unattended, none have a person in the loop. The graph declares 1 control point, which is one reading rather than a share. 1.00 > 0.90 → Closed-loop.",
     "securityLevel": 2,
@@ -73,7 +73,7 @@
   },
   {
     "slug": "incident-commander",
-    "digest": "sha256:31510b7bdf6eec6472a6eb431c902ad13ad59d00c15877a3ed43f03b3016a23e",
+    "digest": "sha256:5a59316f4f3163a975f7a6a5cd5829424b8afa0d3a774b59826742dcada25b6f",
     "autonomyClass": "supervised",
     "autonomyStatement": "6 of 7 nodes run unattended, 1 has a person in the loop. 2 of 3 control points run unattended. 0.6667 ≥ 0.50 → Supervised.",
     "securityLevel": 1,
@@ -97,7 +97,7 @@
   },
   {
     "slug": "pipeline-observability",
-    "digest": "sha256:c6ef312cfffd549b691b3339a155ac1e12c280fac1329d7c61fda272354b39d1",
+    "digest": "sha256:d167dfd9e8808a17cddde3f80e98951218ac1b12d21fffac7afa4df6e0e688c5",
     "autonomyClass": "closed-loop",
     "autonomyStatement": "4 of 4 nodes run unattended, none have a person in the loop. The graph declares 1 control point, which is one reading rather than a share. 1.00 > 0.90 → Closed-loop.",
     "securityLevel": 3,
@@ -121,7 +121,7 @@
   },
   {
     "slug": "starter-software-factory",
-    "digest": "sha256:121612ae5535c9502ce87f7f9e008a071c8b407b5fecb8c68b9b98765d92f9a1",
+    "digest": "sha256:2c646c82f9d092479af237065e317bec7bbc65fe901e57b8162995dd7166fe24",
     "autonomyClass": "closed-loop",
     "autonomyStatement": "5 of 5 nodes run unattended, none have a person in the loop. The graph declares 1 control point, which is one reading rather than a share. 1.00 > 0.90 → Closed-loop.",
     "securityLevel": 4,

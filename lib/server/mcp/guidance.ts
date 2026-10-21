@@ -37,8 +37,8 @@ export function instantiationSteps(input: GuidanceInput): string[] {
   const steps: string[] = [];
 
   steps.push(
-    `Write the ${paths.length} files of this answer under ${folder}, keeping each path as given: ` +
-      `${paths.join(", ")}.`,
+    `Write the ${paths.length} files of this answer under ${folder} before running anything, ` +
+      `keeping each path as given: ${paths.join(", ")}. The folder is what the person keeps.`,
   );
 
   if (readme !== undefined) {
@@ -59,8 +59,8 @@ export function instantiationSteps(input: GuidanceInput): string[] {
 
   steps.push(
     `For a pipeline Attractor can run, call export_pipeline with owner "${owner}", slug "${slug}" ` +
-      `and digest "${digest}", or run darkprint validate ${folder} and darkprint export ${folder} ` +
-      "--attractor from a checkout of the darkprint repository. Read the header the file opens with.",
+      `and digest "${digest}", or run ${NPX} validate ${folder} and ${NPX} export ${folder} ` +
+      "--attractor, which fetch the CLI from npm. Read the header the file opens with.",
   );
 
   steps.push(
@@ -76,23 +76,34 @@ export function instantiationSteps(input: GuidanceInput): string[] {
           "The files are identical whichever harness you name.",
   );
 
+  if (harness === "claude-code") {
+    steps.push(
+      "In Claude Code the Agent tool takes a model, so give each node the one nearest its card's " +
+        "`model`. A subagent's tools are narrowed only by an agent definition under " +
+        "`.claude/agents/`, so a node run without one can reach more than its card's `tools`.",
+    );
+  }
+
   return steps;
 }
 
 /**
+ * The CLI as a reader without a checkout types it. Spelled here because this module may import
+ * only the barrels `tests/server/t220/purity.test.ts` allows; `guidance.test.ts` holds it equal
+ * to the CLI's own `NPX_INVOCATION`.
+ */
+const NPX = "npx -y darkprint";
+
+/**
  * How to RUN the graph, as opposed to where to put it, and why it is not shaped by `harness`.
  *
- * These four sentences were two, and both were emitted only when the caller named a harness
- * other than `generic`. `generic` is the default, so the ordinary call — owner and slug and
- * nothing else — received neither the instruction to isolate a node nor the instruction to
- * stop at a human gate. A caller who never learned the parameter existed got the least safe
- * answer, which is the wrong way round for the one instruction that mentions irreversible
- * work.
+ * Every caller gets it, the default `generic` included, because a caller who never learns the
+ * parameter exists still has to be told to isolate each node and to stop at a human gate.
  *
  * The contract does not vary by harness because it is a property of the FORMAT: a card
- * declares its ports, its prohibitions and its retry bound, and those mean the same thing
- * whoever executes them. What a harness changes is the vocabulary for a subagent, which is
- * the instantiation notes' business above.
+ * declares its ports, its prohibitions, its retry bound and its model, and those mean the same
+ * thing whoever executes them. What a harness changes is the vocabulary for a subagent, which
+ * is the instantiation notes' business above.
  */
 export function runContract(input: GuidanceInput): string[] {
   const { humanGates } = input;
@@ -107,8 +118,11 @@ export function runContract(input: GuidanceInput): string[] {
       "isolated by intending to forget it.",
     "Hold every node to its own card. `will_not` and `cannot` are refusals the author " +
       "declared and nothing downstream enforces; a node's `tools` and `mcp` are the whole " +
-      "list it may reach for. A loop is bounded by the `max_retries` on the card it returns " +
-      "to, and running past it is a different graph.",
+      "list it may reach for, and its `model` is the one its spec was written for. A loop is " +
+      "bounded by the `max_retries` on the card it returns to, and running past it is a " +
+      "different graph.",
+    "Where you cannot give a node its card's `model` or keep it to its `tools`, say which " +
+      "nodes and how when you show the graph, so the person agrees to the run you can do.",
     gateStep(humanGates),
   ];
 }

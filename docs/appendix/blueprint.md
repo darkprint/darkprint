@@ -51,11 +51,11 @@ digraph starter_software_factory {
   rankdir=LR;
   node [shape=box, style=rounded];
 
-  planner  [card="spec-planner@1.0.0"];
-  builder  [card="code-builder@1.0.0"];
-  tester   [card="acceptance-tester@1.0.0"];
-  debugger [card="targeted-debugger@1.1.0"];
-  deployer [card="release-gate@1.0.0"];
+  planner  [card="spec-planner@1.0.1"];
+  builder  [card="code-builder@1.0.1"];
+  tester   [card="acceptance-tester@1.0.1"];
+  debugger [card="targeted-debugger@1.1.1"];
+  deployer [card="release-gate@1.0.1"];
 
   // The lesson of this blueprint is the edge that is NOT written below.
   planner  -> tester   [label="acceptance criteria"];

@@ -41,14 +41,14 @@ will_not:
 risk_markers: []
 notes: >-
   The `plan` port is deliberately not wired to `builder` in this blueprint, and the gap is the
-  lesson rather than an oversight. Doc 3 §4.1 defines `criteria-leak` over a *path* from the
+  lesson rather than an oversight. `criteria-leak` is defined over a *path* from the
   criteria producer to the node whose artefact they judge, and the analyzer reads that path at
   node level, so any edge at all from this node into an `implementation` node establishes the
   marker, whichever port it carries. The builder is therefore handed its brief when the graph is
   instantiated, and nothing leaves this node except the criteria, which go to the tester. The
-  other end of that gap is written down too: `code-builder@1.0.0` lists `acceptance-criteria`
+  other end of that gap is written down too: `code-builder@1.0.1` lists `acceptance-criteria`
   under `cannot`, so an edge from here into the builder is refused by the resolver as well as
   charged by the analyzer.
 
-version: 1.0.0
+version: 1.0.1
 author: autogen

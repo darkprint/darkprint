@@ -7,7 +7,7 @@ digraph grounded_research_desk {
 
   subgraph cluster_retrieval {
     label="retrieval strands";
-    web     [card="web-retriever@1.0.0"];
+    web     [card="web-retriever@1.0.1"];
     vectors [card="vector-recall@1.0.0"];
     code    [card="code-index-search@1.0.0"];
   }

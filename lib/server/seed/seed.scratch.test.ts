@@ -133,7 +133,7 @@ describe("runImport (AC2, AC4)", () => {
 
       const releases = await listReleases(db, bundle!.id);
       expect(releases.length, `${planned.slug}: a second run appended a release`).toBe(1);
-      expect(releases[0]!.version, planned.slug).toBe("1.1.0");
+      expect(releases[0]!.version, planned.slug).toBe("1.1.1");
       /* AC1 after the write, not only in the plan: `addRelease` recomputes the digest from
          the DOT and the card digests it was handed, so this is the stored identity rather
          than the planned one echoed back. */

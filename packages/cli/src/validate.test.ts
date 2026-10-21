@@ -12,13 +12,17 @@
    supposed to catch a CLI composing the engine its own way.
    ============================================================ */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
 import { cardRef, parseCardRef, parseDot, type BundleManifest, type CardRef } from "../../../lib/core";
 import { validateBundle, validateVocabularySource } from "../../../lib/server/engine";
+import { collectingIo } from "./io";
 import { readBundleDirectory } from "./layout";
+import { runCli } from "./run";
 import { validate } from "./validate";
 
 const SLUGS = readdirSync("content/blueprints").sort();
@@ -108,5 +112,53 @@ describe("AC1 — the CLI and the server disagree about nothing", () => {
        until a manifest stopped carrying one; `slug` is derived from the directory name and
        is the member a reader would notice missing. */
     expect(read.manifest.slug).toBe(SLUGS[0]);
+  });
+});
+
+/* --------------------- what `darkprint validate` prints --------------------- */
+
+/** What the verb wrote to stdout for `dir`, and its exit code. */
+async function validateOutput(dir: string): Promise<{ code: number; out: string }> {
+  const io = collectingIo();
+  const code = await runCli(["validate", dir], io);
+  return { code, out: io.stdout.join("") };
+}
+
+describe("`darkprint validate` prints the scorecard a release of the folder would carry", () => {
+  /* The expected lines are the scorecards production stored when it published these two
+     releases, typed in rather than recomputed, so the engine is not checked against itself. */
+  it.each([
+    [
+      "starter-software-factory",
+      "scorecard:\n" +
+        "  autonomy closed-loop\n" +
+        "  security level 4\n" +
+        "  human gates none\n" +
+        "  phases covered planning, implementation, testing, debugging, deployment\n",
+    ],
+    [
+      "frontline-triage",
+      "scorecard:\n" +
+        "  autonomy supervised\n" +
+        "  security level 2\n" +
+        "  human gates escalate\n" +
+        "  phases covered implementation, testing, deployment; missing planning, debugging\n",
+    ],
+  ])("%s", async (slug, scorecard) => {
+    const { code, out } = await validateOutput(`public/bundles/${slug}`);
+    expect(code).toBe(0);
+    expect(out.endsWith(scorecard), out).toBe(true);
+  });
+
+  it("prints none for a folder an error finding keeps from being published", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "darkprint-validate-"));
+    try {
+      writeFileSync(join(dir, "topology.dot"), 'digraph g { a [card="absent@1.0.0"]; }\n');
+      const { code, out } = await validateOutput(dir);
+      expect(code, out).toBe(1);
+      expect(out).not.toContain("scorecard");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

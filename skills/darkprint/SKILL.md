@@ -598,7 +598,8 @@ Walk `references/preflight.md` first, so you already know what the validator wil
 run it. Three ways, and you take the first that is available:
 
 **a. The CLI.** `command -v darkprint` answers; then `darkprint validate <slug>` prints every
-finding with its code and exits 1 only when one of them is an error. When it does not answer
+finding with its code and exits 1 only when one of them is an error. When none is, it ends with
+the scorecard, so check the two figures you predicted against it. When it does not answer
 and the machine has Node and a network, `npx -y darkprint validate <slug>` runs the same
 check: npx fetches the `darkprint` package from npm on the first run and keeps it in its
 cache, and nothing else is installed. Say that in one line before you run it, because it is a

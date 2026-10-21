@@ -203,10 +203,25 @@ function PartialGraph({
   );
 }
 
-export function DraftPanel({ draft, liveUrl }: { draft: LiveDraft; liveUrl: string }) {
+/**
+ * A draft that carries no topology yet. The agent has answered, and the header above already
+ * shows its task, so asking the reader to paste the page address again would be wrong.
+ */
+function NoGraphYet() {
+  return (
+    <section className="panel flex flex-col gap-3 p-5" aria-label="No graph yet">
+      <PanelHeading>No graph yet</PanelHeading>
+      <p className="text-sm leading-relaxed text-muted">
+        The graph appears here once your agent drafts its first node.
+      </p>
+    </section>
+  );
+}
+
+export function DraftPanel({ draft }: { draft: LiveDraft }) {
   const picture = useMemo(() => pictureOf(draft), [draft]);
 
-  if (picture.kind === "empty") return <LiveWaiting liveUrl={liveUrl} />;
+  if (picture.kind === "empty") return <NoGraphYet />;
 
   return (
     <div className="flex flex-col gap-5">
@@ -432,7 +447,7 @@ export function LiveBoardView({
       ) : (
         <Fragment>
           <LiveHeader draft={state.record.draft} />
-          <DraftPanel draft={state.record.draft} liveUrl={liveUrl} />
+          <DraftPanel draft={state.record.draft} />
           {state.record.draft.hits !== undefined && <RegistryHits hits={state.record.draft.hits} />}
           <NextStep draft={state.record.draft} liveUrl={liveUrl} />
         </Fragment>

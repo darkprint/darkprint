@@ -381,7 +381,7 @@ Seven tools (`packages/mcp/src/definitions.ts`), the same table on both transpor
 | --- | --- |
 | `find_blueprints` | ranked hits for a task in prose: `ref` (`owner/slug`), author, current digest, score, similarity, evidence, node count, human-gate ids, autonomy class, security level, phases; `encoder` and `ordered` on the response. Narrowed by `phase`, `autonomy`, `gates` and `dark_factory`, which are passed to the searcher rather than applied to its answer, so a filter plus a limit cannot under-report once the archive passes `MAX_HITS`; `include_forks` off by default |
 | `find_cards` | ranked cards, one per id: `ref` (`id@version`), digest, name, type, action, phases, tools, risk markers, `usedIn`, score, similarity, evidence; `encoder` and `ordered` on the response |
-| `get_blueprint` | every file of one release, its manifest, scorecard, provenance, numbered instantiation notes for `claude-code`, `codex` or `generic`, and `run`: the contract for executing the graph, which does NOT vary by harness and is returned whether or not one is named. `run` says to get the person's agreement against the scorecard first, to give each node its own context and only its declared inputs, to honour `will_not`, `cannot`, `tools` and `mcp`, to bound a loop by `max_retries`, and to stop at every human gate. Held by `lib/server/mcp/guidance.test.ts`, which exists because both safety sentences were once emitted only when a caller named a non-default harness. The current release without `digest` |
+| `get_blueprint` | every file of one release, its manifest, scorecard, provenance, numbered instantiation notes for `claude-code`, `codex` or `generic`, and `run`: the contract for executing the graph, which does NOT vary by harness and is returned whether or not one is named. `run` says to get the person's agreement against the scorecard first, to give each node its own context and only its declared inputs, to honour `will_not`, `cannot`, `tools`, `mcp` and `model`, to name before agreement any node it cannot hold to its `tools` or `model`, to bound a loop by `max_retries`, and to stop at every human gate. The `claude-code` notes add that the Agent tool takes a model and that only an agent definition under `.claude/agents/` narrows a subagent's tools. Held by `lib/server/mcp/guidance.test.ts`, which exists because both safety sentences were once emitted only when a caller named a non-default harness. The current release without `digest` |
 | `read_card` | one card version as published, verbatim YAML |
 | `inspect_provenance` | who published a blueprint, what it was forked from, every release with version and digest |
 | `fetch_release` | the file names of one exact release by digest |
@@ -431,12 +431,12 @@ with `DARKPRINT_API_KEY` as a bearer when set. The package is named `darkprint`,
 | Verb | Does |
 | --- | --- |
 | `clone (<owner>/<slug> [--version <v> \| --digest <d>] \| <id>@<version>) [--out <dir>]` | fetches a release into a directory, byte for byte; given a card reference, writes that one card as `cards/<id>@<version>.yaml` under `--out` (the cwd by default) through `/api/files/cards/` |
-| `validate [<dir>]` | runs the bundle checks offline; exit 1 only on an error finding |
+| `validate [<dir>]` | runs the bundle checks offline and, when no finding is an error, prints the scorecard; exit 1 only on an error finding |
 | `export [<dir>] --attractor` | writes Attractor DOT on stdout, findings on stderr |
 | `import <pipeline.dot> --as <handle> --out <dir>` | reads an Attractor pipeline into a draft bundle on disk |
 | `bump [<dir>] --declare <version> --target <owner>/<slug>` | checks a declared version against what changed since the last release; writes nothing |
 | `report <run-dir> --target <owner>/<slug> --cost <units>` | posts a finished Attractor run to `/api/blueprints/<owner>/<slug>/runs` |
-| `skill install [--codex] [--dir <parent>]` | copies the DarkPrint skill the package carries into `~/.claude/skills/darkprint` (Claude Code), `~/.agents/skills/darkprint` (`--codex`) or `<parent>/skills/darkprint`, replacing an earlier copy; prints the destination and `metadata.version` from the frontmatter; the packaged tree is found beside `dist/`, never from the cwd |
+| `skill install [--codex] [--dir <parent>]` | copies the DarkPrint skill the package carries into `~/.claude/skills/darkprint` (Claude Code), `~/.agents/skills/darkprint` (`--codex`) or `<parent>/skills/darkprint`, replacing an earlier copy; prints the destination, `metadata.version` from the frontmatter and what to ask a new session; the packaged tree is found beside `dist/`, never from the cwd |
 | `mcp` | serves the registry over MCP on stdio |
 
 Environment: `DARKPRINT_URL` (registry base, default `https://www.darkprint.io`),
@@ -536,10 +536,10 @@ publish example names the key `$DARKPRINT_KEY` in the author's shell; the CLI re
 
 `docker compose up -d` starts `pgvector/pgvector:pg16` on 5432 (user, password and database
 `darkprint`) and MinIO on 9000 (console 9001) with the bucket `darkprint`. Then `cp .env.example
-.env.local`, `npm run db:migrate`, `npm run seed:import` (publishes the ten `content/`
-blueprints under the handle `autogen` at version 1.1.0 through the same `publish()` the site
+.env.local`, `npm run db:migrate`, `npm run seed:import` (publishes the sixteen `content/`
+blueprints under the handle `autogen` at version 1.1.1 through the same `publish()` the site
 uses, creating that account on the `github_id` sentinel `0`; a database already holding a slug
-under `autogen` at 1.1.0 with a different digest refuses the import, and one still holding an
+under `autogen` at 1.1.1 with a different digest refuses the import, and one still holding an
 earlier import's card versions under another account stops at the first card whose bytes
 differ, naming it), `npm run dev`. Three operator scripts act as an account through the
 accounts and lifecycle barrels: `npm run account:rename -- --from <handle> --to <handle>

@@ -4,7 +4,7 @@ The canonical five-node factory, plan, build, test, debug, release, and the one 
 
 ```
 blueprint      starter-software-factory
-bundle digest  sha256:121612ae5535c9502ce87f7f9e008a071c8b407b5fecb8c68b9b98765d92f9a1
+bundle digest  sha256:2c646c82f9d092479af237065e317bec7bbc65fe901e57b8162995dd7166fe24
 nodes          5
 cards pinned   5
 ```
@@ -83,11 +83,11 @@ before you leave one of these unset:
 
 | node | card |
 | --- | --- |
-| `planner` | `spec-planner@1.0.0` |
-| `builder` | `code-builder@1.0.0` |
-| `tester` | `acceptance-tester@1.0.0` |
-| `debugger` | `targeted-debugger@1.1.0` |
-| `deployer` | `release-gate@1.0.0` |
+| `planner` | `spec-planner@1.0.1` |
+| `builder` | `code-builder@1.0.1` |
+| `tester` | `acceptance-tester@1.0.1` |
+| `debugger` | `targeted-debugger@1.1.1` |
+| `deployer` | `release-gate@1.0.1` |
 
 ---
 

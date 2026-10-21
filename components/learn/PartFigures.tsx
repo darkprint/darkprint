@@ -739,7 +739,7 @@ function StagePlate({ card }: { card: NodeCard }) {
      `acceptance-criteria` but ONLY for the home page."
 
      The pair the band prints is `will_not[0]` in words and `cannot[0]` as the term.
-     `code-builder@1.0.0` has `acceptance-criteria` under `cannot` and "read the checks the
+     `code-builder@1.0.1` has `acceptance-criteria` under `cannot` and "read the checks the
      work will be run against" under `will_not`, so the evocative name is already in the
      file and nothing here is invented.
 

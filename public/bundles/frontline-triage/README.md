@@ -4,7 +4,7 @@ Classifies inbound tickets, auto-resolves the simple ones with a KB lookup, QAs 
 
 ```
 blueprint      frontline-triage
-bundle digest  sha256:8e227dd8d30f02dc1f1591cbdc800bc35bf2c4bb459ab78fde5dec6a4d4e5b8c
+bundle digest  sha256:ea16da6fc2ada4bd7ade54008ee28ccbcc394d27967f6431ca5e1d9e199c5d1b
 nodes          7
 cards pinned   7
 local terms    lupo/pii-handling
@@ -90,8 +90,8 @@ before you leave one of these unset:
 | `classify` | `intent-router@1.1.0` |
 | `autoresolve` | `resolution-composer@1.0.0` |
 | `kb` | `kb-resolver@1.0.0` |
-| `qa` | `reply-qa-check@1.0.0` |
-| `send` | `reply-dispatch@1.0.0` |
+| `qa` | `reply-qa-check@1.0.1` |
+| `send` | `reply-dispatch@1.0.1` |
 | `escalate` | `confidence-escalation@1.0.0` |
 
 ---

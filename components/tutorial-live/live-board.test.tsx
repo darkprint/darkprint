@@ -30,7 +30,9 @@ import { MCP_CLIENTS } from "@/components/mcp/clients";
 import { pinnedRefs } from "@/components/panes/build";
 import { plainText } from "@/components/ui/visible-text";
 
-import { enrichPrompt, livePageUrl, pictureOf } from "./draft";
+import { ENRICH_PROMPT, withLiveUrl } from "@/components/tutorial/prompts";
+
+import { ENRICH_FOLDER, enrichPrompt, livePageUrl, pictureOf } from "./draft";
 
 /** The address the board prints for its own page; any origin the reader is on works. */
 const LIVE_URL = livePageUrl("https://www.darkprint.io", "b".repeat(32));
@@ -78,9 +80,9 @@ function starterDraft(phase: LivePhase): LiveDraft {
 }
 
 const PARTIAL_DOT = `digraph price_watch {
-  planner [card="spec-planner@1.0.0"];
-  builder [card="code-builder@1.0.0"];
-  tester  [card="acceptance-tester@1.0.0"];
+  planner [card="spec-planner@1.0.1"];
+  builder [card="code-builder@1.0.1"];
+  tester  [card="acceptance-tester@1.0.1"];
   planner -> tester [label="acceptance criteria"];
   builder -> tester [label="build"];
 }
@@ -94,7 +96,7 @@ function partialDraft(phase: LivePhase = "nodes"): LiveDraft {
     bundle: {
       manifest: { slug: "price-watch", title: "Price watch", summary: "Prices, daily.", tags: [] },
       dot: PARTIAL_DOT,
-      cardFiles: { "cards/spec-planner@1.0.0.yaml": card("spec-planner@1.0.0") },
+      cardFiles: { "cards/spec-planner@1.0.1.yaml": card("spec-planner@1.0.1") },
     },
   };
 }
@@ -160,9 +162,9 @@ describe("what the engine resolves from each draft", () => {
     if (picture.kind !== "partial") return;
     expect(picture.parsed).toBe(true);
     expect(picture.nodes).toEqual([
-      { id: "planner", ref: "spec-planner@1.0.0", carded: true },
-      { id: "builder", ref: "code-builder@1.0.0", carded: false },
-      { id: "tester", ref: "acceptance-tester@1.0.0", carded: false },
+      { id: "planner", ref: "spec-planner@1.0.1", carded: true },
+      { id: "builder", ref: "code-builder@1.0.1", carded: false },
+      { id: "tester", ref: "acceptance-tester@1.0.1", carded: false },
     ]);
     expect(picture.edges).toEqual([
       { source: "planner", target: "tester", label: "acceptance criteria" },
@@ -179,7 +181,7 @@ describe("what the engine resolves from each draft", () => {
     if (picture.kind !== "partial") return;
     expect(picture.nodes.map((node) => node.id)).toEqual(["planner", "builder", "tester", "writer"]);
     expect(picture.nodes.at(-1)).toEqual({ id: "writer", carded: false });
-    const shown = plainText(html(createElement(DraftPanel, { draft, liveUrl: livePageUrl("https://www.darkprint.io", TOKEN) })));
+    const shown = plainText(html(createElement(DraftPanel, { draft })));
     expect(shown).toContain("writer no card pinned card pending");
   });
 
@@ -226,14 +228,14 @@ describe("the phase strip", () => {
 
 describe("the graph panel", () => {
   it("draws a resolving draft with the blueprint page's own panel", () => {
-    const markup = html(createElement(DraftPanel, { draft: starterDraft("written"), liveUrl: livePageUrl("https://www.darkprint.io", TOKEN) }));
+    const markup = html(createElement(DraftPanel, { draft: starterDraft("written") }));
     expect(markup).toContain('aria-label="The graph and the card skeleton"');
     expect(plainText(markup)).toContain("Jump to a node");
     expect(plainText(markup)).not.toContain("card pending");
   });
 
   it("lists a partial draft's pending nodes and what is still to settle", () => {
-    const markup = html(createElement(DraftPanel, { draft: partialDraft(), liveUrl: livePageUrl("https://www.darkprint.io", TOKEN) }));
+    const markup = html(createElement(DraftPanel, { draft: partialDraft() }));
     const text = plainText(markup);
     expect(text).toContain("The graph so far");
     expect(text).toContain("3 nodes · 2 edges · 2 cards pending");
@@ -248,13 +250,17 @@ describe("the graph panel", () => {
     expect(markup).not.toContain('aria-label="The graph and the card skeleton"');
   });
 
-  it("never shows an empty panel: an empty topology waits, with the page address", () => {
+  /* The agent has posted by now, so the panel says the graph is still to come rather than
+     waiting for an answer that already arrived and asking for the address to be pasted. */
+  it("never shows an empty panel: an empty topology says no graph yet, and waits for nothing", () => {
     const empty = partialDraft("need");
     empty.bundle.dot = "";
-    const shown = text(html(createElement(DraftPanel, { draft: empty, liveUrl: livePageUrl("https://www.darkprint.io", TOKEN) })));
-    expect(shown).toContain("Waiting for your agent's first answer");
-    expect(shown).toContain(livePageUrl("https://www.darkprint.io", TOKEN));
-    expect(shown).toContain(TOKEN);
+    const shown = text(html(createElement(DraftPanel, { draft: empty })));
+    expect(shown).toContain("No graph yet");
+    expect(shown).toContain("once your agent drafts its first node");
+    expect(shown).not.toContain("Waiting for your agent");
+    expect(shown).not.toContain("Paste it into the prompt");
+    expect(shown).not.toContain(TOKEN);
   });
 });
 
@@ -298,6 +304,13 @@ describe("the next step, per phase", () => {
     expect(text).toContain(enrichPrompt("starter-software-factory", LIVE_URL));
     expect(text).toContain("./starter-software-factory/");
     expect(text).toContain("the DarkPrint skill's enrich mode");
+  });
+
+  it("asks for what the tutorial's enrich prompt asks for, with the reader's folder named", () => {
+    // The live page once added "a trace per step" to its copy, which a graph whose steps
+    // follow one outgoing edge each cannot wire; the agent had to talk the reader out of it.
+    const prompt = enrichPrompt("card-price-watch", LIVE_URL);
+    expect(prompt.replace("./card-price-watch/", ENRICH_FOLDER)).toBe(withLiveUrl(ENRICH_PROMPT, LIVE_URL));
   });
 
   it("points at sign-in and the publish page at the enriched phase", () => {
@@ -356,6 +369,15 @@ describe("the board", () => {
     const shown = text(html(createElement(LiveBoardView, { state: INITIAL, token: TOKEN, origin: "https://www.darkprint.io" })));
     expect(shown).toContain("Waiting for your agent's first answer");
     expect(shown).toContain(TOKEN);
+  });
+
+  it("stops waiting once a record arrives, even before it carries a graph", () => {
+    const draft = partialDraft("need");
+    draft.bundle.dot = "";
+    const shown = text(html(createElement(LiveBoardView, { state: live(draft), token: TOKEN, origin: "https://www.darkprint.io" })));
+    expect(shown).toContain(draft.task ?? "");
+    expect(shown).toContain("No graph yet");
+    expect(shown).not.toContain("Waiting for your agent");
   });
 
   it("shows the expired state on its own, with the way to a new page", () => {

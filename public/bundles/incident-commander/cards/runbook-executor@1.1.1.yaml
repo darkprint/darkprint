@@ -52,7 +52,7 @@ notes: >-
   written `max_iterations: 1`, and engine spec §2.6 counts the attempts that follow the initial
   execution, so a runner read that as one run plus one retry and would have re-applied exactly the
   mitigation this card refuses to re-apply. Zero is a declared cap and not an absent one:
-  Attractor's own default for `max_retries` is 0, and doc 3 §4.1's marker reads it as a bound.
+  Attractor's own default for `max_retries` is 0, and the `unbounded-loop` marker reads it as a bound.
 
-version: 1.1.0
+version: 1.1.1
 author: autogen

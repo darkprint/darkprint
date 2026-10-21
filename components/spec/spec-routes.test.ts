@@ -376,7 +376,7 @@ describe("the figures each layer page opens with", () => {
       "utf8",
     );
     expect(section).toContain("cardSource(");
-    expect(section).toContain("code-builder@1.0.0");
+    expect(section).toContain("code-builder@1.0.1");
   });
 
   /* The lattice case is gone with the drawing it guarded.

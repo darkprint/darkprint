@@ -76,7 +76,7 @@ export interface ScoredGraph {
  * The error-severity half of what the engine said about a graph.
  *
  * Exists because the leaked variant stopped being a graph that merely scores badly.
- * `code-builder@1.0.0` declares `cannot: [acceptance-criteria]`, the added edge carries
+ * `code-builder@1.0.1` declares `cannot: [acceptance-criteria]`, the added edge carries
  * that type, and `bundle/prohibition-violated` is an error: the bundle does not resolve.
  * `loadBundle` still returns an analysis, because doc 1 §2 resolves as far as it can and a
  * partial score with the missing pieces named is more use than nothing — but every other

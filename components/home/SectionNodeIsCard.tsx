@@ -7,7 +7,7 @@
    its interface and the one thing that may never arrive. One figure
    for one idea, drawn the same way wherever the idea appears.
 
-   `code-builder@1.0.0`, off the archive, because its plate ends on
+   `code-builder@1.0.1`, off the archive, because its plate ends on
    `cannot: acceptance-criteria`, and the resolver really does enforce
    that line. `/spec/card` opens the same document in full, so the two
    beats are one card seen twice rather than two examples.
@@ -23,7 +23,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { BeatCaption } from "./BeatCaption";
 
 export function SectionNodeIsCard() {
-  const card = getNodeCard("code-builder", "1.0.0")?.card;
+  const card = getNodeCard("code-builder", "1.0.1")?.card;
   if (card === undefined) return null;
 
   return (

@@ -106,8 +106,8 @@ function graphFigures(): React.ReactElement {
 
 /** The card beat's stage, which draws the node strip in its wide and its narrow frame. */
 function cardStage(): React.ReactElement {
-  const card = getNodeCard("code-builder", "1.0.0")?.card;
-  if (card === undefined) throw new Error("code-builder@1.0.0 is not in the archive");
+  const card = getNodeCard("code-builder", "1.0.1")?.card;
+  if (card === undefined) throw new Error("code-builder@1.0.1 is not in the archive");
   return createElement(CardStackFigure, { card, nodes: 5, size: "stage" });
 }
 
@@ -439,6 +439,6 @@ describe("the figures that read the archive got real numbers", () => {
   });
 
   it("hands the lifecycle strip the published card", () => {
-    expect(getNodeCard("code-builder", "1.0.0")).toBeDefined();
+    expect(getNodeCard("code-builder", "1.0.1")).toBeDefined();
   });
 });

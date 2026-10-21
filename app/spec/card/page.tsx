@@ -313,7 +313,7 @@ export default function SpecCardPage() {
       </header>
 
       {/* The seven fields that decide a node's reach, above the annotated card: fields, then
-          the file. Every value is read off `code-builder@1.0.0`, the card the rest of the
+          the file. Every value is read off `code-builder@1.0.1`, the card the rest of the
           site opens with, so the figure cannot end up teaching a schema nobody ships. */}
       {reachCard !== undefined && (
         <section id="card-reach" className="scroll-mt-24 border-b border-line bg-void py-12 sm:py-16">

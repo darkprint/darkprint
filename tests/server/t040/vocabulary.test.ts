@@ -39,8 +39,8 @@ import {
 
 /** The two cards in `frontline-triage` whose `risk_markers` name the local term. Measured. */
 const CARDS_NAMING_THE_TERM = [
-  "cards/reply-dispatch@1.0.0.yaml",
-  "cards/reply-qa-check@1.0.0.yaml",
+  "cards/reply-dispatch@1.0.1.yaml",
+  "cards/reply-qa-check@1.0.1.yaml",
 ];
 
 describe("AC6: a card naming a term the supplied vocabulary lacks", () => {

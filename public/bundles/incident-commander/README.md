@@ -4,7 +4,7 @@ Triages alerts, routes to the right runbook, drafts a mitigation, QAs it against
 
 ```
 blueprint      incident-commander
-bundle digest  sha256:31510b7bdf6eec6472a6eb431c902ad13ad59d00c15877a3ed43f03b3016a23e
+bundle digest  sha256:5a59316f4f3163a975f7a6a5cd5829424b8afa0d3a774b59826742dcada25b6f
 nodes          7
 cards pinned   7
 ```
@@ -88,8 +88,8 @@ before you leave one of these unset:
 | `classify` | `intent-router@2.1.0` |
 | `autoresolve` | `resolution-composer@1.0.0` |
 | `kb` | `runbook-resolver@1.0.0` |
-| `qa` | `blast-radius-check@1.0.0` |
-| `send` | `runbook-executor@1.1.0` |
+| `qa` | `blast-radius-check@1.0.1` |
+| `send` | `runbook-executor@1.1.1` |
 | `escalate` | `confidence-escalation@1.0.0` |
 
 ---

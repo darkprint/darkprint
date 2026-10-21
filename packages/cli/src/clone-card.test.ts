@@ -26,7 +26,7 @@ afterAll(() => {
   rmSync(scratch, { recursive: true, force: true });
 });
 
-const REF = "spec-planner@1.0.0";
+const REF = "spec-planner@1.0.1";
 /* ABSOLUTE, because one cell chdirs to test `--out`'s default. */
 const CARD = resolve("content", "cards", `${REF}.yaml`);
 const NAMESPACED = "berti/memory-probe@1.0.0";
@@ -58,7 +58,7 @@ describe("clone <id>@<version>", () => {
     expect(result.kind).toBe("card");
     expect(result.root).toBe(out);
     expect(result.files).toEqual([`cards/${REF}.yaml`]);
-    expect(result.version).toBe("1.0.0");
+    expect(result.version).toBe("1.0.1");
     /* A card is pinned by its version; there is no release digest to report. */
     expect(result.digest).toBeUndefined();
     expect(readFileSync(join(out, "cards", `${REF}.yaml`), "utf8")).toBe(readFileSync(CARD, "utf8"));

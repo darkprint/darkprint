@@ -4,7 +4,7 @@ Splits a question across web, vector and code search, synthesizes one answer, an
 
 ```
 blueprint      grounded-research-desk
-bundle digest  sha256:845ed41b13a0af93112d18117fec778c769bc1d96dfffb538f177a52eb4ddb81
+bundle digest  sha256:5378d12cc16c2c90f1e0eef38b94a4e5f6702a77d9e8d9ad5e78004f510b66de
 nodes          8
 cards pinned   8
 ```
@@ -88,7 +88,7 @@ before you leave one of these unset:
 | --- | --- |
 | `question` | `question-intake@1.0.0` |
 | `plan` | `retrieval-planner@1.0.0` |
-| `web` | `web-retriever@1.0.0` |
+| `web` | `web-retriever@1.0.1` |
 | `vectors` | `vector-recall@1.0.0` |
 | `code` | `code-index-search@1.0.0` |
 | `synth` | `evidence-synthesizer@1.0.0` |

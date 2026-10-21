@@ -14,7 +14,7 @@
    be *text* here, so the listing that ends up in
    `.next/server/app/index.html` is the finished one.
 
-   `code-builder@1.0.0` rather than a written-for-the-page example,
+   `code-builder@1.0.1` rather than a written-for-the-page example,
    because the spec asks for a card the site can be held to: it is
    the one carrying `cannot: [acceptance-criteria]` next to a
    `will_not` nothing checks, the resolver enforces the first of
@@ -71,7 +71,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
 import { CardBreakdown } from "./nodecard/CardBreakdown";
 
-const CARD_REF = "code-builder@1.0.0";
+const CARD_REF = "code-builder@1.0.1";
 
 export function SectionNodeCard() {
   const source = cardSource(CARD_REF);

@@ -47,8 +47,8 @@ notes: >-
   This is where the customer's data leaves the process, so `lupo/pii-handling` stays on the card
   even though the QA gate upstream is what stops an unapproved draft ever reaching it. It is also
   where the run stops being reversible: a reply posted to a customer thread cannot be unsent, which
-  is `irreversible-action` in doc 3 §4's own words. The core vocabulary has no email or ticketing
+  is what `irreversible-action` names. The core vocabulary has no email or ticketing
   capability, so `messaging` plus `http-fetch` is the closest honest pair.
 
-version: 1.0.0
+version: 1.0.1
 author: autogen

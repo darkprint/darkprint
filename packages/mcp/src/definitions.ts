@@ -46,7 +46,9 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     description:
       "Search the public registry for blueprints that fit a task described in your own words. " +
       "Write a sentence or two about the work and its constraints; prose finds more than " +
-      "keywords. Results come back ranked by how close each blueprint's document is to the " +
+      "keywords. Blueprints are indexed by the steps their nodes take, so name the steps the " +
+      "work needs and leave the product's own details out of `task`: to build a tool, say " +
+      "plan, write code, test, fix failures and release. Results come back ranked by how close each blueprint's document is to the " +
       "task, best first: the cosine similarity between the two plus a small bonus for words " +
       "that match. Each hit carries its `ref`, written `owner/slug`, its `author`, the `digest` of its " +
       "current release, a `score`, the `similarity` when the vector channel was available, the " +

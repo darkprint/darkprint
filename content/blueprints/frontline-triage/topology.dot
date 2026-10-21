@@ -6,8 +6,8 @@ digraph frontline_triage {
   classify    [card="intent-router@1.1.0"];
   autoresolve [card="resolution-composer@1.0.0"];
   kb          [card="kb-resolver@1.0.0"];
-  qa          [card="reply-qa-check@1.0.0"];
-  send        [card="reply-dispatch@1.0.0"];
+  qa          [card="reply-qa-check@1.0.1"];
+  send        [card="reply-dispatch@1.0.1"];
   escalate    [card="confidence-escalation@1.0.0"];
 
   ticket -> classify;
@@ -27,7 +27,7 @@ digraph frontline_triage {
   // and reaches `autoresolve` through it, which leaves both nodes reachable. Putting the
   // negation on `autoresolve` instead would have reproduced the defect exactly.
   //
-  // `intent-router@1.1.0` is what writes the key (§11.0 Q17). Its spec now tells the agent
+  // `intent-router@1.1.0` is what writes the key. Its spec now tells the agent
   // to put `lane` in `context_updates`, which is Appendix C's field for a node handing a
   // key to the run context, so this fork reads a value the run actually produced. The
   // negation arm stays where it is: a spec instructs an agent and cannot compel one, so

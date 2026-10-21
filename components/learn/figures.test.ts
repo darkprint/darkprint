@@ -127,7 +127,7 @@ describe("Learn figures", () => {
  * phone's column.
  */
 describe("the card beat's node strip", () => {
-  const card = getNodeCard("code-builder", "1.0.0")?.card;
+  const card = getNodeCard("code-builder", "1.0.1")?.card;
   const STRIPS = [
     { name: "wide frame at the switch", viewBox: STRIP.width, css: STRIP_SWITCH_REM * 16 },
     {
@@ -145,7 +145,7 @@ describe("the card beat's node strip", () => {
 
   for (const strip of STRIPS) {
     it(`writes no word below the legibility floor: ${strip.name}`, () => {
-      if (card === undefined) throw new Error("no code-builder@1.0.0 card");
+      if (card === undefined) throw new Error("no code-builder@1.0.1 card");
       const markup = renderToStaticMarkup(
         createElement(CardStackFigure, { card, nodes: 5, size: "stage" }),
       );

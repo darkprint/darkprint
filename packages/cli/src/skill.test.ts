@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 
+import { DESIGN_PROMPT } from "../../../components/tutorial/prompts";
 import { SKILL_ARCHIVE_ROOT } from "../../../lib/skill";
 import { CliError } from "./errors";
 import { collectingIo } from "./io";
@@ -195,6 +196,16 @@ describe("through runCli", () => {
     const declared = readFileSync(join(SOURCE, "SKILL.md"), "utf8").match(/^\s+version:\s*"?([^"\n]+)"?\s*$/m)?.[1];
     expect(printed).toContain(`the DarkPrint skill ${declared}`);
     expect(io.stderr.join("")).toBe("");
+  });
+
+  /* The installer is the last thing a new author reads before the agent, and a session that
+     starts after it is the one sure to find the skill, so the line says both. */
+  it("ends with what to do next: a new session, and the words to ask it in", async () => {
+    const io = collectingIo();
+    expect(await runCli(["skill", "install", "--dir", join(scratch, "next-step")], io)).toBe(0);
+    const last = io.stdout.join("").trimEnd().split("\n").at(-1) ?? "";
+    expect(last).toContain("new session");
+    expect(last).toContain(DESIGN_PROMPT.slice(0, DESIGN_PROMPT.indexOf(":") + 1));
   });
 
   /**

@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 
 import CapabilitiesPage, { metadata as capabilitiesMetadata } from "@/app/capabilities/page";
 import McpPage, { metadata as mcpMetadata } from "@/app/mcp/page";
-import { MCP_CLIENTS, MCP_ENDPOINT_URL } from "@/components/mcp/clients";
+import { MCP_CLIENTS, MCP_ENDPOINT_URL, MCP_FIRST_PROMPT } from "@/components/mcp/clients";
 import { plainText } from "@/components/ui/visible-text";
 import { MCP_CONNECT_COMMAND } from "@/lib/mcp";
 import { DEFAULT_BASE_URL } from "@/packages/mcp/src/registry";
@@ -125,5 +125,14 @@ describe("the connection command", () => {
     const stdio = MCP_PAGE.indexOf("npx -y darkprint mcp");
     expect(remote).toBeGreaterThan(-1);
     expect(stdio).toBeGreaterThan(remote);
+  });
+});
+
+/* A reader who has just connected the server needs the next sentence to type, and needs to
+   know the run happens in their own agent rather than here. */
+describe("what /mcp says to do once the server is connected", () => {
+  it("prints the first prompt and says the agent runs the blueprint", () => {
+    expect(MCP_PAGE).toContain(MCP_FIRST_PROMPT.toLowerCase());
+    expect(MCP_PAGE).toContain("your agent runs the blueprint on your machine");
   });
 });

@@ -579,7 +579,7 @@ function checkHandlerOverride(dot: DotGraph, report: Reporter): void {
     report.report(
       "attractor/reserved-attribute",
       `Node \`${stmt.id}\` carries a \`type\` attribute, which Attractor reads as a handler override.`,
-      "DarkPrint's node type is an ontology term in the card (doc 3 §3), not a DOT attribute. Remove `type` from the DOT; the shape is what selects the handler.",
+      "DarkPrint's node type is an ontology term in the card, not a DOT attribute. Remove `type` from the DOT; the shape is what selects the handler.",
       { nodeId: stmt.id, line: stmt.line, column: stmt.column },
     );
   }

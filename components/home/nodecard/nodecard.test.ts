@@ -36,7 +36,7 @@ import { NODE_CARD_ANNOTATIONS, resolveAnnotations } from "./annotations";
 import { keyBlock, keySpan, tokenizeYaml } from "./yaml";
 
 const CARD = readFileSync(
-  join(process.cwd(), "content/cards/code-builder@1.0.0.yaml"),
+  join(process.cwd(), "content/cards/code-builder@1.0.1.yaml"),
   "utf8",
 ).trimEnd();
 

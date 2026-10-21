@@ -107,7 +107,7 @@ export const PROFILES: Record<string, Profile> = {
     validated: 4,
     pinned: [
       { kind: "blueprint", slug: "starter-software-factory" },
-      { kind: "node", ref: "spec-planner@1.0.0" },
+      { kind: "node", ref: "spec-planner@1.0.1" },
     ],
   },
   lupo: {
