@@ -322,9 +322,10 @@ describe("T100 AC3 — the stored digest is the engine's over the submitted byte
        Moved once more when the CORPUS moved rather than its bytes. `resolvingCorpus` takes
        the smallest bundle by node count, and `pipeline-observability` has four nodes to the
        starter's five, so the archive's newest bundle is the corpus now and the starter is
-       `secondCorpus`. The starter still hashes to `sha256:121612ae…f9a1`, and the value below
-       is what `public/bundles/pipeline-observability/README.md` reports. */
-    ).toBe("sha256:c6ef312cfffd549b691b3339a155ac1e12c280fac1329d7c61fda272354b39d1");
+       `secondCorpus`. The value below is what `public/bundles/pipeline-observability/README.md`
+       reports, and a seed import of the archive stores the same digest; it moved when the
+       gate's card went to `anomaly-gate@1.1.0`. */
+    ).toBe("sha256:d167dfd9e8808a17cddde3f80e98951218ac1b12d21fffac7afa4df6e0e688c5");
   });
 });
 

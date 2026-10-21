@@ -39,7 +39,7 @@ digraph pipeline_observability {
 
   tracer     [card="step-tracer@1.0.0"];
   summariser [card="run-summariser@1.0.0"];
-  gate       [card="anomaly-gate@1.0.0"];
+  gate       [card="anomaly-gate@1.1.0"];
   dispatch   [card="alert-dispatch@1.0.0"];
 
   tracer -> summariser [label="trace records"];

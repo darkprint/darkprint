@@ -11,12 +11,13 @@ spec: >-
   step named in it needs a record count and a failure count, and every step past the first
   needs a timing. When something is missing, emit on `rejected` what is missing and for which
   step, and judge nothing on that pass. When the report is whole, compare each step's failures
-  with `failures_per_step` and its timing with `duration_ms`; the `unparseable` row is compared
-  with `unparseable_records` in the same way. Emit one notice on `signal`. When any threshold is
-  crossed, the notice is a breach and names the step, the metric, the threshold and the figure
-  the report carries, worst first when several crossed; when none is crossed, the notice says
-  the run is clear and carries the totals. Quote the report's figures as they stand: the
-  report is not yours to edit, and the thresholds are not yours to move.
+  with `failures_per_step` and its timing with `duration_ms`, and the `unparseable` row with
+  `unparseable_records`. A figure above its threshold is a breach, and a figure equal to it is
+  not. Emit one notice on `signal`. When any threshold is exceeded, the notice is a breach and
+  names the step, the metric, the threshold and the figure the report carries, worst first when
+  several are exceeded; when none is, the notice says the run is clear and carries the totals.
+  Quote the report's figures as they stand: the report is not yours to edit, and the
+  thresholds are not yours to move.
 model: claude-haiku-4-5
 agent: Threshold judge
 tools: []
@@ -25,7 +26,7 @@ skill: skills/anomaly-gate.md
 params:
   max_retries: 2
   thresholds:
-    failures_per_step: 1
+    failures_per_step: 0
     duration_ms: 30000
     unparseable_records: 0
 
@@ -52,7 +53,9 @@ notes: >-
   `max_retries` is the cap on the loop back to the summariser: a report the gate cannot judge
   goes back at most twice, and the security analyzer reads that key as the bound on the cycle,
   so removing it would charge the loop as unbounded. The thresholds sit under a key of their own
-  so an operator can tune them without touching the spec.
+  so an operator can tune them without touching the spec. Each is the highest figure that still
+  passes, so `failures_per_step: 0` alerts on a single failure, which is what a step reporting
+  once per run needs.
 
-version: 1.0.0
+version: 1.1.0
 author: autogen

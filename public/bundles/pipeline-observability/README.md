@@ -4,7 +4,7 @@ Observability for a pipeline you already have: tracing on every watched step, me
 
 ```
 blueprint      pipeline-observability
-bundle digest  sha256:c6ef312cfffd549b691b3339a155ac1e12c280fac1329d7c61fda272354b39d1
+bundle digest  sha256:d167dfd9e8808a17cddde3f80e98951218ac1b12d21fffac7afa4df6e0e688c5
 nodes          4
 cards pinned   4
 ```
@@ -84,7 +84,7 @@ before you leave one of these unset:
 | --- | --- |
 | `tracer` | `step-tracer@1.0.0` |
 | `summariser` | `run-summariser@1.0.0` |
-| `gate` | `anomaly-gate@1.0.0` |
+| `gate` | `anomaly-gate@1.1.0` |
 | `dispatch` | `alert-dispatch@1.0.0` |
 
 ---
