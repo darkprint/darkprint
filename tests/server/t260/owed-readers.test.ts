@@ -36,24 +36,28 @@
    from here until the reader is real.
    ============================================================ */
 
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
+import { GalleryBrowser } from "@/components/gallery/GalleryBrowser";
+import { allBlueprints } from "@/lib/content";
+import type { Blueprint } from "@/lib/types";
+
 import { sources } from "./contract";
 import {
-  BROWSERS,
   ROUTES,
   SHELVES,
   importedFrom,
   importsOf,
   parse,
-  propertyNames,
   readersCalledPerItem,
 } from "./partition";
 
 const REGISTRY_BARREL = "lib/server/registry/index.ts";
 
-/** What `GalleryBrowser` consumes off each tile that no published reader answers today. */
+/** Fields the shelf must display, including through its row component. */
 const OWED = ["graph", "requiredAgents", "requiredTools"] as const;
 
 /** Every name the registry barrel re-exports, read from the barrel rather than imported. */
@@ -76,24 +80,41 @@ function barrelExports(): Set<string> {
 }
 
 describe("T260's dependency: the batch graph reader `/blueprints` needs", () => {
-  /*
-   * The premise for everything below, and it is measured rather than assumed: if
-   * `GalleryBrowser` stopped consuming these three, the reader would not be owed and this
-   * whole file would be asserting a dependency that no longer exists.
-   */
-  it("`GalleryBrowser` really does consume all three", () => {
-    const [source] = sources([BROWSERS.blueprints], 1);
-    const names = propertyNames(parse(source.path, source.raw));
-
-    const absent = OWED.filter((field) => !names.has(field));
-    expect(
-      absent,
-      `${BROWSERS.blueprints} no longer reads ${absent.join(", ")}. If the shelf stopped ` +
-        `rendering them then \`graphsOf\` is not owed after all and this file should go — ` +
-        `but that is a change to what the tile SHOWS, which AC2 governs, so it needs a ` +
-        `ruling rather than a quiet deletion here.`,
-    ).toEqual([]);
-  });
+  // Rendering follows the component boundary; a search haystack or type declaration cannot
+  // stand in for fields the reader must actually see on both kinds of shelf row.
+  it.each(["starter-software-factory", "ordinary-blueprint"])(
+    "`GalleryBrowser` renders all three fields for %s",
+    (slug) => {
+      const base = allBlueprints()[0];
+      expect(base.graph.nodes.length).toBeGreaterThanOrEqual(2);
+      const blueprint: Blueprint = {
+        ...base,
+        slug,
+        title: "Shelf contract probe",
+        graph: { ...base.graph, nodes: base.graph.nodes.slice(0, 2), edges: [] },
+        requiredAgents: ["shelf-agent-alpha", "shelf-agent-beta"],
+        requiredTools: ["shelf-tool-alpha", "shelf-tool-beta"],
+      };
+      const html = renderToStaticMarkup(
+        createElement(GalleryBrowser, { blueprints: [blueprint], categories: [] }),
+      );
+      const row = html.match(/<article\b[\s\S]*?<\/article>/)?.[0];
+      expect(row, "the shelf must mount its actual ContentRow").toBeDefined();
+      expect(row).toContain('aria-label="Shelf contract probe pipeline preview"');
+      expect(row).toContain("<circle");
+      expect(row).toContain("2 nodes");
+      expect(row).toContain("0 edges");
+      for (const [field, label] of [
+        ["requiredAgents", "Required agents"],
+        ["requiredTools", "Required tools"],
+      ] as const) {
+        expect(
+          html,
+          `the shelf must display ${field} under its visible label`,
+        ).toContain(`>${label}</dt><dd>${blueprint[field].join(", ")}</dd>`);
+      }
+    },
+  );
 
   /*
    * A SOURCE cell, and it is the reason this file can exist before the reader does.

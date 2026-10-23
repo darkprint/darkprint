@@ -14,7 +14,9 @@ registry, the MCP server, the CLI and the authoring skill. Nothing here runs a b
   `npm run build`. Run them yourself; do not trust a report that says they passed.
 - `npm test` needs the compose stack and `.env.local` loaded in the shell
   (`set -a; . ./.env.local; set +a`). It creates and drops scratch databases next to the one
-  `DATABASE_URL` names, so never point `DATABASE_URL` at production.
+  `DATABASE_URL` names, so never point `DATABASE_URL` at production. Check `S3_ENDPOINT`
+  independently: `.env.local` may name hosted storage even with a local database. Tests must
+  use the compose MinIO endpoint and credentials, never a hosted object store.
 - `npm run typecheck` needs the generated route types: run `npm run build` (or
   `npx next typegen`) once in a fresh checkout first.
 - `npm run build` rewrites `public/bundles`, `public/cards` and `public/skill` from `content/`

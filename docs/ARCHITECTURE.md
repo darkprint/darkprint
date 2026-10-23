@@ -85,17 +85,17 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | Path | Rendering | Shows |
 | --- | --- | --- |
 | `/` | static | the landing page: the band to the DarkPrint skill and MCP, the wordmark hero with a per-reader account line, an example of one task taken through MCP, beats on reproducible runs, a blueprint and a node card, what an account adds, and the tutorial door |
-| `/blueprints` | dynamic | the registry index with search, category and tag filters, sorting |
+| `/blueprints` | dynamic | the registry index: browse filters and sorting; nonempty task queries call `/api/search/blueprints`, preserving relevance order and showing match evidence and encoder status |
 | `/blueprints/[owner]` | dynamic | a redirect only: a handle goes to its profile, a legacy slug to the owner that holds it |
 | `/blueprints/[owner]/[slug]` | dynamic | one blueprint: graph, files, releases, notes, downloads; the owner's controls when signed in |
 | `/capabilities` | static | every operation, from the CLI, MCP and the skill, with its status |
-| `/mcp` | static | how to connect an MCP client, per client |
+| `/mcp` | static | connect an MCP client, try a concrete reuse task, and review requirements before local adaptation; the complete tool reference is expandable |
 | `/new` | dynamic | create a draft bundle: slug and visibility |
-| `/nodes` | dynamic | the node card library |
+| `/nodes` | dynamic | browse the node card library or search tasks through `/api/search/cards`; ranked results retain individual versions and disclose their detail-page destination |
 | `/nodes/[...id]` | dynamic | one card: every field, versions, blueprints that pin it, notes, YAML download |
 | `/ontology/[...term]` | dynamic | one vocabulary term: its place in the lattice and its usage |
 | `/settings` | dynamic | handle, email, profile, default visibility, notifications, API keys, account deletion |
-| `/skill` | static | install the blueprint-writing skill for Claude Code or Codex |
+| `/skill` | static | install the blueprint-writing skill, describe or adapt a task, then keep the folder locally or publish; detailed interview guidance is expandable |
 | `/privacy`, `/terms` | static | what the database stores about a person and how to remove it; what a reader may do here and what the site promises back. Linked from the footer's legal row on every page, which is also where Google's OAuth consent screen reads the privacy link from |
 | `/spec/attractor`, `/spec/topology` | static | the Attractor crosswalk; the DOT dialect |
 | `/spec/card` | dynamic | the node card format, with the vocabulary browser |

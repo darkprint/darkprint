@@ -110,9 +110,10 @@ and the stdio MCP server, and `npx -y darkprint skill install` copies the bluepr
 skill it carries into the agent's skills folder.
 
 Not real: nothing here runs a blueprint, runs a node, or calls a model on anyone's behalf.
-Search on the deployed site ranks by words, because the sentence encoder does not load there
-yet. The seeded community numbers that remain are labelled as seeded where they render. No
-mail is sent.
+Search combines sentence similarity with word coverage when the encoder is available, and
+falls back to word matching when it is not. Search responses disclose the encoder state.
+The seeded community numbers that remain are labelled as seeded where they render. No mail
+is sent.
 
 ## Getting started
 

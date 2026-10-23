@@ -8,7 +8,7 @@ export type TaskState =
   | { request: string; status: "ready"; data: TaskResults };
 
 const FILTERS = {
-  blueprints: ["tag", "cat", "phase", "autonomy", "df", "gates"],
+  blueprints: ["tag", "cat", "phase", "autonomy"],
   cards: ["type", "phase", "human", "risk"],
 } as const;
 

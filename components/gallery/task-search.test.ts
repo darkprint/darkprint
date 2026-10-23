@@ -14,7 +14,7 @@ describe("task requests preserve service ranking", () => {
     const params = new URLSearchParams("sort=type&type=validation&phase=testing&human=1&risk=1&unknown=x");
     const url = new URL(taskRequest("cards", " judge against a rubric ", params), "https://example.test");
     expect(Object.fromEntries(url.searchParams)).toEqual({ q: "judge against a rubric", type: "validation", phase: "testing", human: "1", risk: "1" });
-    expect(taskRequest("blueprints", "clean records", new URLSearchParams("sort=oldest&cat=data&tag=etl&autonomy=supervised&phase=testing")))
+    expect(taskRequest("blueprints", "clean records", new URLSearchParams("sort=oldest&cat=data&tag=etl&autonomy=supervised&phase=testing&df=1&gates=required")))
       .toBe("/api/search/blueprints?q=clean+records&tag=etl&cat=data&phase=testing&autonomy=supervised&forks=all");
     expect(taskRequest("cards", "  ", params)).toBe("");
   });

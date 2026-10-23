@@ -84,6 +84,24 @@ const SORT_OPTIONS: { value: GallerySort; label: string }[] = [
 
 const DEFAULT_GALLERY_SORT: GallerySort = "newest";
 
+function GalleryRow({ blueprint }: { blueprint: Blueprint }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <ContentRow item={blueprint} />
+      <dl className="flex flex-wrap gap-x-6 gap-y-2 px-[18px] text-xs text-muted">
+        <div>
+          <dt className="font-mono text-dim">Required agents</dt>
+          <dd>{blueprint.requiredAgents.join(", ") || "None"}</dd>
+        </div>
+        <div>
+          <dt className="font-mono text-dim">Required tools</dt>
+          <dd>{blueprint.requiredTools.join(", ") || "None"}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 export function GalleryBrowser({
   blueprints,
   categories,
@@ -471,11 +489,11 @@ export function GalleryBrowser({
           {leadBlueprint !== null && (
             <div className="flex flex-col gap-2">
               <p className="label-lead">Start here: the five-node starter factory</p>
-              <ContentRow item={leadBlueprint} />
+              <GalleryRow blueprint={leadBlueprint} />
             </div>
           )}
           {gridBlueprints.map((bp) => (
-            <ContentRow key={`${bp.ownerHandle ?? ""}/${bp.slug}`} item={bp} />
+            <GalleryRow key={`${bp.ownerHandle ?? ""}/${bp.slug}`} blueprint={bp} />
           ))}
         </div>
       ) : (
