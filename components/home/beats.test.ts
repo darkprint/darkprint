@@ -36,11 +36,13 @@ describe("the blueprint-first landing", () => {
   it("opens with the product, and the fold leads down to the example", () => {
     const html = render(Wordmark);
     const text = plainText(html);
-    expect(text).toContain("Reusable blueprints for agent workflows.");
-
-    // No buttons on the fold: the example under it is the way in.
-    expect(text).not.toContain("Find a blueprint for your task");
-    expect(text).not.toContain("Browse blueprints");
+    expect(text).toContain(
+      "Your agent retrieves shared workflows and reusable nodes through MCP, adapts a blueprint to your task, and runs it locally.",
+    );
+    expect(text).toContain("Browse blueprints");
+    expect(html).toContain('href="/blueprints"');
+    expect(text).toContain("Connect your agent");
+    expect(html).toContain('href="/mcp"');
     expect(html).toContain('href="#example"');
     expect(render(SectionMcpExample)).toContain('id="example"');
 
