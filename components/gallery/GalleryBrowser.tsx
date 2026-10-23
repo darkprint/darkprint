@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQueryState } from "@/components/ui/useQueryState";
+import { useCallback, useMemo } from "react";
+import { useTaskQuery, useTaskSearch } from "./useTaskSearch";
+import { TaskSearchResults } from "./TaskSearchResults";
 import {
   CONTROL_CLASS,
   RegistryFilterBar,
@@ -92,7 +93,8 @@ export function GalleryBrowser({
   blueprints: readonly Blueprint[];
   categories: readonly string[];
 }) {
-  const { params, set: setParam, clear } = useQueryState();
+  const { params, setParam, clear, search, setDraft } = useTaskQuery();
+  const task = useTaskSearch("blueprints", search, params);
 
   /* Every filter is read from the address bar rather than mirrored into React state, so
      there is one source of truth and Back cannot disagree with the shelf. `?tag=` used
@@ -112,20 +114,6 @@ export function GalleryBrowser({
     ? (rawSort as GallerySort)
     : DEFAULT_GALLERY_SORT;
 
-  /* The search box is the one control that does not write on every keystroke: `draft`
-     is what has been typed since the last write, `null` means "follow the URL", and the
-     write is debounced because Safari throttles `replaceState`. */
-  const [draft, setDraft] = useState<string | null>(null);
-  const search = draft ?? (params.get("q") ?? "");
-
-  useEffect(() => {
-    if (draft === null) return;
-    const timer = setTimeout(
-      () => setParam("q", draft.trim() === "" ? null : draft),
-      250,
-    );
-    return () => clearTimeout(timer);
-  }, [draft, setParam]);
   /* `narrowOpen` stood here, with a note saying the disclosure below "is open when a filter
      inside it is set, so a reader can never have an active filter they cannot see", and
      `TagFromQuery` setting one from `?tag=` was the case it named.
@@ -186,28 +174,11 @@ export function GalleryBrowser({
   }, [blueprints]);
 
   const results = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
     const filtered = blueprints.filter((bp) => {
       if (category && bp.category !== category) return false;
       if (phase && !bp.analysis.phaseCoverage.covered.includes(phase)) return false;
       if (autonomy !== null && bp.autonomy.autonomyClass !== autonomy) return false;
       if (tag && !bp.tags.includes(tag)) return false;
-      if (q) {
-        const haystack =
-          [
-            bp.title,
-            bp.summary,
-            bp.description,
-            bp.category,
-            ...bp.tags,
-            ...bp.requiredAgents,
-            ...bp.requiredTools,
-            ...bp.cardRefs,
-            ...bp.graph.nodes.map((node) => node.label),
-          ].join(" ").toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
       return true;
     });
 
@@ -228,7 +199,7 @@ export function GalleryBrowser({
       return byDate || a.title.localeCompare(b.title);
     });
     return sorted;
-  }, [blueprints, search, tag, category, phase, autonomy, sort]);
+  }, [blueprints, tag, category, phase, autonomy, sort]);
 
   const hasFilters =
     search.trim() !== "" ||
@@ -286,7 +257,6 @@ export function GalleryBrowser({
   /* The sort survives a reset: it is how the reader chose to read the shelf, not a
      narrowing of it. One write, so one history entry rather than five. */
   const clearFilters = useCallback(() => {
-    setDraft("");
     clear(["q", "tag", "cat", "phase", "autonomy"]);
   }, [clear]);
 
@@ -303,7 +273,7 @@ export function GalleryBrowser({
       <RegistryFilterBar
         id="blueprint-filters"
         label="Filter blueprints"
-        results={results.length}
+        results={task.searching ? (task.state.status === "ready" ? task.state.data.hits.length : 0) : results.length}
         total={blueprints.length}
         active={activeFilters.length}
       >
@@ -366,13 +336,15 @@ export function GalleryBrowser({
           <label className="flex items-center gap-2">
             <span className="sr-only">Order the blueprints</span>
             <select
-              value={sort}
+              value={task.searching ? "relevance" : sort}
+              disabled={task.searching}
               onChange={(e) =>
                 setParam("sort", e.target.value === DEFAULT_GALLERY_SORT ? null : e.target.value)
               }
               aria-label="Order the blueprints"
               className={controlClass}
             >
+              {task.searching && <option value="relevance">Service relevance</option>}
               {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -443,10 +415,12 @@ export function GalleryBrowser({
           had no way to tell whether it matched nine, one, or none. The sibling browser
           already carried this fix; it was never brought across. */}
       <div className="flex items-center justify-between gap-3 font-mono text-xs text-dim">
-        <p role="status" aria-live="polite" aria-atomic="true">
-          <span className="text-fg">{results.length}</span> of{" "}
-          {blueprints.length} blueprint{blueprints.length === 1 ? "" : "s"}
-        </p>
+        {!task.searching && (
+          <p role="status" aria-live="polite" aria-atomic="true">
+            <span className="text-fg">{results.length}</span> of{" "}
+            {blueprints.length} blueprint{blueprints.length === 1 ? "" : "s"}
+          </p>
+        )}
         {hasFilters && (
           <button
             type="button"
@@ -459,7 +433,7 @@ export function GalleryBrowser({
       </div>
 
       {/* rows / empty state */}
-      {results.length > 0 ? (
+      {task.searching ? <TaskSearchResults state={task.state} retry={task.retry} /> : results.length > 0 ? (
         /* A column of rows, `gap-3`, where this was a three-column grid of tiles.
            ------------------------------------------------------------
            The shelf offers phase coverage and autonomy class as ways in and no tile showed
