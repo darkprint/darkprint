@@ -40,7 +40,7 @@ const CLAIMS: readonly Claim[] = [
   {
     surface: "/mcp",
     why: "a reader deciding whether to connect has to know what the server sees by default: public blueprints and cards, whoever is asking, until a key is sent",
-    says: "without a key every call reads as anonymous",
+    says: "without a key, every call is anonymous",
     text: MCP_PAGE,
   },
   {
@@ -58,7 +58,7 @@ const CLAIMS: readonly Claim[] = [
   {
     surface: "/mcp · metadata.description",
     why: "the same promise where a reader who never opens the page reads it: a search result, a shared link's preview card",
-    says: "nothing to install",
+    says: "no package to install",
     text: MCP_DESCRIPTION,
   },
   {
@@ -131,8 +131,12 @@ describe("the connection command", () => {
 /* A reader who has just connected the server needs the next sentence to type, and needs to
    know the run happens in their own agent rather than here. */
 describe("what /mcp says to do once the server is connected", () => {
-  it("prints the first prompt and says the agent runs the blueprint", () => {
-    expect(MCP_PAGE).toContain(MCP_FIRST_PROMPT.toLowerCase());
-    expect(MCP_PAGE).toContain("your agent runs the blueprint on your machine");
+  it("prints the concrete task prompt and says execution belongs to a chosen runner", () => {
+    const concretePrompt = MCP_FIRST_PROMPT.replace("<your task>", "review my pull requests");
+    expect(MCP_PAGE).toContain(concretePrompt.toLowerCase());
+    expect(MCP_PAGE).toContain(
+      "execution depends on a runner you choose and happens in your own environment",
+    );
+    expect(MCP_PAGE).toContain("nothing here runs a blueprint");
   });
 });

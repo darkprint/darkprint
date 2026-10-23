@@ -84,10 +84,12 @@ import { describe, expect, it } from "vitest";
 
 import SpecCardPage from "@/app/spec/card/page";
 import {
-  SPEC_LAYERS,
   LEARN_PRACTICE,
+  LEARN_REFERENCE,
+  LEARN_START,
   RUNS,
   SPEC_CROSSWALK,
+  SPEC_LAYERS,
   SPEC_OVERVIEW,
   SPEC_SEQUENCE,
   runPosition,
@@ -132,43 +134,40 @@ describe("the sequence and the filesystem agree", () => {
     expect(orphans).toEqual([]);
   });
 
-  /* Two layer pages, and the crosswalk between them and the door.
-     ------------------------------------------------------------
-     `SPEC_LAYERS` was three until the vocabulary's page folded into `/spec/card` on
-     2026-09-06. It is named here by its whole contents rather than by a length, so the fold
-     is one edited line and a page reappearing at `/spec/ontology` without an entry is still
-     caught by the orphan walk above. The crosswalk is asserted to stand between the door and
-     the first layer, which is the half of the reordering the `run` table below cannot see:
-     that table would pass on any list whose steps happen to ascend. */
-  it("opens at the overview, then the crosswalk, then the layers in resolution order", () => {
+  it("keeps the short start path separate from the ordered reference pages", () => {
+    expect(LEARN_START.map((page) => page.href)).toEqual([
+      "/what-a-blueprint-is",
+      "/tutorial",
+    ]);
+    expect(LEARN_REFERENCE.map((page) => page.href)).toEqual([
+      "/spec/topology",
+      "/spec/card",
+      "/capabilities",
+      "/spec/attractor",
+    ]);
     expect(SPEC_SEQUENCE[0]).toBe(SPEC_OVERVIEW);
-    expect(SPEC_SEQUENCE[1]).toBe(SPEC_CROSSWALK);
+    expect(SPEC_SEQUENCE[1].href).toBe("/tutorial");
     expect(SPEC_LAYERS.map((layer) => layer.href)).toEqual([
       "/spec/topology",
       "/spec/card",
     ]);
+    expect(SPEC_CROSSWALK).toBe(LEARN_REFERENCE.at(-1));
   });
 
-  /**
-   * The sequence is two named runs over one list, and this is the shape of both.
-   *
-   * Written out stop by stop rather than derived, which is what makes it a statement about
-   * the numbering rather than a restatement of the list: a table that read the steps off
-   * `SPEC_SEQUENCE` would agree with any renumbering at all. The practice run closes the
-   * digits up when a stop leaves it, so the two remaining stops read 04 and 05 with no hole
-   * where the essay's number was, and this is where that is written down.
-   */
-  it("runs the specification, then the practice, over one list", () => {
+  it("numbers the Start here path before the optional references", () => {
     expect(
       SPEC_SEQUENCE.map(({ step, href, run }) => ({ step, href, run })),
     ).toEqual([
       { step: "00", href: "/what-a-blueprint-is", run: "specification" },
-      { step: "01", href: "/spec/attractor", run: "specification" },
-      { step: "02", href: "/spec/topology", run: "specification" },
-      { step: "03", href: "/spec/card", run: "specification" },
+      { step: "01", href: "/tutorial", run: "specification" },
+      { step: "02", href: "/spec/topology", run: "practice" },
+      { step: "03", href: "/spec/card", run: "practice" },
       { step: "04", href: "/capabilities", run: "practice" },
-      { step: "05", href: "/tutorial", run: "practice" },
+      { step: "05", href: "/spec/attractor", run: "practice" },
     ]);
+    expect(LEARN_START.every((page) => page.run === "specification")).toBe(true);
+    expect(LEARN_REFERENCE.every((page) => page.run === "practice")).toBe(true);
+    expect(RUNS).toEqual({ specification: "Start here", practice: "Reference" });
     expect(LEARN_PRACTICE.map((page) => page.href)).toEqual([
       "/capabilities",
       "/tutorial",
@@ -197,21 +196,17 @@ describe("the sequence and the filesystem agree", () => {
   });
 
   /**
-   * Where the practice run starts and where it ends, named by hand from both directions.
+   * The short Start here path ends at the tutorial; references follow in their own group.
    *
-   * The run has opened on three different pages as stops were added and deleted around it,
-   * and each move left both arrays consistent and the reading order somewhere new. So the
-   * seam is asserted rather than derived: the first practice stop hands back to the last
-   * layer page, and the last stop hands on to nothing.
-   *
-   * Both halves for each page, because a page can be in the list and forget to draw the
-   * pager the list gives it, and the two failures look identical from the route table.
+   * Assert the boundary from both sides so a reorder cannot silently fold reference reading
+   * into the short path or strand a route outside the pager.
    */
-  it("opens the practice run at what you can do and closes it with the tutorial", () => {
+  it("keeps the tutorial on the short path and opens the reference after it", () => {
+    expect(specNeighbours("/tutorial").previous?.href).toBe("/what-a-blueprint-is");
+    expect(specNeighbours("/tutorial").next?.href).toBe("/spec/topology");
     expect(specNeighbours("/capabilities").previous?.href).toBe("/spec/card");
-    expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/tutorial");
-    expect(specNeighbours("/tutorial").next).toBeUndefined();
-    expect(specNeighbours("/tutorial").previous?.href).toBe("/capabilities");
+    expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/spec/attractor");
+    expect(specNeighbours("/spec/attractor").next).toBeUndefined();
     for (const page of ["app/capabilities/page.tsx", "app/tutorial/page.tsx"]) {
       const text = readFileSync(join(ROOT, page), "utf8");
       expect(text, page).toMatch(/from "@\/components\/spec\/SpecPager"/);
@@ -221,15 +216,20 @@ describe("the sequence and the filesystem agree", () => {
 
   /** The position a reader is shown is the position inside their own run. */
   it("counts a stop against its own run, not across both", () => {
-    expect(runPosition("/spec/card")).toEqual({
+    expect(runPosition("/tutorial")).toEqual({
       run: "specification",
-      position: 4,
+      position: 2,
+      total: 2,
+    });
+    expect(runPosition("/spec/card")).toEqual({
+      run: "practice",
+      position: 2,
       total: 4,
     });
     expect(runPosition("/capabilities")).toEqual({
       run: "practice",
-      position: 1,
-      total: 2,
+      position: 3,
+      total: 4,
     });
     expect(Object.keys(RUNS).sort()).toEqual(["practice", "specification"]);
   });
@@ -284,19 +284,17 @@ describe("next and previous", () => {
     expect(last).toBeDefined();
     expect(specNeighbours(first.href).previous).toBeUndefined();
     expect(specNeighbours(last?.href ?? "").next).toBeUndefined();
-    // And the chain is a chain rather than two ends with a hole: every stop but the last
-    // hands on to the one after it.
-    expect(specNeighbours(SPEC_LAYERS[0].href).previous).toBe(SPEC_CROSSWALK);
-    /* Both sides of the crosswalk, which is where it MOVED TO rather than where it was
-       inserted. Reordering a list is the one edit that leaves the arrays consistent and the
-       reading order wrong, and neither `position` nor the neighbour loop below would notice:
-       they walk whatever order the list is in. The pair was `SPEC_LAYERS[2]` and
-       `LEARN_PRACTICE[0]` while this page closed the specification run; it opens that run
-       now, so the door is behind it and the first layer is in front. */
-    expect(specNeighbours(SPEC_CROSSWALK.href).previous).toBe(SPEC_OVERVIEW);
-    expect(specNeighbours(SPEC_CROSSWALK.href).next).toBe(SPEC_LAYERS[0]);
-    // And the practice run still opens where the specification run ends.
-    expect(specNeighbours(LEARN_PRACTICE[0].href).previous).toBe(SPEC_LAYERS[1]);
+    // The tutorial completes the short path, and the references begin after it.
+    expect(specNeighbours("/tutorial").previous).toBe(SPEC_OVERVIEW);
+    expect(specNeighbours("/tutorial").next).toBe(SPEC_LAYERS[0]);
+    expect(specNeighbours(SPEC_LAYERS[0].href).previous?.href).toBe("/tutorial");
+    expect(specNeighbours(SPEC_CROSSWALK.href).previous?.href).toBe("/capabilities");
+    expect(specNeighbours(SPEC_CROSSWALK.href).next).toBeUndefined();
+    // Preserve the historical export for callers that still use its name.
+    expect(LEARN_PRACTICE.map((page) => page.href)).toEqual([
+      "/capabilities",
+      "/tutorial",
+    ]);
 
     for (const [i, page] of SPEC_SEQUENCE.entries()) {
       const { position, total, previous, next } = specNeighbours(page.href);

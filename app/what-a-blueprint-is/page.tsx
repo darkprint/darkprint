@@ -169,9 +169,9 @@ function WhereNext() {
     <section className="border-t border-line bg-surface py-16 sm:py-20">
       <div className="container-page flex flex-col gap-8">
         <SectionHeading
-          eyebrow="Next"
-          title="Where to go from here"
-          lead="Two reference pages follow: the topology file first, then the node card, which also covers the vocabulary."
+          eyebrow="Reference"
+          title="Explore the formats"
+          lead="The graph comes first, then the node card and the vocabulary it uses. The tutorial is next in Start here."
         />
         {/* Two columns for two doors, so the card door sits at the right edge the way
             the pager's "Next" does on every other Learn page. */}
@@ -255,8 +255,14 @@ export default function WhatABlueprintIsPage() {
             as="h1"
             eyebrow={SPEC_OVERVIEW.eyebrow}
             title="A pattern for getting work done by agents"
-            lead="A blueprint records the shape of the work: which agents exist, what each one is handed, what each one is kept away from, and where a person acts. It is a folder of plain text files, neither a prompt nor a model, and you run it with your own tools."
+            lead="A blueprint records the shape of the work: which agents exist, what each one is handed, what each one is kept away from, and where a person acts. Start from a task, reuse a whole workflow or one version-pinned card, then adapt it locally. Public blueprints and cards need no sign-in. You choose the runner that executes the files."
           />
+          <Link
+            href="/tutorial"
+            className="mt-6 inline-flex w-fit items-center gap-2 text-sm text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan"
+          >
+            Write your first blueprint <span aria-hidden>→</span>
+          </Link>
         </div>
       </header>
 
@@ -389,13 +395,12 @@ export default function WhatABlueprintIsPage() {
         </div>
       </section>
 
-      {/* The doors close the page, then the rail: this page is stop 00 of the Learn
-          sequence, so the pager belongs at its foot the way it does on the spec pages. */}
+      {/* Reference doors sit here; the pager links forward to the short Start here path. */}
       <WhereNext />
 
       <section className="bg-void py-16 sm:py-20">
         <div className="container-page">
-          <SpecPager href={SPEC_OVERVIEW.href} showNext={false} />
+          <SpecPager href={SPEC_OVERVIEW.href} />
         </div>
       </section>
     </>

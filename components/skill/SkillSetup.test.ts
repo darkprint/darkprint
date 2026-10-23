@@ -118,11 +118,29 @@ describe("the install commands", () => {
   });
 });
 
-describe("the tutorial covers what a reader is in for", () => {
+describe("the task-first path and its optional interview details", () => {
   const text = openText(SETUP).toLowerCase();
+  const allText = plainText(SETUP).toLowerCase();
 
-  it("says it is an interview and not a generator", () => {
-    expect(text).toContain("interview, not a generator");
+  it("leads from describing a task to adapting a workflow or reusing cards", () => {
+    expect(text).toContain("2. describe the task");
+    expect(text).toContain("public workflows to adapt or cards to reuse for one part");
+    expect(text).toContain("public reads need no sign-in");
+    expect(text).toContain("review the graph, pinned cards, scorecard and provenance");
+    expect(text).toContain("search matches are not quality judgments");
+    expect(text).toContain("a reused card stays unchanged");
+    expect(text).toContain("version and identity");
+    expect(text).toContain("3. keep or publish the folder");
+    expect(text.indexOf("2. describe the task")).toBeLessThan(
+      text.indexOf("3. keep or publish the folder"),
+    );
+  });
+
+  it("keeps the interview checklist available in a native disclosure", () => {
+    expect(SETUP).toContain('<summary');
+    expect(text).toContain("see what the interview covers");
+    expect(allText).toContain("interview, not a generator");
+    expect(allText).toContain("it can decline");
   });
 
   it("names the six rows in the order the interview asks them, with the registry search among them", () => {
@@ -135,13 +153,13 @@ describe("the tutorial covers what a reader is in for", () => {
       "the loop",
     ]);
     for (const question of QUESTIONS) {
-      expect(text).toContain(question.label);
-      expect(text).toContain(question.text.toLowerCase());
+      expect(allText).toContain(question.label);
+      expect(allText).toContain(question.text.toLowerCase());
     }
   });
 
   it("says it can decline to draw a graph", () => {
-    expect(text).toContain("it can decline");
+    expect(allText).toContain("it can decline");
   });
 
   it("names the four files it leaves behind, in the shape the registry stores", () => {

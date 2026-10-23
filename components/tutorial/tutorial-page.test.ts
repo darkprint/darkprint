@@ -31,7 +31,7 @@ import { describe, expect, it } from "vitest";
 
 import TutorialPage from "@/app/tutorial/page";
 import { MCP_CLIENTS } from "@/components/mcp/clients";
-import { LEARN_PRACTICE } from "@/components/spec/sequence";
+import { LEARN_START } from "@/components/spec/sequence";
 import { LivePromptView, StartLiveView } from "@/components/tutorial/StartLive";
 import {
   DESIGN_PROMPT,
@@ -154,8 +154,8 @@ describe("five sections the rail can reach", () => {
   });
 
   it("is the list the Learn rail links from", () => {
-    const stop = LEARN_PRACTICE.find((page) => page.href === "/tutorial");
-    expect(stop, "the tutorial left the practice run").toBeDefined();
+    const stop = LEARN_START.find((page) => page.href === "/tutorial");
+    expect(stop, "the tutorial left Start here").toBeDefined();
     expect(stop?.sections.map((section) => section.id)).toEqual([...SECTION_IDS]);
     for (const section of stop?.sections ?? []) {
       expect(section.label.length).toBeGreaterThan(4);

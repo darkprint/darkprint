@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/site/Logo";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { PanelHeading } from "@/components/ui/SectionHeading";
+import { More } from "@/components/ui/More";
 import { cx } from "@/lib/format";
 import {
   CLAUDE_CODE_SKILLS_PARENT,
@@ -16,10 +17,10 @@ import {
 import { BUNDLE_CARDS_DIR, BUNDLE_README, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
 
 /* ============================================================
-   The tutorial on `/skill`: install it, answer its questions, keep the folder.
+   `/skill`: install the DarkPrint skill, describe a task, then keep or publish its folder.
 
-   The three steps carry an ordinal because the reader is meant to be at one of three
-   places in a sequence, and nothing else on the page is numbered.
+   Three numbered steps give the page its order. The install instructions and resulting files
+   remain visible; the full interview checklist sits in a native disclosure.
 
    ── The naming hazard, resolved in copy ──
    `skill` is already a word in this vocabulary and it means something narrower:
@@ -178,48 +179,55 @@ export function SkillSetup({ className }: { className?: string }) {
         </div>
       </li>
 
-      {/* ---------- 02 · the interview ---------- */}
+      {/* ---------- 02 · describe and adapt ---------- */}
       <li className="flex min-w-0 flex-col gap-4">
-        <StepHeading index={2} title="Answer its questions" />
+        <StepHeading index={2} title="Describe the task" />
 
         <div className="flex min-w-0 flex-col gap-4">
           <p className="text-[15px] leading-relaxed text-muted">
-            An interview, not a generator. Ask it for a blueprint and it asks you what the
-            work is first, because a graph nobody described is a graph nobody can check.
-            Six things, all of which you would have had to decide anyway, and one of them it
-            looks up for you.
+            Tell the DarkPrint skill what you want done. Before drawing, it searches public
+            workflows to adapt or cards to reuse for one part. Public reads need no sign-in.
+            Review the graph, pinned cards, scorecard and provenance before adapting. Search
+            matches are not quality judgments. A reused card stays unchanged; edits need a new
+            version and identity. Then shape the missing work together in an interview.
           </p>
 
-          {/* A list that happens to be aligned, not a table: `QUESTIONS` has no second axis.
-              The label and its sentence sit in one `<li>` so a screen reader takes them
-              together; below `sm` the pair stacks. */}
-          <ul className="flex min-w-0 flex-col border-t border-line">
-            {QUESTIONS.map((question) => (
-              <li
-                key={question.label}
-                className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 border-b border-line py-[13px] sm:grid-cols-[148px_minmax(0,1fr)] sm:gap-5"
-              >
-                <span className="font-mono text-[12px] leading-relaxed tracking-[0.06em] text-blueprint-ink">
-                  {question.label}
-                </span>
-                <span className="min-w-0 text-[15px] leading-relaxed text-muted">
-                  {question.text}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <More summary="See what the interview covers" bare>
+            <p className="text-[15px] leading-relaxed text-muted">
+              An interview, not a generator. It asks about the outcome, a check, the nodes,
+              boundaries and loops, and looks up what the registry already holds.
+            </p>
+            {/* A list that happens to be aligned, not a table: `QUESTIONS` has no second axis.
+                The label and its sentence sit in one `<li>` so a screen reader takes them
+                together; below `sm` the pair stacks. */}
+            <ul className="flex min-w-0 flex-col border-t border-line">
+              {QUESTIONS.map((question) => (
+                <li
+                  key={question.label}
+                  className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 border-b border-line py-[13px] sm:grid-cols-[148px_minmax(0,1fr)] sm:gap-5"
+                >
+                  <span className="font-mono text-[12px] leading-relaxed tracking-[0.06em] text-blueprint-ink">
+                    {question.label}
+                  </span>
+                  <span className="min-w-0 text-[15px] leading-relaxed text-muted">
+                    {question.text}
+                  </span>
+                </li>
+              ))}
+            </ul>
 
-          <p className="text-[15px] leading-relaxed text-muted">
-            It can decline. If nobody can name the command that fails when the work is
-            wrong, it offers a two-node prototype to find one instead of drawing a graph
-            that cannot be checked.
-          </p>
+            <p className="text-[15px] leading-relaxed text-muted">
+              It can decline. If nobody can name the command that fails when the work is
+              wrong, it offers a two-node prototype to find one instead of drawing a graph
+              that cannot be checked.
+            </p>
+          </More>
         </div>
       </li>
 
       {/* ---------- 03 · the folder ---------- */}
       <li className="flex min-w-0 flex-col gap-4">
-        <StepHeading index={3} title="Keep the folder" />
+        <StepHeading index={3} title="Keep or publish the folder" />
 
         {/* The only box in the tutorial, drawn like the command's frame one step up, so the
             two things a reader takes away from this page are drawn the same way. The mark
