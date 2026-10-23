@@ -26,15 +26,9 @@
 
 import { CORE_ONTOLOGY, splitTermId, type TermKind } from "@/lib/core";
 import type { Db } from "@/lib/db";
-import { schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
 import type { Actor } from "@/lib/server/policy";
-import {
-  MalformedVocabularyError,
-  getRelease,
-  parseStoredVocabulary,
-} from "@/lib/server/archive";
-import { blueprints } from "@/lib/server/registry";
+import { MalformedVocabularyError, parseStoredVocabulary } from "@/lib/server/archive";
+import { localVocabularies } from "@/lib/server/registry";
 import type { OntologyTerm } from "@/lib/server/types";
 import { value } from "./params";
 import { encoderState } from "./embed";
@@ -190,37 +184,12 @@ async function bothCorpora(db: Db): Promise<readonly OntologyTerm[]> {
 
 /** Every local term declared by the current release of a blueprint the public may read. */
 async function localTerms(db: Db): Promise<readonly OntologyTerm[]> {
-  const universe = await blueprints(db, PUBLIC_ONLY);
-  if (universe.length === 0) return [];
-
-  /* One query for the whole mapping rather than one per blueprint. It reads no `visibility`
-     column: the universe above is T080's answer to which bundles are public, and all this
-     adds is the id to fetch a release by. */
-  const rows = await db
-    .select({
-      id: schema.bundle.id,
-      slug: schema.bundle.slug,
-      handle: schema.account.handle,
-    })
-    .from(schema.bundle)
-    .innerJoin(schema.account, eq(schema.bundle.ownerId, schema.account.id));
-  const idOf = new Map<string, string>();
-  for (const row of rows) {
-    if (row.handle === null) continue;
-    idOf.set(`${row.handle}/${row.slug}`, row.id);
-  }
-
+  /* Which blueprints are public, and which release of each is current, are both the
+     registry's answers; this module only parses what the registry hands back. */
   const out: OntologyTerm[] = [];
-  for (const bp of universe) {
-    const bundleId = idOf.get(`${bp.ownerHandle}/${bp.slug}`);
-    if (bundleId === undefined) continue;
-    /* Resolved by `(bundleId, digest)` where the digest is the one T080 already chose as
-       this blueprint's current release — so which release is current stays D-80-03's
-       decision and is not re-derived here. */
-    const release = await getRelease(db, bundleId, bp.digest);
-    if (release === undefined) continue;
+  for (const { vocabulary } of await localVocabularies(db, PUBLIC_ONLY)) {
     try {
-      out.push(...(parseStoredVocabulary(release.vocabulary, "searchTerms")?.terms ?? []));
+      out.push(...(parseStoredVocabulary(vocabulary, "searchTerms")?.terms ?? []));
     } catch (cause) {
       /* One malformed `local_vocabulary` costs its own bundle's terms and never the whole
          vocabulary, which is `registry/snapshot.ts`'s treatment of an unparseable pin: this

@@ -33,7 +33,7 @@ const setupCard = (html: string, href: string) => {
 };
 
 describe("Wordmark", () => {
-  it("renders the blueprint-first claim and both primary actions without client JS", () => {
+  it("renders the blueprint-first claim without client JS, and no buttons under it", () => {
     const html = render();
     const text = plainText(html);
     /* Two tones, and it has to stay ONE WORD.
@@ -52,17 +52,17 @@ describe("Wordmark", () => {
     expect(html).toMatch(/Dark<[^>]+>Print</);
     expect(text).toContain("Reusable blueprints for agent workflows.");
 
-    /* The two routes are the same for every reader, so they are in the static frame; the
-       account line under them reads the session in the browser, because `/` must stay
-       prerendered (`tests/server/t261/ac3-prerender-verdicts.test.ts`). Its server frame is
-       the claimless pulse, so nothing here may say who the reader is. */
-    expect(text).toContain(
-      "Find a blueprint for your task and fetch it as a folder your agent can run.",
-    );
-    expect(html).toContain('href="/blueprints"');
-    expect(html).toContain('href="/tutorial"');
-    expect(text).toContain("Browse blueprints");
-    expect(text).toContain("Write your first blueprint");
+    /* The owner took the support sentence and both buttons out of the hero, and the example
+       under it is the way in, so the cue points there. The account line reads the session in
+       the browser, because `/` must stay prerendered
+       (`tests/server/t261/ac3-prerender-verdicts.test.ts`). Its server frame is the
+       claimless pulse, so nothing here may say who the reader is. */
+    expect(text).not.toContain("Find a blueprint for your task");
+    expect(text).not.toContain("Browse blueprints");
+    expect(text).not.toContain("Write your first blueprint");
+    expect(html).not.toContain('href="/blueprints"');
+    expect(html).not.toContain('href="/tutorial"');
+    expect(html).toContain('href="#example"');
     expect(html).toContain("animate-pulse");
     expect(text).not.toContain("Sign in with");
     expect(text.toLowerCase()).not.toContain("sign in");

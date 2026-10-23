@@ -1,10 +1,8 @@
 /* ============================================================
    Beat 1 of redesign spec §2, and the frame it stands in.
 
-   One viewport, one word, one line. Everything the previous hero
-   carried beside the name (a five-node drawing, a classification
-   token, two buttons) moved down the page into the beats that were
-   about those things: the graph is beat 2, the buttons are beat 4.
+   One viewport, one word, one line. The hero carries no buttons:
+   the example under it is the way in.
 
    The small CLI mention that used to sit in this section's top-right
    corner moved 2026-07-29 into `Wordmark.tsx`, directly under the
@@ -130,7 +128,7 @@ export function Hero() {
           Proportional on the bottom because a fixed 88 cannot do that job at every height.
           The author read the hero on a tall window — "it does not seem central" — and a
           fixed pad lifts the block by half its excess whatever the viewport is: 8px, on a
-          screen with 500px of empty paper under the buttons. `20vh` lifts by a share of the
+          screen with 500px of empty paper under the lockup. `20vh` lifts by a share of the
           slack instead, so the correction grows with the thing it is correcting.
 
           Measured on the built page, as the name's centre above the middle of the space
@@ -139,7 +137,7 @@ export function Hero() {
           the report was made at.
 
           Below `sm` both pads are flat and smaller, because on a phone the job is keeping
-          the two routes above the fold rather than centring the name optically.
+          the claim and the way-down cue above the fold rather than centring the name optically.
 
           `container-page` for the horizontal, where the mock spells 64px. It is the same
           order of gutter and it is what every other page on the site uses; the name is

@@ -117,6 +117,7 @@ afterAll(async () => {
 const READERS: readonly { operation: string; invoke: (db: Db) => Promise<unknown> }[] = [
   { operation: "blueprints", invoke: (d) => registry.blueprints(d, ANON) },
   { operation: "blueprint", invoke: (d) => registry.blueprint(d, ANON, PROBE_REF, PROBE_REF) },
+  { operation: "localVocabularies", invoke: (d) => registry.localVocabularies(d, ANON) },
   { operation: "cards", invoke: (d) => registry.cards(d, ANON) },
   { operation: "latestCards", invoke: (d) => registry.latestCards(d, ANON) },
   { operation: "versionsOf", invoke: (d) => registry.versionsOf(d, ANON, PROBE_REF) },
@@ -379,15 +380,16 @@ describe("the barrel's fault surface is exactly one class, and its exports are p
 /* ------------------------------------------------------------------ */
 
 describe("AC2/AC3: every published reader seals what the driver throws", () => {
-  it("twenty readers, each rejecting with its own operation and nothing from the statement", async () => {
+  it("twenty-one readers, each rejecting with its own operation and nothing from the statement", async () => {
     expect(
       READERS.length,
       "An empty or shortened case list would make every assertion below pass over nothing. " +
-        "Twenty readers are published (13 + T132's three, D-132-01/03, + usersOfMany at " +
+        "Twenty-one readers are published (13 + T132's three, D-132-01/03, + usersOfMany at " +
         "T260's merge, D-260-31, + ownedBundles and draftBundle at 0007_drafts, T280, + " +
-        "storedVersionsOf with the single-card publish door) from the barrel; the partition " +
-        "test above is what keeps this number honest as the surface changes.",
-    ).toBe(20);
+        "storedVersionsOf with the single-card publish door, + localVocabularies for the " +
+        "term list) from the barrel; the partition test above is what keeps this number " +
+        "honest as the surface changes.",
+    ).toBe(21);
 
     const leaked: string[] = [];
     const unreached: string[] = [];

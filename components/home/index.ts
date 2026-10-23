@@ -4,6 +4,7 @@
    The directory holds more than this: `SectionLevels`, `SectionNodeCard` and
    `SectionRoles` are sections other pages mount by path. They are deliberately absent
    from the exports below so this list says exactly what the landing renders. */
+export { SectionMcpExample } from "./SectionMcpExample";
 export { SectionSameRun } from "./SectionSameRun";
 export { SectionBlueprint } from "./SectionBlueprint";
 export { SectionNodeIsCard } from "./SectionNodeIsCard";

@@ -52,7 +52,7 @@ export { RegistryStoreError } from "./errors";
 export { withRegistryStore } from "./store";
 export { withRegistryErrors } from "./http";
 
-export { blueprint, blueprints } from "./blueprints";
+export { blueprint, blueprints, localVocabularies } from "./blueprints";
 /* 0007_drafts (T280). Two readers over `bundle` directly — `owned.ts`'s header says why
    they do not go through `loadSnapshot`, and in particular why its release-skip for the
    public archive shelf is untouched by either. */

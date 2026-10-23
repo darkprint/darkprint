@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================
-   The line under the hero's two routes, per reader.
+   The line under the hero's claim, per reader.
 
    Read in the browser because `/` must stay prerendered for every visitor, the same way
    `SiteHeader` reads it through `useUploadSession`. The loading and unreachable states say

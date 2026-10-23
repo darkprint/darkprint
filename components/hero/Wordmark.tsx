@@ -74,7 +74,6 @@ import {
 } from "animejs";
 
 import { Logo } from "@/components/site/Logo";
-import { ButtonLink } from "@/components/ui/Button";
 import { HeroAccountLine } from "./HeroAccountLine";
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
@@ -104,13 +103,6 @@ const MARK_TONE_SPLIT = 4;
  * nodes, and `app/layout.tsx` carries the same string in its own metadata.
  */
 const CLAIM = "Reusable blueprints for agent workflows.";
-
-/**
- * What the registry is for, in one sentence under the claim. The claim is deliberately
- * abstract, so without this line the first screen never says that a reader can take something
- * away.
- */
-const SUPPORT = "Find a blueprint for your task and fetch it as a folder your agent can run.";
 
 /** The rule under the name, in scene units. Tall enough for the pulse's stroke. */
 const RULE = { width: 900, height: 6 } as const;
@@ -195,7 +187,7 @@ function handle(id: string): string {
  * ── Why the second half moved forward ──
  * The claim used to land at 1400 and the way-down cue at 1980, which put the last thing a
  * reader could act on at 2.58s. Everything a reader can act on is now on screen by ~1.6s:
- * the claim and the sentence under it at 900, the two buttons at 1080.
+ * the claim at 900, the account line and the way-down cue at 1080.
  *
  * ── Why `settle` moved back ──
  * `settle` is also when the trace overlay is pulled away (`AT.settle - 200`). At 980 that
@@ -506,37 +498,19 @@ export function Wordmark() {
         </span>
       </h1>
 
-      {/* A sibling of the heading rather than part of it, so the accessible name stays the
-          one claim. It shares the claim's mark and therefore its beat. */}
-      <p
-        data-mark="claim"
-        className="mt-5 text-balance text-base leading-relaxed text-muted sm:text-lg"
-      >
-        {SUPPORT}
-      </p>
-
-      {/* The routes are the same for every reader, so they ship in the prerendered HTML and
-          work without JS. Only the line under them depends on the session. */}
+      {/* No buttons here: the example right under the hero is the way in, and the header
+          carries the registry and the skill on every page. Only the account line depends on
+          the session. */}
       <div data-mark="cta" className="mt-8 flex w-full flex-col items-center gap-5">
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-center">
-          <ButtonLink href="/blueprints" size="lg">
-            Browse blueprints
-          </ButtonLink>
-          <ButtonLink href="/tutorial" variant="outline" size="lg">
-            Write your first blueprint <span aria-hidden>→</span>
-          </ButtonLink>
-        </div>
-
         <HeroAccountLine />
 
-        {/* The way down, on the author's instruction: "add also a small arrow pointing down
-            below the buttons".
+        {/* The way down.
 
             A LINK, not a decoration. An arrow under the fold's last element is read as an
             affordance whether or not it is one, and a cue that answers a click with nothing
-            is worse than no cue — so it goes where it points, `#reproducible`, the first
-            beat under the hero. That section already carries `scroll-mt-24`, so the landing
-            is not left under the site header.
+            is worse than no cue — so it goes where it points, `#example`, the first beat
+            under the hero. That section carries `scroll-mt-24`, so the landing is not left
+            under the site header.
 
             An `<a href="#…">` rather than anything scripted: the app forbids
             `scrollIntoView`, and a fragment works before hydration, on a shared link and
@@ -546,7 +520,7 @@ export function Wordmark() {
             aloud is a character and not a destination. `hoverable:hover` only, per
             `globals.css`: a touch pointer has no leave, so a tapped cue would latch. */}
         <a
-          href="#reproducible"
+          href="#example"
           className="group inline-flex flex-col items-center gap-1 text-dim transition-colors hoverable:hover:text-cyan"
         >
           <span className="sr-only">Skip to the first section</span>

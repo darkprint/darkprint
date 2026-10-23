@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import { Wordmark } from "@/components/hero/Wordmark";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionFirstBlueprint } from "@/components/home/SectionFirstBlueprint";
+import { SectionMcpExample } from "@/components/home/SectionMcpExample";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionRegistry } from "@/components/home/SectionRegistry";
 import {
@@ -32,18 +33,16 @@ const render = (component: React.ComponentType) =>
   renderToStaticMarkup(createElement(component));
 
 describe("the blueprint-first landing", () => {
-  it("opens with the product, and the fold's two doors are routes", () => {
+  it("opens with the product, and the fold leads down to the example", () => {
     const html = render(Wordmark);
     const text = plainText(html);
     expect(text).toContain("Reusable blueprints for agent workflows.");
-    expect(text).toContain(
-      "Find a blueprint for your task and fetch it as a folder your agent can run.",
-    );
 
-    // The routes are in the static frame; only the account line waits for the session.
-    expect(html).toContain('href="/blueprints"');
-    expect(html).toContain('href="/tutorial"');
-    expect(text).toContain("Browse blueprints");
+    // No buttons on the fold: the example under it is the way in.
+    expect(text).not.toContain("Find a blueprint for your task");
+    expect(text).not.toContain("Browse blueprints");
+    expect(html).toContain('href="#example"');
+    expect(render(SectionMcpExample)).toContain('id="example"');
 
     /* The account line's server frame is its claimless placeholder: a "Sign in" here would
        tell a signed-in reader something false for a frame, the failure

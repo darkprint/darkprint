@@ -1,5 +1,5 @@
 /* ============================================================
-   DarkPrint backend — the read model, built once per call
+   DarkPrint backend — the read model, projected once per call
    AC6 ("no private bundle or private card appears in any
    response") is one filter at the boundary rather than twelve
    functions' worth of remembering: every reader answers from this
@@ -8,12 +8,14 @@
    columns the schema has — `bundle.owner_id` and
    `card_version.owner_id`.
 
-   Four queries, fixed, whatever the registry's size: bundles,
-   their owners' handles, their releases, and the card versions
-   those releases pin. Nothing here iterates a query.
+   The rows behind it are kept per database handle and read again
+   only when a committed write has changed them, because a page
+   calls several readers and each one rebuilds the snapshot. A call
+   costs one small statement that answers whether anything changed;
+   the projection, visibility filter included, still runs per call.
    ============================================================ */
 
-import { inArray } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { canonicalJson, cardRef, parseCardRef, CORE_PHASE_IDS } from "@/lib/core";
 import { visibleTo, type Actor } from "@/lib/server/policy";
@@ -134,37 +136,152 @@ interface CurrentBlueprint {
   source: ReleaseSource;
 }
 
-export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapshot> {
-  const bundles = (await db.select().from(schema.bundle)).filter((row) => readable(actor, row));
+type BundleRow = typeof schema.bundle.$inferSelect;
+type CardRow = typeof schema.cardVersion.$inferSelect;
 
-  /* No short circuit on an empty bundle list, and that is the point: a registry can hold
-     cards and no blueprints — an account whose first publish is `New card` — and the second
-     source below is what serves them. The two queries here are guarded instead, because
-     `inArray` over an empty list is not a question worth asking Postgres. */
+/** Every release, without the columns only a current release is read for. */
+interface ReleaseRow {
+  id: string;
+  bundleId: string;
+  version: string;
+  digest: string;
+  cardRefs: string[];
+}
+
+/** What a current release adds to its `ReleaseRow`. */
+interface ReleaseBody {
+  id: string;
+  dot: string;
+  manifest: unknown;
+  localVocabulary: unknown;
+}
+
+/**
+ * The rows every snapshot is projected from, unfiltered, so one copy serves every actor. They
+ * are shared across requests, so they are frozen all the way down: a reader that mutates a
+ * manifest or a card body throws instead of changing what every other reader sees.
+ */
+interface RegistryRows {
+  bundles: readonly BundleRow[];
+  owners: readonly { id: string; handle: string | null }[];
+  releases: readonly ReleaseRow[];
+  bodies: readonly ReleaseBody[];
+  cards: readonly CardRow[];
+}
+
+/** Each bundle's current release: highest semver, tiebroken on row id. */
+function currentReleases(releases: readonly ReleaseRow[]): Map<string, ReleaseRow> {
+  const current = new Map<string, ReleaseRow>();
+  for (const row of releases) {
+    const held = current.get(row.bundleId);
+    if (held === undefined || cmpReleasesCurrentFirst(row, held) < 0) current.set(row.bundleId, row);
+  }
+  return current;
+}
+
+function deepFreeze<T>(value: T): T {
+  if (typeof value !== "object" || value === null) return value;
+  Object.freeze(value);
+  for (const child of Object.values(value)) deepFreeze(child);
+  return value;
+}
+
+/**
+ * Every release is read for its pins, because a version any release pins stays out of the
+ * standalone cards, but only the current ones are read for their DOT and manifest.
+ */
+async function readRows(db: Db): Promise<RegistryRows> {
+  const bundles = await db.select().from(schema.bundle);
+  const ownerIds = [...new Set(bundles.map((b) => b.ownerId))];
   const owners =
-    bundles.length === 0
+    ownerIds.length === 0
       ? []
       : await db
           .select({ id: schema.account.id, handle: schema.account.handle })
           .from(schema.account)
-          .where(inArray(schema.account.id, [...new Set(bundles.map((b) => b.ownerId))]));
-  const handleOf = new Map(owners.map((o) => [o.id, o.handle]));
-
-  const releases =
-    bundles.length === 0
+          .where(inArray(schema.account.id, ownerIds));
+  const releases = await db
+    .select({
+      id: schema.release.id,
+      bundleId: schema.release.bundleId,
+      version: schema.release.version,
+      digest: schema.release.digest,
+      cardRefs: schema.release.cardRefs,
+    })
+    .from(schema.release);
+  const currentIds = [...currentReleases(releases).values()].map((row) => row.id);
+  const bodies =
+    currentIds.length === 0
       ? []
       : await db
-          .select()
+          .select({
+            id: schema.release.id,
+            dot: schema.release.dot,
+            manifest: schema.release.manifest,
+            localVocabulary: schema.release.localVocabulary,
+          })
           .from(schema.release)
-          .where(inArray(schema.release.bundleId, bundles.map((b) => b.id)));
+          .where(inArray(schema.release.id, currentIds));
+  const cards = await db.select().from(schema.cardVersion);
+  return deepFreeze({ bundles, owners, releases, bodies, cards });
+}
 
-  // Highest semver, tiebroken on row id (D-80-03). One release per bundle: a blueprint is
-  // what its current release says it is, and the appended history is T010's to serve.
-  const currentByBundle = new Map<string, (typeof releases)[number]>();
-  for (const row of releases) {
-    const held = currentByBundle.get(row.bundleId);
-    if (held === undefined || cmpReleasesCurrentFirst(row, held) < 0) currentByBundle.set(row.bundleId, row);
-  }
+/**
+ * A value that changes whenever a committed write changes what `readRows` reads. An insert or
+ * an update gives its row a transaction id no row held before and a delete shortens the list,
+ * so the sorted `xmin` lists move exactly when the rows do. Owner handles are hashed by value
+ * instead, because an account row also changes for edits this index never reads.
+ *
+ * A transaction reads through its own `Db` object and so caches apart from the pool, and a
+ * rolled-back transaction id never appears in committed rows, so no stamp a rollback saw can
+ * come back.
+ */
+async function stampOf(db: Db): Promise<string> {
+  const xmins = (table: typeof schema.bundle | typeof schema.release | typeof schema.cardVersion) =>
+    sql`(select coalesce(string_agg(xmin::text, ',' order by xmin::text), '') from ${table})`;
+  const result = await db.execute<{ stamp: string }>(sql`
+    select
+      md5(concat_ws('|',
+        ${xmins(schema.bundle)},
+        ${xmins(schema.release)},
+        ${xmins(schema.cardVersion)},
+        (select coalesce(string_agg(id::text || ':' || coalesce(handle, ''), ',' order by id), '')
+           from ${schema.account}
+          where id in (select owner_id from ${schema.bundle}))
+      )) as stamp`);
+  return result.rows[0].stamp;
+}
+
+/** Keyed by the `Db` object, so each test database and each server instance keeps its own copy. */
+const held = new WeakMap<Db, { stamp: string; rows: Promise<RegistryRows> }>();
+
+/**
+ * The stamp is read before the rows, so a write landing between the two leaves rows newer than
+ * their stamp and the next caller misses, never the reverse. Concurrent callers on one stamp
+ * share one read, and a failed read is dropped so the next caller retries it.
+ */
+async function registryRows(db: Db): Promise<RegistryRows> {
+  const stamp = await stampOf(db);
+  const kept = held.get(db);
+  if (kept !== undefined && kept.stamp === stamp) return kept.rows;
+  const entry = { stamp, rows: readRows(db) };
+  held.set(db, entry);
+  entry.rows.catch(() => {
+    if (held.get(db) === entry) held.delete(db);
+  });
+  return entry.rows;
+}
+
+export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapshot> {
+  const rows = await registryRows(db);
+
+  /* No short circuit on an empty bundle list, and that is the point: a registry can hold
+     cards and no blueprints — an account whose first publish is `New card` — and the second
+     source below is what serves them. */
+  const bundles = rows.bundles.filter((row) => readable(actor, row));
+  const handleOf = new Map(rows.owners.map((o) => [o.id, o.handle]));
+  const bodyOf = new Map(rows.bodies.map((body) => [body.id, body]));
+  const currentByBundle = currentReleases(rows.releases);
 
   const current: CurrentBlueprint[] = [];
   for (const bundle of bundles) {
@@ -174,13 +291,17 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
     if (release === undefined) continue;
     const ownerHandle = handleOf.get(bundle.ownerId);
     if (ownerHandle === null || ownerHandle === undefined) continue;
-    const manifest = release.manifest as BundleManifest;
+    // Absent only when the release was deleted between the two release reads, which is the
+    // bundle leaving the registry.
+    const body = bodyOf.get(release.id);
+    if (body === undefined) continue;
+    const manifest = body.manifest as BundleManifest;
     current.push({
       key: { ownerHandle, slug: bundle.slug },
       digest: release.digest,
       manifest,
       pinned: release.cardRefs,
-      source: { dot: release.dot, manifest, vocabulary: release.localVocabulary },
+      source: { dot: body.dot, manifest, vocabulary: body.localVocabulary },
     });
   }
 
@@ -199,39 +320,19 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
     pinsByBlueprint.set(keyOf(bp.key), pins);
   }
 
-  // Two sets, and the difference between them is the whole of D-80-06. `wantedIds` is what
-  // the query asks Postgres for; `pinnedRefs` is what may enter the index. Selecting by id
-  // alone returns **every** version of a pinned id, including versions no release pins —
-  // and keying those into the index put a card nothing instantiates into `cards()`,
-  // `versionsOf()`, `card()` and `latestCards()`, while `cardRefs` still (correctly) omitted
-  // it, so the read model contradicted itself. The tell was that such a record carries an
-  // empty `usedIn`, which the indexing rule makes impossible.
-  const wantedIds = new Set<string>();
+  // Matched on the whole `id@version` and never on the id alone: an id match would index
+  // versions no release pins, which `cardRefs` omits, and the read model would contradict
+  // itself. The tell is a record with an empty `usedIn`, which the indexing rule forbids.
   const pinnedRefs = new Set<CardRef>();
   for (const pins of pinsByBlueprint.values()) {
-    for (const [ref, { id }] of pins) {
-      wantedIds.add(id);
-      pinnedRefs.add(ref);
-    }
+    for (const ref of pins.keys()) pinnedRefs.add(ref);
   }
 
-  const cardRows =
-    wantedIds.size === 0
-      ? []
-      : (
-          await db
-            .select()
-            .from(schema.cardVersion)
-            .where(inArray(schema.cardVersion.cardId, [...wantedIds]))
-        ).filter((row) => readable(actor, row));
-
   // Only cards a DOT node instantiates are indexed (contract), and only the ones this actor
-  // may read: `rowsByRef` is the set of pins that resolve to a visible row. The query above
-  // is deliberately a superset — one `IN` over ids rather than one over every `id@version`
-  // pair — so the narrowing to the pin set happens here, and it is the line that makes the
-  // comment true rather than aspirational.
-  const rowsByRef = new Map<CardRef, (typeof cardRows)[number]>();
-  for (const row of cardRows) {
+  // may read: `rowsByRef` is the set of pins that resolve to a visible row.
+  const visibleCards = rows.cards.filter((row) => readable(actor, row));
+  const rowsByRef = new Map<CardRef, CardRow>();
+  for (const row of visibleCards) {
     const ref = cardRef(row.cardId, row.version);
     if (!pinnedRefs.has(ref)) continue;
     rowsByRef.set(ref, row);
@@ -253,14 +354,14 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
      of every release enters this set, not only the current one. What is left is a row no
      release has ever named. Its `usedIn` is `[]` by construction rather than by omission. */
   const claimed = new Set<CardRef>();
-  for (const row of await db.select({ cardRefs: schema.release.cardRefs }).from(schema.release)) {
+  for (const row of rows.releases) {
     for (const pin of row.cardRefs) {
       const parsed = parseCardRef(pin);
       if (parsed !== undefined) claimed.add(cardRef(parsed.id, parsed.version));
     }
   }
 
-  for (const row of (await db.select().from(schema.cardVersion)).filter((r) => readable(actor, r))) {
+  for (const row of visibleCards) {
     const ref = cardRef(row.cardId, row.version);
     if (claimed.has(ref) || rowsByRef.has(ref)) continue;
     rowsByRef.set(ref, row);

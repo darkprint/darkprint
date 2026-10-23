@@ -281,6 +281,11 @@ export const PUBLISHED_READERS = {
   storedVersionsOf:
     "storedVersionsOf(db: Db, actor: Actor, cardId: string): " +
     "Promise<readonly CardSummary[]>",
+  /* Each readable blueprint's current local vocabulary, answered from the snapshot so the
+     term list reads no release row per blueprint. */
+  localVocabularies:
+    "localVocabularies(db: Db, actor: Actor): " +
+    "Promise<readonly { blueprint: BlueprintSummary; vocabulary: unknown }[]>",
 } as const;
 
 export type ReaderName = keyof typeof PUBLISHED_READERS;
@@ -414,6 +419,7 @@ export const READER_PROBES: Record<ReaderName, ReaderProbe> = {
     variantArgs: [VARIANT.cardId],
     supplied: [PROBE.cardId],
   },
+  localVocabularies: { args: [], supplied: [] },
 };
 
 export function hasCallerInputs(name: ReaderName): boolean {

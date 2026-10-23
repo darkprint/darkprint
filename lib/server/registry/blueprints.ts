@@ -14,6 +14,24 @@ export async function blueprints(db: Db, actor: Actor): Promise<readonly Bluepri
 }
 
 /**
+ * Each readable blueprint's `release.local_vocabulary` from its current release, verbatim and
+ * in `blueprints()` order. It answers from the snapshot, so the term list costs no release
+ * read per blueprint; parsing stays with `parseStoredVocabulary`, the column's one reader.
+ */
+export async function localVocabularies(
+  db: Db,
+  actor: Actor,
+): Promise<readonly { blueprint: BlueprintSummary; vocabulary: unknown }[]> {
+  return withRegistryStore("localVocabularies", async () => {
+    const snapshot = await loadSnapshot(db, actor);
+    return snapshot.blueprints.map((bp) => ({
+      blueprint: bp,
+      vocabulary: snapshot.releaseByKey.get(keyOf(bp))?.vocabulary,
+    }));
+  });
+}
+
+/**
  * One blueprint by its two-part key (B-09), or `undefined` — for a key nothing holds and
  * for one the caller may not see alike. The two answers are deliberately the same value:
  * B-03 returns 404 rather than 403 so existence does not leak, and a caller able to tell
