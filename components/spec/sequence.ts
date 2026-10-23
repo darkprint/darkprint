@@ -1,103 +1,10 @@
 /* ============================================================
-   The Learn routes, as one ordered list.
+   The Learn routes, grouped as a welcoming start and an optional
+   reference, then kept in one ordered list for the rail and pager.
 
-   Redesign spec §4.1 splits `/spec` into an overview and three
-   layer pages, and asks that they "read as a sequence". A sequence
-   needs somewhere to say what comes after what, and the choice is
-   between four pages each naming their own neighbours and one list
-   they all derive from. The list wins for the reason the split was
-   made at all: the author left the single page because it was long,
-   and four pages whose pagers disagree about the order is a worse
-   failure than the length was.
-
-   ── The IA pass, 2026-08-07: two routes left this list ──
-   `/spec` is gone. The author asked for the overview page deleted
-   and its three children kept reachable, and the page that becomes
-   their door is `/what-a-blueprint-is`, which already linked all
-   three under the same three headings. So `SPEC_OVERVIEW` is that
-   route now: stop 00 still exists, the crumb and the rail still have
-   a parent, and `next.config.ts` 308s `/spec` onto it.
-
-   `SPEC_SCORING` is gone too, and it is a deletion rather than a
-   move. The author asked the grading door off the spec index, and
-   `/spec/scoring` merged into `/reading-the-radar` — one page for
-   the picture and the arithmetic, outside this sequence, because
-   grading is a reading OF the three layers rather than a fourth
-   document a blueprint is written in. `spec-routes.test.ts` walks
-   `app/spec` to make sure a fifth child never reappears without an
-   entry here.
-
-   ── And the worked example left, 2026-09-06 ──
-   The owner deleted `/build` and its component tree: "it is not
-   useful and make confusion". `SANDBOX` was exported by name for
-   the header's Learn menu and the footer's Learn column, so its
-   removal is three files, and the essay renumbers 06 → 05 the way
-   it did in 2026-09-04's deletion below.
-
-   ── And the grading page itself left, 2026-09-04 ──
-   The author asked "How a blueprint is graded" off the site. It was
-   stop 05, between the sandbox and the essay, so the row comes out
-   and the essay takes 05 the way the sandbox took 04 when it was
-   promoted: a sequence with a hole where a number should be tells a
-   reader they missed a page. `next.config.ts` 308s
-   `/reading-the-radar` onto `/build`, which was the stop that stood
-   before it, and `/spec/scoring` was repointed there in the same
-   change rather than chaining through a route that now redirects.
-   Both were repointed again onto `/what-a-blueprint-is` when
-   `/build` itself went, for the same no-chaining reason.
-
-   ── And one route arrived, 2026-09-05 ──
-   `SPEC_CROSSWALK` at `/spec/attractor`, on the owner's §11.0 Q20
-   (b) ruling: the mapping between a bundle and the file an Attractor
-   runner takes gets a page rather than a clause appended to each
-   field row on `/spec/card`. It takes 04 in the specification run
-   and the practice run moves down a rung, which is the treatment
-   this file already applies in the other direction when a stop is
-   deleted. It is NOT a fourth entry in `SPEC_LAYERS`: a blueprint is
-   still three files, and the layer pages still say which of them
-   they specify. (Two pages and three layers since the fold below,
-   which is why the card entry's eyebrow names two.) See the constant
-   for the rest of the argument.
-
-   ── And that route moved to the front, 2026-09-06 ──
-   The owner asked whether the ontology should exist at all, or
-   whether everything should unify under the Attractor spec, because
-   two specification documents read as two rival standards. The
-   finding was that the vocabulary describes a layer Attractor leaves
-   open, and that what makes the two read as rivals is the ORDER a
-   reader meets them in: `/spec/topology` documents a DOT carrying
-   two attributes Attractor's Appendix A does not have, and the page
-   explaining that stood after three DarkPrint documents. The owner:
-   "The motivations you provided are sound. Apply them."
-
-   So `SPEC_CROSSWALK` is stop 01 and the layers move down a rung.
-   The reader who already knows Attractor meets the mapping before
-   the first DarkPrint format rather than after all of them, and the
-   two attributes they will not recognise have been named as ours a
-   page earlier.
-
-   `/spec/ontology` is DELETED in the same change, and it is a fold
-   rather than a deletion of the subject: every term in that document
-   exists to be a legal value of a card field, so each is printed
-   beside the field that consumes it on `/spec/card`. `SPEC_LAYERS`
-   is two entries. What that cost is recorded on the constant itself,
-   because the deleted entry carried two claims the site made nowhere
-   else.
-
-   So this file owns the order, the labels and the one-line question
-   each page answers, and every surface reads it: the doors on
-   `/what-a-blueprint-is`, each child's crumb, and the previous/next
-   pager at the foot of every stop.
-
-   Plain TypeScript, no JSX and no React, so `spec-routes.test.ts`
-   can import it under `environment: "node"` and hold the pages on
-   disk against it.
-
-   Nothing dynamic lives here. The ontology door printed a live term
-   count and that number was read off the engine on the page that
-   rendered it rather than frozen into this list; the door is gone
-   with the stop, and the rule it was an instance of still holds for
-   whatever quotes a figure next.
+   Routes and their URLs stay stable. Grouping is presentational:
+   public links, existing pages and the ordinary next/previous chain
+   remain available.
    ============================================================ */
 
 /**
@@ -125,25 +32,16 @@ export interface SpecSection {
 }
 
 /**
- * Which of the two runs a stop belongs to.
+ * Which of the two reader-facing Learn groups a stop belongs to.
  *
- * The rail was one flat list of seven and the reader saw one course. Stops 00–03 are a
- * specification — what the three files are and what the validator does with them — and
- * what follows is a reading OF that specification. `LEARN_PRACTICE` has been its own
- * constant in this file since before the split, so the code already knew; the reader did
- * not, and was told they were two-sevenths through a course when they had come for DOT
- * syntax.
- *
- * The grouping is PRESENTATIONAL. There is still one list, one `specNeighbours()` walk and
- * one pager, and a reader stepping from 03 to 04 crosses the boundary in the ordinary way —
- * the pager just names the run they are stepping into.
+ * These labels distinguish the short authoring path from the optional reference pages.
  */
 export type SpecRun = "specification" | "practice";
 
-/** What each run is called, wherever one is named. One string, two surfaces. */
+/** Reader-facing names for the two Learn groups. */
 export const RUNS: Record<SpecRun, string> = {
-  specification: "Specification",
-  practice: "In practice",
+  specification: "Start here",
+  practice: "Reference",
 };
 
 /** What every page in the sequence carries. */
@@ -257,11 +155,10 @@ export interface SpecLayerPage extends SpecPage {
 }
 
 /**
- * The entry point, and the one page that answers the author's original question.
+ * The entry point for readers making or adapting a blueprint.
  *
- * Their words: "probably we need a page reporting in details what is the documentation,
- * ie the spec language we use in darkprint. Probably it is the ontology, right?" The
- * overview answers it in one line and hands the reader a door per layer page.
+ * It introduces the folder and points to a walkthrough. The reference pages remain close by
+ * for readers who need a format, capability, or Attractor mapping.
  *
  * ── Why this is `/what-a-blueprint-is` and no longer `/spec` ──
  * The IA pass deleted `/spec` on the author's instruction and asked that its three
@@ -281,7 +178,7 @@ export const SPEC_OVERVIEW: SpecPage = {
   nav: "What a blueprint is",
   eyebrow: "What a blueprint is",
   title: "What a blueprint is",
-  question: "What a blueprint is for, and the three files one is written in.",
+  question: "What blueprints are, what you can reuse, and which files define one.",
   sections: [
     { id: "bundle", label: "The blueprint contents" },
     { id: "parts", label: "The three parts" },
@@ -290,7 +187,7 @@ export const SPEC_OVERVIEW: SpecPage = {
 };
 
 /**
- * Stop 01: the crosswalk between a bundle and the file a runner takes.
+ * The reference page mapping a bundle to the file a runner takes.
  *
  * ── why this is a route and not a column ──
  * The 2026-09-04 audit asked whether DarkPrint is a file registry a person who already
@@ -301,30 +198,20 @@ export const SPEC_OVERVIEW: SpecPage = {
  * cannot drift from what the exporter writes — where a clause per field row is a dozen
  * sentences that each go stale on their own.
  *
- * ── why stop 01, having been stop 04 ──
- * It arrived as the last question the specification run left open: having read what the
- * three files are, what does the thing that runs them actually see. The owner reversed that
- * on 2026-09-06 ("The motivations you provided are sound. Apply them"), on the finding this
- * file's header records: `/spec/topology` documents a DOT carrying `card=` and `in=`,
- * neither of which is in Attractor's Appendix A, and the page that says whose they are was
- * three DarkPrint documents further on. A reader who arrives already knowing Attractor met
- * two unexplained attributes first and a rival standard second.
+ * It is a reference, not a required authoring step. The page maps DarkPrint fields to the
+ * Attractor format for readers who plan to use that runner; the four reference pages remain
+ * separate from the short Start here path.
  *
- * So the question it answers is asked before the formats rather than after them, and every
- * layer moves down a rung. That is the treatment this file applies whenever a stop is
- * inserted or removed, and for the reason recorded on the essay below: a sequence with a
- * hole where a number should be tells a reader they missed a page.
- *
- * It is still not a layer. A blueprint is three files and this page adds no format a reader
- * has to write; `SPEC_LAYERS` is where the layers are, and two pages are left in it.
+ * It is not a layer. A blueprint is three files and this page adds no format a reader has to
+ * write; `SPEC_LAYERS` is where the layer pages are.
  *
  * `eyebrow` deliberately breaks the layers' "Layer 0n of 03" pattern. Reusing it would have
  * announced a fourth layer in the one word a reader scanning the header reads first.
  */
 export const SPEC_CROSSWALK: SpecPage = {
   href: "/spec/attractor",
-  step: "01",
-  run: "specification",
+  step: "05",
+  run: "practice",
   nav: "Attractor crosswalk",
   eyebrow: "Compatibility",
   title: "The Attractor crosswalk",
@@ -340,7 +227,7 @@ export const SPEC_CROSSWALK: SpecPage = {
 };
 
 /**
- * The layer pages, in the order a reader resolves the files: graph, then card.
+ * The layer reference pages, in the order a reader resolves the files: graph, then card.
  *
  * ── `title` is the site's name for the route, not a headline ──
  * Renamed on 2026-08-08. They were "The topology, in DOT", "The node card, in YAML" and
@@ -385,7 +272,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   {
     href: "/spec/topology",
     step: "02",
-    run: "specification",
+    run: "practice",
     nav: "Topology",
     eyebrow: "Layer 01 of 03",
     title: "The topology file (DOT)",
@@ -403,7 +290,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   {
     href: "/spec/card",
     step: "03",
-    run: "specification",
+    run: "practice",
     nav: "Node card",
     /* "Layers 02 and 03 of 03", where the entry above keeps the single-layer form.
        ------------------------------------------------------------
@@ -442,99 +329,63 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   },
 ];
 
-/**
- * The second run: what a reading of the specification looks like.
- *
- * Two pages. The specification says what the three files are, and this run is what a reader
- * does with it: the index of every operation the surfaces offer, then the walkthrough that
- * uses them. Both left the AI Tools menu because a reader consults them while learning, and
- * Learn is where the chrome puts what a reader consults.
- *
- * The numbering closes up whenever a stop leaves, which is why these read 04 and 05: a
- * sequence with a hole where a number should be tells a reader they missed a page.
- *
- * `LEARN_PRACTICE` stays a constant rather than being inlined: it is what the second run
- * IS, and the rail's grouping reads it. Inlining it into `SPEC_SEQUENCE` would leave the
- * grouping reading a shape nothing names, which is how a run quietly stops being one.
- */
-export const LEARN_PRACTICE: readonly SpecPage[] = [
-  {
-    href: "/capabilities",
-    step: "04",
-    run: "practice",
-    nav: "What you can do",
-    eyebrow: "Reference",
-    title: "What you can do",
-    question:
-      "Every operation, from the site, a terminal or your agent, and whether it works today.",
-    sections: [
-      { id: "intent-title", label: "By intent" },
-      { id: "cli", label: "Command line" },
-      { id: "mcp", label: "MCP" },
-      { id: "skill", label: "The blueprint-writing skill" },
-    ],
-  },
-  {
-    href: "/tutorial",
-    step: "05",
-    run: "practice",
-    nav: "Write your first blueprint",
-    eyebrow: "Tutorial",
-    title: "Write your first blueprint",
-    question:
-      "Make one: the blueprint-writing skill interviews you and the graph draws itself as you answer.",
-    /* The five steps of the page, in the order a reader takes them. The work happens in
-       the reader's own agent; the live page is what this site adds to it. */
-    sections: [
-      { id: "install", label: "Install the DarkPrint skill" },
-      { id: "open-live", label: "Open a live page" },
-      { id: "design", label: "Describe the task" },
-      { id: "enrich", label: "Enrich over MCP" },
-      { id: "keep", label: "Keep it" },
-    ],
-  },
+const TUTORIAL: SpecPage = {
+  href: "/tutorial",
+  step: "01",
+  run: "specification",
+  nav: "Write your first blueprint",
+  eyebrow: "Tutorial",
+  title: "Write your first blueprint",
+  question: "Describe a task, reuse what fits, and adapt it into a blueprint.",
+  sections: [
+    { id: "install", label: "Install the DarkPrint skill" },
+    { id: "open-live", label: "Open a live page" },
+    { id: "design", label: "Describe the task" },
+    { id: "enrich", label: "Enrich over MCP" },
+    { id: "keep", label: "Keep it" },
+  ],
+};
+
+const CAPABILITIES: SpecPage = {
+  href: "/capabilities",
+  step: "04",
+  run: "practice",
+  nav: "What you can do",
+  eyebrow: "Reference",
+  title: "What you can do",
+  question: "Every operation, where it lives, and what it does.",
+  sections: [
+    { id: "intent-title", label: "By intent" },
+    { id: "cli", label: "Command line" },
+    { id: "mcp", label: "MCP" },
+    { id: "skill", label: "The blueprint-writing skill" },
+  ],
+};
+
+/** The short route for readers making or adapting a blueprint. */
+export const LEARN_START: readonly SpecPage[] = [SPEC_OVERVIEW, TUTORIAL];
+
+/** Format and capability references remain available without extending the start path. */
+export const LEARN_REFERENCE: readonly SpecPage[] = [
+  ...SPEC_LAYERS,
+  CAPABILITIES,
+  SPEC_CROSSWALK,
 ];
 
-/**
- * The reading order: the door, the crosswalk, then the layers in resolution order.
- *
- * A fifth stop stood here, `SPEC_SCORING` at `/spec/scoring`, for how the engine grades
- * what the three layers describe. The IA pass took it out of the sequence and off the
- * route tree together: the author asked the grading door off the spec index, and a page
- * that stays a numbered spec stop while its parent index has been deleted is the same
- * instruction refused twice. Its content merged into `/reading-the-radar`.
- *
- * That page is gone as well since 2026-09-04, on the author's instruction, and grading no
- * longer has a stop of its own anywhere in Learn. Both old paths 308'd onto `/build` until
- * the owner deleted that route on 2026-09-06, and `next.config.ts` repointed both onto
- * `/what-a-blueprint-is` rather than chaining them through a third redirect.
- *
- * The sequence is six stops: the door, the Attractor crosswalk, the two layer pages, then
- * the practice run's reference and tutorial.
- *
- * `SPEC_CROSSWALK` is spread in by name rather than folded into `SPEC_LAYERS`, and it now
- * stands BEFORE it. Two reasons, and only the second one is new. The doors on
- * `/what-a-blueprint-is` are read off `SPEC_LAYERS`, and the crosswalk is not a layer: it
- * names no file a reader writes. And the mapping is what a reader who already knows
- * Attractor needs before they meet a DOT with `card=` in it, which is the whole of the
- * 2026-09-06 reordering recorded at the top of this file.
- */
+/** Preserve the former export for any existing code importing that page pair. */
+export const LEARN_PRACTICE: readonly SpecPage[] = [CAPABILITIES, TUTORIAL];
+
+/** One continuous pager chain, presented as a short start path followed by references. */
 export const SPEC_SEQUENCE: readonly SpecPage[] = [
-  SPEC_OVERVIEW,
-  SPEC_CROSSWALK,
-  ...SPEC_LAYERS,
-  ...LEARN_PRACTICE,
+  ...LEARN_START,
+  ...LEARN_REFERENCE,
 ];
 
 /**
  * Where a stop sits inside its own run, counting only the numbered ones.
  *
- * The rail's meta line reads "Specification · 3 of 4", which is the question a reader who
- * came for DOT syntax is actually asking: how much of THIS is left. The sandbox is excluded
- * from both halves, because a stop with no number is not one of four.
- *
- * Returns `undefined` for the sandbox itself: it has no position to print, and the rail
- * falls back to naming the run alone.
+ * The rail's meta line counts the numbered stops in Start here or Reference, rather than
+ * counting across the whole sequence.
  */
 export function runPosition(
   href: string,

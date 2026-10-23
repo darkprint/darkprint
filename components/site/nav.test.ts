@@ -44,7 +44,7 @@ import { describe, expect, it } from "vitest";
 import nextConfig from "../../next.config";
 import { SPEC_SEQUENCE } from "@/components/spec/sequence";
 
-import { ACCOUNT_MENU, LEARN, NAV } from "./SiteHeader";
+import { ACCOUNT_MENU, LEARN, LEARN_GROUPS, NAV } from "./SiteHeader";
 import { COLS } from "./SiteFooter";
 
 /** Repo root: this file is `<root>/components/site/`. */
@@ -476,7 +476,17 @@ describe("the nav is a complete map of the routes", () => {
      folded into `/spec/card`, so it was a count in a place nothing could hold it true. The
      assertion never depended on it: it compares the dropdown against `SPEC_SEQUENCE`
      element-wise, whatever the sequence is. */
-  it("uses the shared sequence for the Learn dropdown", () => {
+  it("groups the Learn dropdown into the short path and optional references", () => {
+    expect(LEARN_GROUPS.map(({ title, pages }) => ({
+      title,
+      hrefs: pages.map(({ href }) => href),
+    }))).toEqual([
+      { title: "Start here", hrefs: ["/what-a-blueprint-is", "/tutorial"] },
+      {
+        title: "Reference",
+        hrefs: ["/spec/topology", "/spec/card", "/capabilities", "/spec/attractor"],
+      },
+    ]);
     expect(LEARN.map(({ href, label, step }) => ({ href, label, step }))).toEqual(
       SPEC_SEQUENCE.map(({ href, nav, step }) => ({ href, label: nav, step })),
     );

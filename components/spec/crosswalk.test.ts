@@ -412,9 +412,9 @@ describe("the page renders those constants and not a transcription", () => {
 });
 
 describe("the stop the page is reached through", () => {
-  it("is in the specification run, with sections the page really declares", () => {
+  it("is in Reference, with sections the page really declares", () => {
     expect(SPEC_CROSSWALK.href).toBe("/spec/attractor");
-    expect(SPEC_CROSSWALK.run).toBe("specification");
+    expect(SPEC_CROSSWALK.run).toBe("practice");
     for (const section of SPEC_CROSSWALK.sections) {
       /* Both halves. A rail row pointing at an id nothing declares scrolls nowhere, and an
          id declared without `scroll-mt-24` lands under the sticky header — which reads to

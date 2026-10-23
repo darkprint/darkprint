@@ -7,7 +7,11 @@ import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Logo } from "./Logo";
 import { ButtonLink } from "@/components/ui/Button";
-import { SPEC_SEQUENCE } from "@/components/spec/sequence";
+import {
+  LEARN_REFERENCE,
+  LEARN_START,
+  RUNS,
+} from "@/components/spec/sequence";
 import { authorFor, profileHref } from "@/components/profile/author";
 import type { AccountRecord } from "@/lib/server/accounts";
 import { cx } from "@/lib/format";
@@ -164,11 +168,21 @@ const BUILD_BLURB: Record<string, string> = {
   "/skill": "A skill for your coding agent that interviews you and writes the blueprint",
 };
 
-export const LEARN = SPEC_SEQUENCE.map((page) => ({
-  href: page.href,
-  label: page.nav,
-  step: page.step,
-}));
+export const LEARN_GROUPS = [
+  { title: RUNS.specification, pages: LEARN_START },
+  { title: RUNS.practice, pages: LEARN_REFERENCE },
+] as const;
+
+const learnLinks = LEARN_GROUPS.flatMap(({ title, pages }) =>
+  pages.map((page, index) => ({
+    href: page.href,
+    label: page.nav,
+    step: page.step,
+    heading: index === 0 ? title : undefined,
+  })),
+);
+
+export const LEARN = learnLinks.map(({ href, label, step }) => ({ href, label, step }));
 
 /**
  * The account menu, and every route in it is real.
@@ -232,8 +246,8 @@ const MOBILE_GROUPS = [
 function mobileLinks(
   group: (typeof MOBILE_GROUPS)[number]["id"],
   account: AccountRecord | null | undefined,
-): readonly { href: string; label: string; step?: string }[] {
-  if (group === "learn") return LEARN;
+): readonly { href: string; label: string; step?: string; heading?: string }[] {
+  if (group === "learn") return learnLinks;
   if (group === "you") {
     /* The whole account state, not just the handle, because a null handle means two
        different things here: nobody is signed in, or somebody is and has not chosen one
@@ -471,7 +485,7 @@ export function SiteHeader() {
             </div>
           </details>
 
-          {/* Learn ▾ — unchanged in mechanism; its contents follow `SPEC_SEQUENCE`. */}
+          {/* Learn ▾ — grouped from the shared sequence for the short path and references. */}
           <details
             open={isOpen("learn")}
             onToggle={(event) =>
@@ -491,20 +505,27 @@ export function SiteHeader() {
               <Caret />
             </summary>
             <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 py-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
-              {LEARN.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cx(
-                    "block px-4 py-2 text-sm transition-colors hoverable:hover:bg-cyan/5 hoverable:hover:text-cyan",
-                    isActive(item.href) ? "text-cyan" : "text-muted",
-                  )}
-                >
-                  <span className="mr-3 font-mono text-[10px] text-dim">
-                    {item.step ?? "└"}
-                  </span>
-                  {item.label}
-                </Link>
+              {LEARN_GROUPS.map((group) => (
+                <section key={group.title} className="py-1">
+                  <p className="px-4 pb-1 pt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
+                    {group.title}
+                  </p>
+                  {group.pages.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cx(
+                        "block px-4 py-2 text-sm transition-colors hoverable:hover:bg-cyan/5 hoverable:hover:text-cyan",
+                        isActive(item.href) ? "text-cyan" : "text-muted",
+                      )}
+                    >
+                      <span className="mr-3 font-mono text-[10px] text-dim">
+                        {item.step ?? "└"}
+                      </span>
+                      {item.nav}
+                    </Link>
+                  ))}
+                </section>
               ))}
             </div>
           </details>
@@ -696,9 +717,8 @@ export function SiteHeader() {
                   /* An `/api/` row is a route handler with a side effect (the sign-in rows
                      set a state cookie and redirect to the provider), so it is a plain
                      anchor, the way `SignInButtons` renders it, and no prefetch reaches it. */
-                  return item.href.startsWith("/api/") ? (
+                  const link = item.href.startsWith("/api/") ? (
                     <a
-                      key={item.href}
                       href={item.href}
                       onClick={() => setMobileAt(null)}
                       className={className}
@@ -707,13 +727,22 @@ export function SiteHeader() {
                     </a>
                   ) : (
                     <Link
-                      key={item.href}
                       href={item.href}
                       onClick={() => setMobileAt(null)}
                       className={className}
                     >
                       {content}
                     </Link>
+                  );
+                  return (
+                    <div key={item.href}>
+                      {item.heading !== undefined && (
+                        <p className="px-3 pb-1 pt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
+                          {item.heading}
+                        </p>
+                      )}
+                      {link}
+                    </div>
                   );
                 })}
                 {/* Sign out is a `POST` for the reason the desktop menu's is, and a phone has

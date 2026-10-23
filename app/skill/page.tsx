@@ -25,7 +25,7 @@ const LINK = "text-cyan underline decoration-cyan/40 underline-offset-4 transiti
 const NEVER: readonly { label: string; body: React.ReactNode }[] = [
   {
     label: "run",
-    body: "no node runs and no model is called on your behalf. The folder is text, and whichever runner you choose executes it",
+    body: "the DarkPrint skill does not execute the blueprint or its nodes, or call a model on your behalf. The folder is text; a runner you choose executes it",
   },
   {
     label: "publish by itself",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   /* The shared-link preview owes a reader the limit before they open the tab, so the
      description carries the same sentence the closing section prints. */
   description:
-    "One command puts the DarkPrint skill in your own agent. It interviews you, searches the registry for what already exists, and writes a folder of topology.dot, one card per node, blueprint.yaml and README.md. The DarkPrint skill runs nothing and sends nothing on its own; publishing is a step you take on this site or with an API key.",
+    "One command puts the DarkPrint skill in your own agent. It interviews you, searches public blueprints and cards with no sign-in, and writes topology.dot, one card per node, blueprint.yaml and README.md. The DarkPrint skill runs nothing and sends nothing on its own; publishing is a step you take on this site or with an API key.",
 };
 
 export default function SkillPage() {

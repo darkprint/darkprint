@@ -32,9 +32,11 @@ describe("InstallTabs", () => {
     expect(plainText(html).toLowerCase()).not.toContain("coming soon");
   });
 
-  it("is introduced by the section that mounts it as something to run or paste", () => {
-    const page = plainText(renderToStaticMarkup(createElement(McpPage as never)));
-    expect(page.toLowerCase()).toContain("run the command, or paste the json into its mcp settings");
+  it("is introduced as the client's remote setup, without implying a local install", () => {
+    const page = plainText(renderToStaticMarkup(createElement(McpPage as never))).toLowerCase();
+    expect(page).toContain("choose a client and use its setup command");
+    expect(page).toContain(MCP_ENDPOINT_URL.toLowerCase());
+    expect(page).toContain("there is nothing to install for the remote connection");
   });
 
   it("points every client at the one remote address, and none at npm", () => {
