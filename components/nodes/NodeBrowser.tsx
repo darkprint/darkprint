@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cx } from "@/lib/format";
-import { useQueryState } from "@/components/ui/useQueryState";
+import { useTaskQuery, useTaskSearch } from "@/components/gallery/useTaskSearch";
+import { TaskSearchResults } from "@/components/gallery/TaskSearchResults";
 import { GroupSpine, type GroupSpineItem } from "@/components/ui/GroupSpine";
 import {
   CONTROL_CLASS,
@@ -135,7 +136,6 @@ const UNPHASED = "unphased";
 /* --------------------- the filter set --------------------- */
 
 interface Filters {
-  q: string;
   type: string | null;
   phase: string | null;
   human: boolean;
@@ -154,11 +154,6 @@ type Dimension = keyof Filters;
  * so "Human gate (2)" promised two cards while a phase filter was already excluding
  * both, and picking it landed on an empty grid. A count is a promise about what happens
  * when you click it.
- *
- * The search haystack covers what a reader can see on a tile. It used to be `id`,
- * `name`, `action` and `tools` only, so typing "validation" returned cards whose prose
- * happened to contain the word and *not* the cards whose type is `validation` — the one
- * result the word most obviously asks for.
  */
 function passes(node: NodeSummary, f: Filters, skip?: Dimension): boolean {
   if (skip !== "type" && f.type !== null && node.type !== f.type) return false;
@@ -174,25 +169,6 @@ function passes(node: NodeSummary, f: Filters, skip?: Dimension): boolean {
   if (skip !== "human" && f.human && !node.requiresHuman) return false;
   if (skip !== "risk" && f.risk && node.riskMarkers.length === 0) return false;
 
-  if (skip !== "q") {
-    const q = f.q.trim().toLowerCase();
-    if (q !== "") {
-      const haystack = [
-        node.id,
-        node.name,
-        node.action,
-        node.typeLabel,
-        node.tools.join(" "),
-        node.phases.map((p) => p.label).join(" "),
-        node.riskMarkers.join(" "),
-        node.author?.displayName ?? "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-  }
-
   return true;
 }
 
@@ -204,9 +180,11 @@ function FilterChip({
   active,
   onClick,
   deadReason,
+  allowEmpty = false,
 }: {
   label: string;
   glyph: string;
+  allowEmpty?: boolean;
   /** How many cards remain if this chip is pressed, given every other filter. */
   count: number;
   active: boolean;
@@ -224,7 +202,7 @@ function FilterChip({
      trap. Measured before this: `human in the loop` alone matched 2 and `carries a risk
      marker` alone matched 8, but pressing both matched 0 — every time, with nothing
      saying so. Two clicks from arrival to a guaranteed dead end. */
-  const dead = count === 0 && !active;
+  const dead = count === 0 && !active && !allowEmpty;
   return (
     <button
       type="button"
@@ -277,9 +255,8 @@ function FilterChip({
 }
 
 /**
- * The node-card library, filtered in the browser. Everything it needs arrives as
- * plain props from the server — the whole library is a few dozen rows, so there is
- * nothing to fetch and nothing to page.
+ * Browse filters use the server-rendered shelf; task queries use the search service
+ * so a semantic hit need not contain the query on its tile.
  *
  * ── The filters live in the URL ──
  * They used to live in five `useState` calls and nowhere else, which broke the one loop
@@ -304,7 +281,8 @@ export function NodeBrowser({
   /** The vocabulary's node types, all of them. See `NodeTypeTerm`. */
   types: readonly NodeTypeTerm[];
 }) {
-  const { params, set: setParam, clear } = useQueryState();
+  const { params, setParam, clear, search, setDraft } = useTaskQuery();
+  const task = useTaskSearch("cards", search, params);
 
   /* Every filter is read from the URL rather than mirrored into React state, so there
      is one source of truth and Back cannot disagree with the grid. */
@@ -317,31 +295,9 @@ export function NodeBrowser({
     ? (rawSort as SortKey)
     : DEFAULT_SORT;
 
-  /**
-   * The search box is the one control that does not write on every change.
-   *
-   * `draft` is what the reader has typed since the last write; `null` means "follow the
-   * URL". Keystrokes update it immediately so the field never lags, and the URL catches
-   * up on a timer — Safari throttles `replaceState` to roughly a hundred calls per
-   * thirty seconds, which a fast typist would otherwise reach.
-   */
-  const [draft, setDraft] = useState<string | null>(null);
-  const search = draft ?? (params.get("q") ?? "");
-
-  /* Debounced write for the typed query only. Setting state from a subscription
-     callback is the pattern the effect rule asks for, so `draft` is released back to
-     the URL there rather than here. */
-  useEffect(() => {
-    if (draft === null) return;
-    const timer = setTimeout(() => setParam("q", draft.trim() === "" ? null : draft), 250);
-    return () => clearTimeout(timer);
-  }, [draft, setParam]);
-
-  /** Open on mobile, where the panel is behind a disclosure. Ignored from `sm` up. */
-
   const filters: Filters = useMemo(
-    () => ({ q: search, type, phase, human: humanOnly, risk: riskOnly }),
-    [search, type, phase, humanOnly, riskOnly],
+    () => ({ type, phase, human: humanOnly, risk: riskOnly }),
+    [type, phase, humanOnly, riskOnly],
   );
 
 
@@ -503,7 +459,7 @@ export function NodeBrowser({
    * alphabetical runs would answer a question nobody asked.
    */
   const groups = useMemo(() => {
-    if (sort !== "type") return null;
+    if (task.searching || sort !== "type") return null;
     const out: { id: string; label: string; nodes: NodeSummary[] }[] = [];
     for (const node of results) {
       const last = out[out.length - 1];
@@ -511,7 +467,7 @@ export function NodeBrowser({
       else out.push({ id: node.type, label: node.typeLabel, nodes: [node] });
     }
     return out;
-  }, [results, sort]);
+  }, [results, sort, task.searching]);
 
   /**
    * Each type's place among the types that have cards, and its one-line definition, by id.
@@ -616,7 +572,6 @@ export function NodeBrowser({
   /* The sort survives a reset. It is how the reader chose to read the shelf, not a
      narrowing of it, and clearing a search should not also re-sort the page. */
   const clearFilters = useCallback(() => {
-    setDraft("");
     clear(["q", "type", "phase", "human", "risk"]);
   }, [clear]);
 
@@ -676,10 +631,11 @@ export function NodeBrowser({
       {/* The disclosure, the panel and the control shape all live in
           `components/ui/RegistryFilterBar.tsx` now. What stays here is what only this
           browser knows: which filters exist and how they narrow the library. */}
+      {task.searching && <p className="text-sm text-muted">Filter counts describe the browse library. Search applies filters before ranking.</p>}
       <RegistryFilterBar
         id="node-filters"
         label="Filter node cards"
-        results={results.length}
+        results={task.searching ? (task.state.status === "ready" ? task.state.data.hits.length : 0) : results.length}
         total={nodes.length}
         active={activeCount}
       >
@@ -687,7 +643,7 @@ export function NodeBrowser({
           <SearchField
             value={search}
             onChange={setDraft}
-            placeholder="Search ids, names, actions, tools…"
+            placeholder="Describe a task, tool, input, or constraint…"
             ariaLabel="Search node cards"
           />
 
@@ -704,7 +660,7 @@ export function NodeBrowser({
                 /* Disabled rather than hidden: a reader who has narrowed to one phase
                    should be able to see that `human-gate` exists and simply has nothing
                    left in it, which is a different fact from it not existing. */
-                <option key={t.id} value={t.id} disabled={t.count === 0}>
+                <option key={t.id} value={t.id} disabled={!task.searching && t.count === 0}>
                   {t.label} ({t.count})
                 </option>
               ))}
@@ -721,14 +677,14 @@ export function NodeBrowser({
             >
               <option value="">All phases</option>
               {phases.map((p) => (
-                <option key={p.id} value={p.id} disabled={p.count === 0}>
+                <option key={p.id} value={p.id} disabled={!task.searching && p.count === 0}>
                   {p.label} ({p.count})
                 </option>
               ))}
               {/* Last in the list because the five above are a sequence and this is
                   not a sixth step in it. Named for where the node stands, not for
                   what its card leaves out. */}
-              {unphasedCount > 0 && (
+              {(task.searching || unphasedCount > 0) && (
                 <option value={UNPHASED}>
                   Not in a named phase ({unphasedCount})
                 </option>
@@ -739,11 +695,13 @@ export function NodeBrowser({
           <label className="flex items-center gap-2">
             <span className="sr-only">Sort node cards</span>
             <select
-              value={sort}
+              value={task.searching ? "relevance" : sort}
+              disabled={task.searching}
               onChange={(e) => setParam("sort", e.target.value === DEFAULT_SORT ? null : e.target.value)}
               aria-label="Sort node cards"
               className={controlClass}
             >
+              {task.searching && <option value="relevance">Service relevance</option>}
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -758,6 +716,7 @@ export function NodeBrowser({
             label="human in the loop"
             glyph="⏸"
             count={humanCount}
+            allowEmpty={task.searching}
             active={humanOnly}
             deadReason={deadReason("human")}
             onClick={() => setParam("human", humanOnly ? null : "1")}
@@ -766,6 +725,7 @@ export function NodeBrowser({
             label="carries a risk marker"
             glyph="△"
             count={riskCount}
+            allowEmpty={task.searching}
             active={riskOnly}
             deadReason={deadReason("risk")}
             onClick={() => setParam("risk", riskOnly ? null : "1")}
@@ -780,10 +740,12 @@ export function NodeBrowser({
           or none. Phrased as a sentence for the same reason — "11 of 53 node cards"
           reads as an announcement, where a bare pair of numerals does not. */}
       <div className="flex items-center justify-between gap-3 font-mono text-xs text-dim">
-        <p role="status" aria-live="polite" aria-atomic="true">
-          <span className="text-fg">{results.length}</span> of {nodes.length} node
-          card{nodes.length === 1 ? "" : "s"}
-        </p>
+        {!task.searching && (
+          <p role="status" aria-live="polite" aria-atomic="true">
+            <span className="text-fg">{results.length}</span> of {nodes.length} node
+            card{nodes.length === 1 ? "" : "s"}
+          </p>
+        )}
         {hasFilters && (
           <button
             type="button"
@@ -845,7 +807,7 @@ export function NodeBrowser({
       )}
 
       {/* grid / empty state */}
-      {results.length > 0 ? (
+      {task.searching ? <TaskSearchResults state={task.state} retry={task.retry} /> : results.length > 0 ? (
         groups === null ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {results.map((node) => (
