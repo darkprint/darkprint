@@ -1,0 +1,46 @@
+{
+  "about": [
+    "Additional task-fit probes authored from the card contracts before measuring these queries.",
+    "Independent of the original golden author, not blind to the corpus or to the known misses.",
+    "Whole means a blueprint addresses the requested flow; partial means a reusable node, not an end-to-end solution.",
+    "Expected is a relevant target, not a claim that other returned results are irrelevant. No exact-query aliases are warranted."
+  ],
+  "blueprints": [
+    { "query": "restore a stopped batch without repeating completed stages", "expected": "checkpoint-resume-runner", "fit": "whole" },
+    { "query": "screen incoming prompts and outgoing replies for unsafe material", "expected": "guarded-assistant-line", "fit": "whole" },
+    { "query": "turn incoming help requests into answers or a handoff to support staff", "expected": "frontline-triage", "fit": "whole" },
+    { "query": "collect competing proposals and eliminate weaker candidates over several rounds", "expected": "hypothesis-tournament", "fit": "whole" },
+    { "query": "choose between inexpensive inference and deeper reasoning based on difficulty", "expected": "budget-aware-router", "fit": "whole" },
+    { "query": "check a proposed patch and wait for its maintainer before merging", "expected": "guarded-merge-bot", "fit": "whole" },
+    { "query": "trace each step of an existing job and notify someone when it fails", "expected": "pipeline-observability", "fit": "whole" },
+    { "query": "convert free form source documents into validated structured records", "expected": "schema-forge-etl", "fit": "whole" },
+    { "query": "repeatedly improve a draft using criticism without showing its writer the scoring rules", "expected": "producer-critic-refinery", "fit": "whole" },
+    { "query": "investigate a question and substantiate the claims before delivering an answer", "expected": "grounded-research-desk", "fit": "whole" }
+  ],
+  "cards": [
+    { "query": "execute the requested suites on a pull request and return the failing assertions", "expected": "test-runner", "fit": "partial" },
+    { "query": "evaluate submitted work using supplied scoring dimensions and justify each mark", "expected": "llm-judge", "fit": "partial" },
+    { "query": "define admission conditions for hypotheses before any are generated", "expected": "review-rubric", "fit": "partial" },
+    { "query": "put already scored items in dependency order using a weighting policy", "expected": "queue-scheduler", "fit": "partial" },
+    { "query": "assess urgency impact blocking relationships and cost separately for each item", "expected": "priority-scorer", "fit": "partial" },
+    { "query": "inspect a completed execution for unsupported calls and out of order steps even if it succeeded", "expected": "trajectory-auditor", "fit": "partial" },
+    { "query": "reject a record that violates its schema and name the offending fields", "expected": "schema-gate", "fit": "partial" },
+    { "query": "collect worker responses after parallel execution", "expected": "panel-fan-in", "fit": "partial" },
+    { "query": "pause until the maintainer explicitly approves the review", "expected": "maintainer-approval", "fit": "partial" },
+    { "query": "repair a failing test without broad unrelated code changes", "expected": "targeted-debugger", "fit": "partial" },
+    { "query": "send one unchanged question to several reviewers without letting them coordinate", "expected": "panel-fanout", "fit": "partial" },
+    { "query": "execute untrusted python with a time limit and no network access", "expected": "sandboxed-python-runner", "fit": "partial" }
+  ],
+  "negatives": [
+    { "query": "arrange delivery of flowers for a birthday" },
+    { "query": "translate this menu from Japanese into Spanish" },
+    { "query": "remove the background from a photograph" },
+    { "query": "compose sheet music for a string quartet" }
+  ],
+  "cardNegatives": [
+    { "query": "arrange delivery of flowers for a birthday" },
+    { "query": "translate this menu from Japanese into Spanish" },
+    { "query": "remove the background from a photograph" },
+    { "query": "compose sheet music for a string quartet" }
+  ]
+}

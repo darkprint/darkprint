@@ -18,16 +18,18 @@
    id under any version, because the local archive holds the seed
    under two owners with identical content and the second copy
    would otherwise fill the top three with duplicates. Ranks are
-   therefore over DISTINCT slugs (or ids), first occurrence wins,
-   and the raw top hits are printed beside them.
+   therefore reported over DISTINCT slugs (or ids) for historical
+   comparison, alongside delivered ranks where duplicates consume
+   slots. The delivered recall@5 measures the actual five-hit window.
 
-   Exit code is 0 whatever the numbers say: this prints a
-   measurement for a person to read, and the thresholds belong to
-   whoever runs the held-out set.
+   Without --baseline this prints measurements, not a pass/fail.
+   --baseline rejects regressions including MRR; --require-encoder
+   refuses measurements made without the encoder.
    ============================================================ */
 
 import "./module-hook.ts";
 import { readFileSync } from "node:fs";
+import { compareSummary, rankOf, summarise, type Summary } from "./rag-eval.metrics.ts";
 
 const { searchBlueprints, searchCards } = await import("@/lib/server/search");
 /* The floor is read off the module that publishes it, beside its calibration; this script
@@ -44,9 +46,10 @@ interface EvalFile {
   blueprints?: Positive[];
   negatives?: { query: string }[];
   cards?: Positive[];
+  cardNegatives?: { query: string }[];
 }
 
-/** How far above the floor a negative's best score may sit and still read as "nothing here". */
+/** Historical low-score diagnostic, not abstention: a quiet search can still return hits. */
 const NEGATIVE_MARGIN = 0.05;
 
 const argv = process.argv.slice(2);
@@ -103,30 +106,6 @@ function rankLine(label: string, query: string, expected: string, ranked: Ranked
   return { rank: found ? rank + 1 : undefined };
 }
 
-/**
- * The headline metric, and it is `@5` for one reason: `FIND_DEFAULT_LIMIT` is 5 and both MCP
- * find verbs slice with `clampLimit`, so a hit at rank 6 is a hit no agent is ever shown.
- * top-1 and MRR sit beside it because a set can hold recall while losing the order.
- */
-function summarise(ranks: readonly (number | undefined)[]): Summary {
-  const found = ranks.filter((r): r is number => r !== undefined);
-  return {
-    n: ranks.length,
-    recallAt5: found.filter((r) => r <= 5).length,
-    top1: found.filter((r) => r === 1).length,
-    top3: found.filter((r) => r <= 3).length,
-    mrr: Number((ranks.reduce<number>((sum, r) => sum + (r === undefined ? 0 : 1 / r), 0) / (ranks.length || 1)).toFixed(4)),
-  };
-}
-
-interface Summary {
-  n: number;
-  recallAt5: number;
-  top1: number;
-  top3: number;
-  mrr: number;
-}
-
 /** `a/b` with the ratio, so a run reads without arithmetic. */
 function line(label: string, s: Summary): string {
   return `${label}: recall@5 ${s.recallAt5}/${s.n}, top-1 ${s.top1}/${s.n}, top-3 ${s.top3}/${s.n}, MRR ${s.mrr.toFixed(3)}`;
@@ -139,16 +118,19 @@ try {
 
   const blueprints = file.blueprints ?? [];
   const blueprintRanks: (number | undefined)[] = [];
+  const deliveredBlueprintRanks: (number | undefined)[] = [];
   if (blueprints.length > 0) console.log(`blueprints (${blueprints.length}):`);
   for (const row of blueprints) {
     const results = await searchBlueprints(db, anonymous, { q: row.query, forks: "all" });
     encoder = results.encoder;
     const ranked = distinct(results.hits, (i) => results.hits[i].item.slug, results.encoder);
     blueprintRanks.push(rankLine("bp  ", row.query, row.expected, ranked).rank);
+    deliveredBlueprintRanks.push(rankOf(results.hits.map((hit) => hit.item.slug), row.expected, false));
   }
 
   const negatives = file.negatives ?? [];
   let quiet = 0;
+  let empty = 0;
   if (negatives.length > 0) console.log(`negatives (${negatives.length}):`);
   for (const row of negatives) {
     const results = await searchBlueprints(db, anonymous, { q: row.query, forks: "all" });
@@ -158,6 +140,7 @@ try {
     const bestScore = best === undefined ? undefined : ranked.scoreOf.get(best);
     const isQuiet = bestScore === undefined || bestScore < MIN_SIMILARITY + NEGATIVE_MARGIN;
     if (isQuiet) quiet += 1;
+    if (best === undefined) empty += 1;
     console.log(
       `  neg  ${isQuiet ? "quiet " : "LOUD  "} hits ${String(ranked.keys.length).padStart(2)}  ` +
         `top ${best === undefined ? "(nothing)" : `${best} @ ${bestScore?.toFixed(4)}`}  ${JSON.stringify(row.query)}`,
@@ -166,28 +149,49 @@ try {
 
   const cards = file.cards ?? [];
   const cardRanks: (number | undefined)[] = [];
+  const deliveredCardRanks: (number | undefined)[] = [];
   if (cards.length > 0) console.log(`cards (${cards.length}):`);
   for (const row of cards) {
     const results = await searchCards(db, anonymous, { q: row.query });
     encoder = results.encoder;
     const ranked = distinct(results.hits, (i) => results.hits[i].item.id, results.encoder);
     cardRanks.push(rankLine("card", row.query, row.expected, ranked).rank);
+    deliveredCardRanks.push(rankOf(results.hits.map((hit) => hit.item.id), row.expected, false));
+  }
+
+  const cardNegatives = file.cardNegatives ?? [];
+  let cardsQuiet = 0;
+  let cardsEmpty = 0;
+  for (const row of cardNegatives) {
+    const results = await searchCards(db, anonymous, { q: row.query });
+    encoder = results.encoder;
+    const best = results.hits[0];
+    const isQuiet = best === undefined || best.score < MIN_SIMILARITY + NEGATIVE_MARGIN;
+    if (isQuiet) cardsQuiet += 1;
+    if (best === undefined) cardsEmpty += 1;
+    console.log(`  card neg ${isQuiet ? "quiet" : "LOUD "} hits ${results.hits.length} top ${best?.item.id ?? "(nothing)"} @ ${best?.score.toFixed(4) ?? "-"} ${JSON.stringify(row.query)}`);
   }
 
   const report = {
     encoder,
     blueprints: summarise(blueprintRanks),
     cards: summarise(cardRanks),
-    negatives: { n: negatives.length, quiet },
+    negatives: { n: negatives.length, quiet, empty },
+    cardNegatives: { n: cardNegatives.length, quiet: cardsQuiet, empty: cardsEmpty },
+    delivered: { blueprints: summarise(deliveredBlueprintRanks), cards: summarise(deliveredCardRanks) },
   };
 
   console.log("");
   console.log(`encoder: ${encoder}`);
   if (blueprints.length > 0) console.log(line("blueprints", report.blueprints));
   if (negatives.length > 0) {
-    console.log(`negatives: ${quiet}/${negatives.length} empty or below ${(MIN_SIMILARITY + NEGATIVE_MARGIN).toFixed(2)}`);
+    console.log(`negatives: ${quiet}/${negatives.length} empty or below ${(MIN_SIMILARITY + NEGATIVE_MARGIN).toFixed(2)}; ${empty}/${negatives.length} actually empty`);
   }
   if (cards.length > 0) console.log(line("cards     ", report.cards));
+
+  if (blueprints.length > 0) console.log(line("delivered blueprints", report.delivered.blueprints));
+  if (cards.length > 0) console.log(line("delivered cards", report.delivered.cards));
+  if (cardNegatives.length > 0) console.log(`card negatives: ${cardsQuiet}/${cardNegatives.length} quiet, ${cardsEmpty}/${cardNegatives.length} empty`);
 
   if (asJson) console.log(`\n${JSON.stringify(report, null, 2)}`);
 
@@ -200,14 +204,18 @@ try {
     const before = JSON.parse(readFileSync(baselinePath, "utf8")) as typeof report;
     const falls: string[] = [];
     for (const half of ["blueprints", "cards"] as const) {
-      for (const metric of ["recallAt5", "top1", "top3"] as const) {
-        const was = before[half][metric];
-        const now = report[half][metric];
-        if (now < was) falls.push(`${half}.${metric} ${was} -> ${now}`);
+      falls.push(...compareSummary(half, before[half], report[half]));
+      if (before.delivered !== undefined) {
+        falls.push(...compareSummary(`delivered.${half}`, before.delivered[half], report.delivered[half]));
       }
     }
-    if (before.negatives.quiet > report.negatives.quiet) {
-      falls.push(`negatives.quiet ${before.negatives.quiet} -> ${report.negatives.quiet}`);
+    for (const half of ["negatives", "cardNegatives"] as const) {
+      if (before[half] === undefined) continue;
+      if (before[half].n !== report[half].n) falls.push(`${half}.n: incomparable evaluation sets`);
+      if (before[half].quiet > report[half].quiet) falls.push(`${half}.quiet ${before[half].quiet} -> ${report[half].quiet}`);
+      if (before[half].empty !== undefined && before[half].empty > report[half].empty) {
+        falls.push(`${half}.empty ${before[half].empty} -> ${report[half].empty}`);
+      }
     }
     if (falls.length > 0) {
       console.error(`\nagainst ${baselinePath}, ${falls.length} metric(s) fell:\n  ${falls.join("\n  ")}`);
