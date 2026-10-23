@@ -29,7 +29,8 @@ import { createTestDb, type TestDb } from "@/tests/support";
    held here to what produces it: the archive's own files for the graph, and the MCP verbs
    over a seeded registry for the search and the contract. */
 
-const text = plainText(renderToStaticMarkup(createElement(SectionMcpExample)));
+const html = renderToStaticMarkup(createElement(SectionMcpExample));
+const text = plainText(html);
 
 function topology(slug: string) {
   const src = readFileSync(join(process.cwd(), "content/blueprints", slug, "topology.dot"), "utf8");
@@ -53,6 +54,31 @@ function cardOf(nodeId: string) {
 }
 
 describe("the landing's MCP example, against the archive", () => {
+  it("keeps the task-to-approval path compact and the full example expandable", () => {
+    const disclosureStart = html.indexOf("<details");
+    const summaryEnd = html.indexOf("</summary>", disclosureStart);
+    const disclosureEnd = html.indexOf("</details>", disclosureStart);
+    expect(disclosureStart).toBeGreaterThan(-1);
+    expect(summaryEnd).toBeGreaterThan(disclosureStart);
+    expect(disclosureEnd).toBeGreaterThan(summaryEnd);
+
+    const overview = html.slice(0, disclosureStart);
+    const disclosure = html.slice(disclosureStart, disclosureEnd);
+    const summary = html.slice(disclosureStart, summaryEnd);
+    expect(overview).toContain("A real task, matched to a blueprint");
+    for (const phrase of ["Your task", "MCP match", "Adapt locally", "You approve"]) {
+      expect(overview).toContain(phrase);
+    }
+    expect(overview).toContain(`${EXAMPLE_OWNER}/${EXAMPLE_HITS[0]}`);
+    expect(overview).not.toContain(EXAMPLE_PROMPT);
+    expect(summary).toContain("Full prompt, match, graph, and run contract");
+    expect(plainText(disclosure.slice(summaryEnd - disclosureStart))).toContain(EXAMPLE_PROMPT);
+    expect(disclosure).toContain("Covered by the blueprint");
+    expect(disclosure).toContain("Added by your agent");
+    expect(html.slice(disclosureEnd)).toContain("DarkPrint hands out the files and the run contract, and executes nothing.");
+    expect(html.slice(disclosureStart, html.indexOf(">", disclosureStart))).not.toContain(" open");
+  });
+
   it("prints the /mcp page's first prompt with the task filled in", () => {
     expect(MCP_FIRST_PROMPT.split("<your task>"), "the placeholder is gone or doubled").toHaveLength(2);
     expect(EXAMPLE_PROMPT).toBe(MCP_FIRST_PROMPT.replace("<your task>", EXAMPLE_TASK));

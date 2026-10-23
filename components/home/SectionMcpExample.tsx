@@ -113,98 +113,139 @@ export function SectionMcpExample() {
   const [chosen] = hits;
 
   return (
-    <section id="example" className="scroll-mt-24 border-t border-line bg-void py-20 sm:py-28">
+    <section id="example" className="scroll-mt-24 border-t border-line bg-void py-14 sm:py-20">
       <div className="container-page">
         <SectionHeading
-          title="A task, through MCP"
-          lead="Your agent finds the blueprint closest to your task, and you agree to the graph before anything runs."
+          title="A real task, matched to a blueprint"
+          lead="MCP finds a close fit. Your agent adapts it locally, and you approve the graph before it runs."
           align="center"
           className="mx-auto"
         />
 
-        <ol className="panel mt-12">
-          <Step index="01" who="You ask" person>
-            <div className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3">
-              <pre className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere font-mono text-xs leading-relaxed text-blueprint-line">
-                <code>{EXAMPLE_PROMPT}</code>
-              </pre>
-              <CopyButton text={EXAMPLE_PROMPT} ariaLabel="Copy the example prompt" />
-            </div>
-          </Step>
-
-          <Step index="02" who="find_blueprints" person={false}>
-            <p>The agent searches the registry with your task. These are its top two hits.</p>
-            <ul className="flex flex-col gap-2">
-              {hits.map((hit, i) => (
-                <li
-                  key={hit.slug}
-                  className={cx(
-                    "flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg border px-3.5 py-2.5",
-                    i === 0 ? "border-line-bright bg-surface-2" : "border-line",
-                  )}
-                >
-                  <span className="font-mono text-[13px] text-dim">{i + 1}</span>
-                  <Link
-                    href={blueprintRecordHref({ slug: hit.slug, ownerHandle: EXAMPLE_OWNER })}
-                    className={cx("font-mono text-[13px]", LINK)}
-                  >
-                    {EXAMPLE_OWNER}/{hit.slug}
-                  </Link>
-                  <span className="text-fg">{hit.title}</span>
-                  <span className="font-mono text-[13px] text-dim">{hit.graph.nodes.length} nodes</span>
-                </li>
-              ))}
-            </ul>
-          </Step>
-
-          <Step index="03" who="get_blueprint" person={false}>
+        <ol className="panel mt-8">
+          <Step index="01" who="Your task" person>
             <p>
-              It writes the first hit&apos;s files under <Id>./{chosen.slug}/</Id> and shows you
-              the graph with its scorecard.
+              Process each night&apos;s new orders, load valid records, and email the sales team a
+              one-page summary.
             </p>
-            <div className="rounded-lg border border-line bg-blueprint-deep/30 px-3 py-4">
-              <GraphThumbnail
-                graph={chosen.graph}
-                className="mx-auto block h-auto w-full"
-                ariaLabel={`The ${chosen.title} graph`}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Route ids={EXAMPLE_LINE} />
-              <p className="text-sm text-dim">
-                A record that fails the schema goes back: <Id>{EXAMPLE_LOOP.join(" → ")}</Id>
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <p className="eyebrow">Covered by the blueprint</p>
-                <p>
-                  It sweeps the rows changed since its last run, cleans them, checks each record
-                  against a schema and loads the ones that pass into your table. Its last node,{" "}
-                  <Id>{EXAMPLE_IRREVERSIBLE}</Id>, refreshes the views and posts the night&apos;s
-                  counts to an ops channel.
-                </p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <p className="eyebrow">Added by your agent</p>
-                <p>
-                  No node in it emails anyone. Your agent adds a <Id>{EXAMPLE_ADDED}</Id> node
-                  after <Id>{EXAMPLE_ADDED_AFTER}</Id> that writes the one-page summary for the
-                  sales team, and the run you agree to includes it.
-                </p>
-              </div>
-            </div>
           </Step>
-
-          <Step index="04" who="You agree" person>
+          <Step index="02" who="MCP match" person={false}>
             <p>
-              The agent runs the graph on your machine, one node at a time, each in its own
-              context with only the inputs its card declares. No node here waits for a person,
-              so the contract has the agent stop on its own wherever the work is irreversible,
-              and <Id>{EXAMPLE_IRREVERSIBLE}</Id> is the node whose card says so.
+              The top registry hit is{" "}
+              <Link
+                href={blueprintRecordHref({ slug: chosen.slug, ownerHandle: EXAMPLE_OWNER })}
+                className={cx("font-mono text-[13px]", LINK)}
+              >
+                {EXAMPLE_OWNER}/{chosen.slug}
+              </Link>
+              , a real {chosen.graph.nodes.length}-node blueprint.
+            </p>
+          </Step>
+          <Step index="03" who="Adapt locally" person={false}>
+            <p>
+              The agent adds <Id>{EXAMPLE_ADDED}</Id> after <Id>{EXAMPLE_ADDED_AFTER}</Id> for the
+              email summary. The published blueprint has no email node.
+            </p>
+          </Step>
+          <Step index="04" who="You approve" person>
+            <p>
+              Review and approve the graph first. Your agent then runs it locally, one node at a time,
+              following the card-marked stop at irreversible work.
             </p>
           </Step>
         </ol>
+
+        <details className="panel group mt-5">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-medium text-muted transition-colors hoverable:hover:text-fg focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan [&::-webkit-details-marker]:hidden sm:px-6">
+            <span>Full prompt, match, graph, and run contract</span>
+            <span aria-hidden className="font-mono text-lg text-blueprint-line transition-transform group-open:rotate-45">
+              +
+            </span>
+          </summary>
+          <ol className="border-t border-line">
+            <Step index="01" who="You ask" person>
+              <div className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3">
+                <pre className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere font-mono text-xs leading-relaxed text-blueprint-line">
+                  <code>{EXAMPLE_PROMPT}</code>
+                </pre>
+                <CopyButton text={EXAMPLE_PROMPT} ariaLabel="Copy the example prompt" />
+              </div>
+            </Step>
+
+            <Step index="02" who="find_blueprints" person={false}>
+              <p>The agent searches the registry with your task. These are its top two hits.</p>
+              <ul className="flex flex-col gap-2">
+                {hits.map((hit, i) => (
+                  <li
+                    key={hit.slug}
+                    className={cx(
+                      "flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg border px-3.5 py-2.5",
+                      i === 0 ? "border-line-bright bg-surface-2" : "border-line",
+                    )}
+                  >
+                    <span className="font-mono text-[13px] text-dim">{i + 1}</span>
+                    <Link
+                      href={blueprintRecordHref({ slug: hit.slug, ownerHandle: EXAMPLE_OWNER })}
+                      className={cx("font-mono text-[13px]", LINK)}
+                    >
+                      {EXAMPLE_OWNER}/{hit.slug}
+                    </Link>
+                    <span className="text-fg">{hit.title}</span>
+                    <span className="font-mono text-[13px] text-dim">{hit.graph.nodes.length} nodes</span>
+                  </li>
+                ))}
+              </ul>
+            </Step>
+
+            <Step index="03" who="get_blueprint" person={false}>
+              <p>
+                It writes the first hit&apos;s files under <Id>./{chosen.slug}/</Id> and shows you
+                the graph with its scorecard.
+              </p>
+              <div className="rounded-lg border border-line bg-blueprint-deep/30 px-3 py-4">
+                <GraphThumbnail
+                  graph={chosen.graph}
+                  className="mx-auto block h-auto w-full"
+                  ariaLabel={`The ${chosen.title} graph`}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Route ids={EXAMPLE_LINE} />
+                <p className="text-sm text-dim">
+                  A record that fails the schema goes back: <Id>{EXAMPLE_LOOP.join(" → ")}</Id>
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <p className="eyebrow">Covered by the blueprint</p>
+                  <p>
+                    It sweeps the rows changed since its last run, cleans them, checks each record
+                    against a schema and loads the ones that pass into your table. Its last node,{" "}
+                    <Id>{EXAMPLE_IRREVERSIBLE}</Id>, refreshes the views and posts the night&apos;s
+                    counts to an ops channel.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <p className="eyebrow">Added by your agent</p>
+                  <p>
+                    No node in it emails anyone. Your agent adds a <Id>{EXAMPLE_ADDED}</Id> node
+                    after <Id>{EXAMPLE_ADDED_AFTER}</Id> that writes the one-page summary for the
+                    sales team, and the run you agree to includes it.
+                  </p>
+                </div>
+              </div>
+            </Step>
+
+            <Step index="04" who="You agree" person>
+              <p>
+                The agent runs the graph on your machine, one node at a time, each in its own
+                context with only the inputs its card declares. No node here waits for a person,
+                so the contract has the agent stop on its own wherever the work is irreversible,
+                and <Id>{EXAMPLE_IRREVERSIBLE}</Id> is the node whose card says so.
+              </p>
+            </Step>
+          </ol>
+        </details>
 
         <BeatCaption href="/mcp" cta="Connect your agent">
           DarkPrint hands out the files and the run contract, and executes nothing.

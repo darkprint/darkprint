@@ -74,10 +74,12 @@ import {
 } from "animejs";
 
 import { Logo } from "@/components/site/Logo";
-import { HeroAccountLine } from "./HeroAccountLine";
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
 import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
+
+import { HeroAccountLine } from "./HeroAccountLine";
+import { SetupChips } from "./SetupChips";
 
 import { WORDMARK_LETTER_PATHS } from "./wordmark-paths";
 
@@ -100,9 +102,10 @@ const MARK_TONE_SPLIT = 4;
  * ("Specifications go in. Software comes out.") didn't evoke what the site is for — a
  * registry of graphs that define a pipeline's autonomy, published so others can read and
  * reuse them as-is. Splitting the claim with markup would put its words in separate text
- * nodes, and `app/layout.tsx` carries the same string in its own metadata.
+ * nodes.
  */
-const CLAIM = "Reusable blueprints for agent workflows.";
+const CLAIM =
+  "Your agent retrieves shared workflows and reusable nodes through MCP, adapts a blueprint to your task, and runs it locally.";
 
 /** The rule under the name, in scene units. Tall enough for the pulse's stroke. */
 const RULE = { width: 900, height: 6 } as const;
@@ -498,10 +501,14 @@ export function Wordmark() {
         </span>
       </h1>
 
-      {/* No buttons here: the example right under the hero is the way in, and the header
-          carries the registry and the skill on every page. Only the account line depends on
-          the session. */}
-      <div data-mark="cta" className="mt-8 flex w-full flex-col items-center gap-5">
+      {/* Browse and connect stay visible independently of the entrance timeline. */}
+      <div className="mt-8">
+        <SetupChips />
+      </div>
+
+      {/* The account link is secondary and reads the session in the browser, so the
+          server-rendered frame remains neutral. */}
+      <div data-mark="cta" className="mt-4 flex w-full flex-col items-center gap-4">
         <HeroAccountLine />
 
         {/* The way down.
@@ -533,12 +540,8 @@ export function Wordmark() {
         </a>
       </div>
 
-      {/* The two setup chips stood here, last in the entrance at 1.26s. They are
-          `components/hero/SetupChips.tsx` now, in the section's top-left corner and outside
-          the timeline entirely, on the author's instruction that the command a returning
-          reader comes to copy should be readable the moment the page paints. That file
-          carries the reasoning; what it means here is that this component is the lockup and
-          nothing else, and `AT` no longer has a beat with nothing on it. */}
+      {/* The browse and connect actions render below the claim and join the CTA entrance beat.
+          Their links stay in the static markup before the animation runs. */}
     </div>
   );
 }
