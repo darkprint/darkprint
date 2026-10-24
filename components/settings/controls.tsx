@@ -53,8 +53,8 @@ type Tone = "lead" | "plain" | "amber" | "signal";
  * and `signal` marks the one section whose actions cannot be undone.
  */
 const TONES: Record<Tone, { panel: string; rule: string; title: string }> = {
-  lead: { panel: "panel panel-lead", rule: "border-line", title: "" },
-  plain: { panel: "panel", rule: "border-line", title: "" },
+  lead: { panel: "rounded-xl border border-line bg-surface/40", rule: "border-line", title: "" },
+  plain: { panel: "rounded-xl border border-line bg-surface/20", rule: "border-line", title: "" },
   amber: {
     panel: "rounded-lg border border-amber/25 bg-amber/5",
     rule: "border-amber/20",
@@ -106,10 +106,10 @@ export function SettingsSection({
 }) {
   const shape = TONES[tone];
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className={cx("p-5", shape.panel, className)}>
+    <section id={id} aria-labelledby={`${id}-title`} className={cx("p-5 sm:p-6", shape.panel, className)}>
       <div className={cx("flex flex-wrap items-center justify-between gap-3 border-b pb-4", shape.rule)}>
-        <h2 id={`${id}-title`} className={cx("label-lead", shape.title)}>
-          {step} · {title}
+        <h2 id={`${id}-title`} className={cx("font-display text-xl font-semibold text-fg", shape.title)}>
+          <span className="mr-3 font-mono text-xs font-normal text-dim">{step}</span>{title}
         </h2>
         {note}
       </div>
@@ -168,7 +168,7 @@ export function Field({
       </label>
       {children}
       {hint !== undefined && (
-        <p className="font-mono text-[11px] leading-relaxed text-dim">{hint}</p>
+        <p className="text-xs leading-relaxed text-muted">{hint}</p>
       )}
     </div>
   );

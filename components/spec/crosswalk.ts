@@ -85,20 +85,20 @@ const ROWS: readonly CrosswalkRow[] = [
     scope: "graph",
     attribute: "goal",
     keys: ["manifest.summary"],
-    origin: "The bundle manifest's one-line summary.",
+    origin: "The manifest summary.",
     reads:
-      "§2.5: “Human-readable goal for the pipeline. Exposed as $goal in prompt templates and mirrored into the run context as graph.goal.” Every prompt on the graph can therefore expand it.",
+      "The pipeline goal, available as $goal in prompts and graph.goal in run context (§2.5, §4.5).",
     sections: ["2.5", "4.5"],
-    absent: "A manifest with a blank summary writes no goal attribute at all.",
+    absent: "A blank summary omits this attribute.",
   },
   {
     scope: "graph",
     attribute: "label",
     keys: ["manifest.title"],
-    origin: "The bundle manifest's title.",
-    reads: "§2.5: “Display name for the graph (used in visualization).” Nothing routes on it.",
+    origin: "The manifest title.",
+    reads: "Display name for the graph; it does not affect routing (§2.5).",
     sections: ["2.5"],
-    absent: "A manifest with a blank title writes no label attribute.",
+    absent: "A blank title omits this attribute.",
   },
 
   /* --------------------- node --------------------- */
@@ -106,9 +106,9 @@ const ROWS: readonly CrosswalkRow[] = [
     scope: "node",
     attribute: "label",
     keys: ["card.name"],
-    origin: "The card's human name. A node with no card is labelled with its own DOT id.",
+    origin: "The card name, or the DOT id when no card is present.",
     reads:
-      "§2.6: “Display name shown in UI, prompts, and telemetry.” §4.5 also falls back to it as the prompt when a codergen node has none, so it is a routing-visible string and not only a caption.",
+      "Display name for UI, prompts and telemetry (§2.6). LLM nodes also use it as a fallback when prompt is empty (§4.5).",
     sections: ["2.6", "4.5"],
   },
   {
@@ -116,75 +116,75 @@ const ROWS: readonly CrosswalkRow[] = [
     attribute: "shape",
     keys: ["card.type"],
     origin:
-      "The card's ontology type, resolved through its broader chain and then through the type table below.",
+      "The card type, resolved through its broader parents and the handler mapping.",
     reads:
-      "§2.6: “Graphviz shape. Determines the default handler type.” §2.8 is the mapping, and it is the whole reason a DarkPrint type never travels as a DOT attribute.",
+      "Selects the default handler (§2.6, §2.8).",
     sections: ["2.6", "2.8"],
     absent:
-      "A type the vocabulary has never heard of, and a node with no card at all, both get box. That runs the card's spec as a prompt instead of dropping the node.",
+      "Unknown types and nodes without cards use box, an LLM handler, so the node is retained.",
   },
   {
     scope: "node",
     attribute: "prompt",
     keys: ["card.spec"],
-    origin: "The card's spec, verbatim. This is the field that makes a topology runnable.",
+    origin: "The card spec, unchanged.",
     reads:
-      "§2.6: “Primary instruction for the stage. Supports $goal variable expansion. Falls back to label if empty for LLM stages.” §4.5 step 1 is that fallback in pseudocode.",
+      "The stage instruction. Supports $goal; LLM stages fall back to label when empty (§2.6, §4.5).",
     sections: ["2.6", "4.5"],
   },
   {
     scope: "node",
     attribute: "llm_model",
     keys: ["card.model"],
-    origin: "The model the card names, quoted as a String because a dash ends a bare token.",
+    origin: "The card model, quoted to preserve hyphens in the identifier.",
     reads:
-      "§2.6: “LLM model identifier. Overridable by stylesheet.” §8.5 puts an explicit node attribute above every stylesheet rule.",
+      "The explicit node attribute outranks every model_stylesheet rule (§8.5).",
     sections: ["2.6", "8.4", "8.5"],
     absent:
-      "A card naming no model writes no attribute, so the graph's model_stylesheet still decides. Writing an empty string here would beat the sheet under §8.5 rather than defer to it.",
+      "No model attribute is written. The stylesheet can supply a default. An empty string would take precedence instead.",
   },
   {
     scope: "node",
     attribute: "max_retries",
     keys: ITERATION_CAP_KEYS.map((key) => `card.params.${key}`),
     origin:
-      "The iteration cap the card declares, read by the same function that decides whether a cycle is counted as unbounded.",
+      "The card’s iteration cap, using the same lookup as cycle analysis.",
     reads:
-      "§2.6: “Number of additional attempts beyond the initial execution. If omitted, inherits graph default_max_retries. max_retries=3 means up to 4 total executions.” So a cap of 3 is four passes, not three.",
+      "Additional attempts after the first execution. max_retries=3 permits four executions (§2.6).",
     sections: ["2.6", "3.5", "3.6"],
     absent:
-      "A card declaring no cap writes no attribute, and the node inherits the graph's default_max_retries, which is 0.",
+      "Inherits graph default_max_retries, whose default is 0.",
   },
   {
     scope: "node",
     attribute: "tool_command",
     keys: [`card.params.${TOOL_COMMAND_KEY}`],
     origin:
-      "The shell command a shell-tool card carries. Written only when the node's shape selects §4.10's handler, since no other handler reads it.",
+      "The shell-tool command. Written only for the handler that uses it.",
     reads:
-      "§4.10 reads it bare and refuses the node without it: “IF command is empty: RETURN Outcome(status=FAIL, failure_reason=‘No tool_command specified’)”. It has no default anywhere in the spec.",
+      "The shell command to execute. An empty command fails; there is no default (§4.10).",
     sections: ["4.10"],
     absent:
-      "A shell-tool card with no command writes no attribute. That is deliberate: an empty string is the value §4.10 fails on, so a missing command is left out of the file, and the validator has already warned about it as card/missing-field.",
+      "A missing command is omitted. The validator reports card/missing-field; an empty value would also fail at runtime.",
   },
   {
     scope: "node",
     attribute: "class",
     keys: ["card.type", "card.phases"],
     origin:
-      "The card's type, then its broader chain nearest-first, then its phases in the card's own order, each lowercased and hyphenated behind a dp- prefix.",
+      "The type, its broader ancestors nearest-first, then the phases in card order. Names are lowercased and hyphenated with a dp- prefix.",
     reads:
-      "§2.12: “Classes are comma-separated.” §8.3 makes .class_name a stylesheet selector at specificity 2, above a shape and below a node id, which is what lets whoever runs the file choose a model per class; DarkPrint itself states no opinion on which model a class should run.",
+      "Comma-separated classes (§2.12). Model stylesheet class selectors have specificity 2, above shape and below node id (§8.3). The runner chooses the model rules.",
     sections: ["2.10", "2.12", "8.2", "8.3"],
-    absent: "A card with no phases and an unknown type still writes its declared type as one class.",
+    absent: "Even an unknown type with no phases writes its declared type as a class.",
   },
   {
     scope: "node",
     attribute: "card",
     keys: ["card.id", "card.version"],
-    origin: "The pinned card ref, id@version, joined the way a DOT node already pins one.",
+    origin: "The exact card reference, id@version.",
     reads:
-      "Nothing. It is in none of §2.5, §2.6 or §2.7, in none of Appendix A's three tables, and no §7.2 lint rule is about an attribute name the tables do not carry. This one row is the compatibility claim.",
+      "Attractor ignores it: the attribute is not reserved and has no lint rule. DarkPrint readers can recover the card identity.",
     sections: ["2.5", "2.6", "2.7", "7.2", "Appendix A"],
   },
   {
@@ -192,9 +192,9 @@ const ROWS: readonly CrosswalkRow[] = [
     attribute: "dp_node",
     keys: [],
     origin:
-      "The node's original id in topology.dot, written only when the id had to be rewritten to reach the file.",
+      "The original topology node id, included only when export rewrites it.",
     reads:
-      "Nothing, for the same reason as card. It exists because §2.3 requires “bare identifiers for node IDs” matching [A-Za-z_][A-Za-z0-9_]*, and because a node called start or exit collides with §7.2's start_node and terminal_node rules. The rewritten node keeps its real name here.",
+      "Attractor ignores it. Rewriting satisfies the bare-id grammar [A-Za-z_][A-Za-z0-9_]* and avoids collisions with start/exit boundary ids (§2.3, §7.2).",
     sections: ["2.2", "2.3", "7.2"],
   },
 
@@ -203,33 +203,33 @@ const ROWS: readonly CrosswalkRow[] = [
     scope: "edge",
     attribute: "label",
     keys: [],
-    origin: "The label the edge carries in topology.dot, trimmed.",
+    origin: "The topology edge label, trimmed.",
     reads:
-      "§2.7: “Human-facing caption and routing key. Used for preferred-label matching in edge selection.” §3.3 is where that matching happens.",
+      "Caption and routing key for preferred-label matching (§2.7, §3.3).",
     sections: ["2.7", "3.3"],
-    absent: "An unlabelled edge writes no label attribute, and its two siblings below are unaffected.",
+    absent: "No label is written. Condition and weight are unaffected.",
   },
   {
     scope: "edge",
     attribute: "condition",
     keys: [],
     origin:
-      "The condition the edge declares, carried byte for byte and never trimmed. It is input to somebody else's parser.",
+      "The topology condition, exported byte for byte without trimming or parsing.",
     reads:
-      "§2.7: “Boolean guard expression evaluated against the current context and outcome.” §10 is the grammar it has to parse under, and §7.2's condition_syntax rule is an ERROR when it does not.",
+      "A Boolean guard against the context and outcome (§2.7, §10). Invalid syntax is an error (§7.2).",
     sections: ["2.7", "7.2", "10"],
-    absent: "An edge with no condition is unguarded and always eligible.",
+    absent: "The edge is unguarded and always eligible.",
   },
   {
     scope: "edge",
     attribute: "weight",
     keys: [],
     origin:
-      "The weight the edge declares. Emitted bare when it looks like a number under §2.2's Integer or Float, quoted otherwise, and both spellings parse back the same.",
+      "The topology weight. Numbers matching §2.2’s Integer or Float are emitted bare; other values are quoted. Both forms parse back identically.",
     reads:
-      "§2.7: “Numeric priority for edge selection. Higher weight wins among equally eligible edges.”",
+      "Higher weights win among equally eligible edges (§2.7, §3.3).",
     sections: ["2.2", "2.7", "3.3"],
-    absent: "An edge with no weight takes §2.7's default of 0.",
+    absent: "Defaults to 0.",
   },
 ];
 

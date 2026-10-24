@@ -22,6 +22,7 @@ import { Id, SpecLink } from "@/components/spec/parts";
 import { CARD_ROWS, type CardRow } from "@/components/spec/rows";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SEVERITY_META } from "@/components/ui/severity";
 import { cx } from "@/lib/format";
@@ -169,7 +170,7 @@ function FieldTerms({ terms }: { terms: readonly OntologyTerm[] }) {
  */
 function FieldEntry({ row, terms }: { row: CardRow; terms: readonly OntologyTerm[] }) {
   return (
-    <div className="grid gap-x-8 gap-y-3 border-t border-line py-5 md:grid-cols-[13rem_minmax(0,1fr)_14rem]">
+    <div className="grid gap-x-6 gap-y-3 border-t border-line px-4 py-5 first:border-t-0 md:grid-cols-[10rem_minmax(0,1fr)_12rem] sm:px-5">
       <dt className="font-mono text-[12px] leading-relaxed text-fg">{row.name}</dt>
       <dd className="min-w-0 text-sm leading-relaxed text-muted">
         <p>{prose(row.what)}</p>
@@ -307,7 +308,7 @@ export default function SpecCardPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="One YAML file per node: what the step is, what it is told to do, which model and tools it may use, what arrives and what must never arrive. The validator accepts the same fields as JSON. A published version is never edited in place, so a change means a new file and a new version number."
+            lead="One YAML file defines a node’s job, interface and limits. JSON is also accepted. Published versions are immutable; changes require a new version."
           />
         </div>
       </header>
@@ -357,21 +358,20 @@ export default function SpecCardPage() {
           <div className="flex flex-col gap-3">
             <span className="label-lead">The reference</span>
             <h2 id="fields-heading" className={cx(BAND_H2, "scroll-mt-24")}>
-              Every field, and what holds it
+              Field reference
             </h2>
             {/* No count in the sentence: a number typed beside a list somebody else owns
                 goes stale silently. Every id under a field comes out of `CORE_ONTOLOGY`
                 through the engine's own view, so a term renamed in the core is renamed
                 here and one removed disappears. */}
             <p className="text-[15px] leading-relaxed text-muted">
-              The ids under a field are the curated core, spelled as a card has to spell
-              them.
+              Use the exact core term IDs listed under each field.
             </p>
           </div>
 
           <div className="flex flex-col gap-5">
             <CheckLegend />
-            <dl className="flex flex-col border-b border-line">
+            <dl className={cx(guide.reference, guide.copper, "flex flex-col !p-0")}>
               {CARD_ROWS.map((row) => (
                 <FieldEntry key={row.name} row={row} terms={termsOf(row.values)} />
               ))}
@@ -391,10 +391,8 @@ export default function SpecCardPage() {
               What the validator checks
             </h2>
             <p className="text-[15px] leading-relaxed text-muted">
-              Every code beside a field is a real diagnostic. The validator prints it on{" "}
-              <SpecLink href="/upload">the upload page</SpecLink> and in the build when the
-              rule is broken, so a code can be grepped for and tripped on purpose, which is
-              what separates a checked rule from a promise.
+              Diagnostic codes appear on{" "}
+              <SpecLink href="/upload">the upload page</SpecLink> and in build output when a check fails.
             </p>
           </div>
 
@@ -403,9 +401,7 @@ export default function SpecCardPage() {
               {/* No reading lane: this is a one-sentence caption for the panel directly under
                   it, and the panel is full width. */}
               <p className="text-[15px] leading-relaxed text-muted">
-                This message is the validator&rsquo;s own output rather than text written for
-                this page. It comes from adding one edge, <Id>{ADDED_DOT_LINE}</Id>, to the
-                starter blueprint.
+                Adding <Id>{ADDED_DOT_LINE}</Id> to the starter blueprint produces this validator error:
               </p>
               <div className="rounded-lg border border-line bg-surface-2 p-4">
                 {/* The severity in word form, beside the code, from the same table the
@@ -428,9 +424,8 @@ export default function SpecCardPage() {
                 )}
               </div>
               <p className="text-sm text-dim">
-                <SpecLink href="/spec/topology">The topology page</SpecLink> shows the same
-                prohibition from the other side: the starter&rsquo;s DOT file, where the
-                planner -&gt; builder edge is deliberately absent.
+                <SpecLink href="/spec/topology">The topology page</SpecLink> shows the starter’s DOT file. It omits the planner -&gt; builder edge
+                because the builder card forbids it.
               </p>
             </div>
           )}
@@ -451,15 +446,14 @@ export default function SpecCardPage() {
           <div className="flex flex-col gap-3">
             <span className="label-lead">Every term</span>
             <h2 id="every-term-heading" className={cx(BAND_H2, "scroll-mt-24")}>
-              The whole vocabulary, and what names each term
+              Vocabulary
             </h2>
             {/* No total here: the browser prints a live `results/total` in its own filter
                 bar, and a number typed in the half of the page that cannot see it would be
                 a second count of the same set. */}
             <p className="text-[15px] leading-relaxed text-muted">
-              The {CORE_ONTOLOGY.terms.length} curated terms the fields draw on, and every
-              term a published blueprint declares in its own namespace, each with its parent
-              and how many cards name it.
+              Browse {CORE_ONTOLOGY.terms.length} core terms and the local terms declared by published
+              blueprints. Each entry shows its parent and how many cards use it.
             </p>
           </div>
 

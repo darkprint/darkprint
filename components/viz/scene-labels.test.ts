@@ -101,6 +101,10 @@ function graphFigures(): React.ReactElement {
     null,
     createElement(GraphFigure, { ...props, compact: true }),
     createElement(GraphFigure, props),
+    createElement(GraphFigure, {
+      ...props, compact: true, nodeMark: "schematic", highlightedNode: "builder",
+      highlightedNodeLabel: starter.graph.nodes.find((node) => node.id === "builder")!.label,
+    }),
   );
 }
 
@@ -211,8 +215,8 @@ const ROSTER: readonly SceneEntry[] = [
   // register left on the site, and converting it is what put it in front of this guard.
   {
     files: ["components/learn/PartFigures.tsx"],
-    // Two graph figures, and the card stage's node strip in its two frames.
-    frames: 4,
+    // Both Learn placements, the paired-card graph, and the card strip’s two frames.
+    frames: 5,
     render: () => framesOf(createElement(Fragment, null, graphFigures(), cardStage())),
   },
   /* `components/howto/IsolationWall.tsx` (1 frame) and `components/howto/PhaseStrip.tsx`

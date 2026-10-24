@@ -127,6 +127,7 @@ describe("before the press", () => {
     const markup = step({ session: { state: "no-handle", accountId: "acct_1" } });
     expect(publishIsDisabled(markup)).toBe(true);
     expect(text(markup)).toContain("no handle yet");
+    expect(markup).toContain('href="/welcome"');
     expect(markup).not.toContain('href="/api/auth/github/login"');
   });
 
@@ -169,7 +170,7 @@ describe("the endings", () => {
       },
     });
     const plain = text(markup);
-    expect(plain).toContain("Published. The registry holds it.");
+    expect(plain).toContain("Published to the registry.");
     expect(plain).toContain("Stored as berti/planner@1.0.0 , public");
     /* A stranger's bundle cannot pin a private card, so the sentence names the owner's own. */
     expect(plain).toContain("Your blueprints can pin it by that id");
@@ -196,7 +197,7 @@ describe("the endings", () => {
       },
     });
     const plain = text(markup);
-    expect(plain).toContain("Not published. The registry declined it.");
+    expect(plain).toContain("The registry declined this submission.");
     expect(plain).toContain("card-invalid : publishCard: the card was refused with 1 error.");
     expect(plain).toContain("card/unknown-term Unknown term `lupo/pii-handling`.");
     expect(plain).toContain("Declare it in the bundle's ontology/extensions.yaml.");

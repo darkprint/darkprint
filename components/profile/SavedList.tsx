@@ -136,17 +136,15 @@ export function SavedList({ saves }: { saves: readonly SavedRow[] }) {
 
       <div className="flex flex-col gap-2 px-5 py-4 text-xs leading-relaxed text-dim">
         <p>
-          This list is private to your account and follows you between devices. Starring a
-          card saves it here and raises the card&rsquo;s public star count; removing a card
-          here removes your star as well.
+          Saved cards sync privately across devices. Starring a card saves it and adds a public
+          star; removing it here also removes your star.
         </p>
-        <p>Three limits today:</p>
+        <p>Blueprint saves work differently:</p>
         <ul className="flex list-disc flex-col gap-1 pl-5">
-          <li>Starring a blueprint changes its public count but does not add it to this list.</li>
-          <li>Saving a blueprint from its tile keeps the save in this browser only.</li>
+          <li>Blueprint stars affect the public count, not this list.</li>
+          <li>Blueprint tile saves stay in this browser.</li>
           <li>
-            A card you starred before starring and saving became one action joins the list
-            the next time you star it.
+            Older card stars join this list when you star them again.
           </li>
         </ul>
       </div>

@@ -266,7 +266,7 @@ export function OwnedBundles({
       </div>
 
       {visible.length === 0 && (
-        <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-8 text-center font-mono text-[13px] text-dim">
+        <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-8 text-center text-sm text-muted">
           {shelfEmptyMessage("blueprints", visibility, query)}
         </p>
       )}
@@ -312,8 +312,8 @@ export function OwnedBundles({
           </span>
           <div className="flex flex-col gap-2 text-[13px] leading-relaxed text-muted">
             <p>
-              Every public blueprint this account owns, including ones with no release yet.
-              Private blueprints are left out of the list and out of the counts.
+              Public blueprints, including unreleased drafts. Private blueprints are excluded
+              from this list and its counts.
             </p>
           </div>
         </div>

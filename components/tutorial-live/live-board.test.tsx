@@ -297,7 +297,7 @@ describe("the next step, per phase", () => {
   it("prints the MCP install command from the clients table at the written phase", () => {
     const markup = html(createElement(NextStep, { draft: starterDraft("written"), liveUrl: LIVE_URL }));
     const text = plainText(markup);
-    expect(text).toContain("Next: enrich it");
+    expect(text).toContain("Next: add reusable steps");
     // The constant itself, never a retyped copy of it.
     expect(markup).toContain(MCP_CLIENTS[0].snippet);
     for (const client of MCP_CLIENTS) expect(text).toContain(client.label);
@@ -367,7 +367,7 @@ describe("the board", () => {
 
   it("waits with the page address before the first record arrives", () => {
     const shown = text(html(createElement(LiveBoardView, { state: INITIAL, token: TOKEN, origin: "https://www.darkprint.io" })));
-    expect(shown).toContain("Waiting for your agent's first answer");
+    expect(shown).toContain("Waiting for your first draft");
     expect(shown).toContain(TOKEN);
   });
 
@@ -427,7 +427,7 @@ describe("the page shell", () => {
     expect(shown).toContain("Back to the tutorial");
     expect(shown).toContain("Your blueprint, live");
     // The server render is the board's waiting state; the poll only starts in the browser.
-    expect(shown).toContain("Waiting for your agent's first answer");
+    expect(shown).toContain("Waiting for your first draft");
     expect(markup).not.toMatch(/max-w-|prose-lane/);
   });
 });

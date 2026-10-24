@@ -215,7 +215,7 @@ export function WelcomeForm({ suggestedHandle }: { suggestedHandle: string }) {
       <Field
         id="handle"
         label="Handle"
-        hint="Lowercase letters, digits and single hyphens, up to 32 characters, starting and ending with a letter or digit. It is reserved to you permanently; if you rename later, the old handle stays reserved too."
+        hint="Up to 32 lowercase letters, digits or single hyphens. Start and end with a letter or digit. It is reserved to you permanently, even after renaming."
       >
         <PrefixedField
           id="handle"
@@ -255,7 +255,7 @@ export function WelcomeForm({ suggestedHandle }: { suggestedHandle: string }) {
       <Field
         id="display-name"
         label="Display name"
-        hint="Shown on your profile and beside what you publish. Optional, and you can change it whenever you like."
+        hint="Optional. Shown on your profile; change it anytime."
       >
         <TextField id="display-name" value={displayName} onChange={setDisplayName} />
       </Field>
@@ -278,7 +278,7 @@ export function WelcomeForm({ suggestedHandle }: { suggestedHandle: string }) {
           {saving ? "Saving…" : "Finish signing up"}
         </button>
         <span className="text-center text-[13px] leading-relaxed text-dim">
-          The handle is the one thing publishing needs; everything else can wait.
+          The handle is the one thing publishing needs.
         </span>
       </div>
     </form>

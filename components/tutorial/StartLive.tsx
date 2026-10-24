@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { CopyButton } from "@/components/ui/CopyButton";
+import { CodePanel, guideStyles as guide } from "@/components/ui/Guide";
 import { isLiveToken, type LiveOpened } from "@/lib/core/tutorial/live";
 
 import {
@@ -101,7 +101,7 @@ export interface StartLiveViewProps {
  */
 export function StartLiveView({ token, pending, error, onStart }: StartLiveViewProps) {
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-xl border border-line bg-surface-2 px-6 py-6">
+    <div className={`${guide.diagram} p-5 flex min-w-0 flex-col gap-4`}>
       {token === null ? (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <Button type="button" size="lg" onClick={onStart} disabled={pending}>
@@ -229,15 +229,7 @@ export function LivePromptView({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <div className="flex min-w-0 items-start gap-2">
-        <pre
-          data-prompt={name}
-          className="min-w-0 flex-1 whitespace-pre-wrap break-words rounded-lg border border-line bg-surface-2 px-3.5 py-3 font-sans text-[15px] leading-relaxed text-fg"
-        >
-          <code className="font-sans">{prompt}</code>
-        </pre>
-        <CopyButton text={prompt} ariaLabel={PROMPTS[name].ariaLabel} />
-      </div>
+      <CodePanel title={name === "design" ? "Describe your task" : "Add reusable steps"} text={prompt} ariaLabel={PROMPTS[name].ariaLabel} prose preProps={{ "data-prompt": name }} />
       {!filled && (
         <p className="text-sm leading-relaxed text-dim">
           Open your live page in step 2 and its address fills in here.

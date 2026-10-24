@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { InstallTabs } from "@/components/mcp/InstallTabs";
 import { MCP_ENDPOINT_URL, MCP_FIRST_PROMPT } from "@/components/mcp/clients";
-import { CopyButton } from "@/components/ui/CopyButton";
+import { CodePanel, GuideStepHeading, guideStyles as guide } from "@/components/ui/Guide";
 import { More } from "@/components/ui/More";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { BUNDLE_CARDS_DIR, BUNDLE_README, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
@@ -21,7 +21,7 @@ import { NPX_INVOCATION } from "@/packages/cli/src/index";
 export const metadata: Metadata = {
   title: "Connect via MCP",
   description:
-    "Connect an agent to DarkPrint's remote MCP server with no package to install. Search public workflows or reusable cards, then review provenance and adapt locally. Public reads need no sign-in. DarkPrint does not run a blueprint.",
+    "Connect your agent to the registry with no package to install. Find blueprints and cards to adapt locally. DarkPrint does not run a blueprint.",
 };
 
 /** One row per tool, in the order the server lists them. Names are the tool names an agent calls. */
@@ -63,108 +63,85 @@ const OPERATIONS = [
   },
 ] as const;
 
-const CONCRETE_PROMPT = MCP_FIRST_PROMPT.replace("<your task>", "review my pull requests");
+const CONCRETE_PROMPT = MCP_FIRST_PROMPT.replace("<your task>", "reviewing pull requests");
 
 export default function McpPage() {
   return (
-    <div className="container-page py-16 sm:py-20">
+    <div className={`${guide.page} container-page py-16 sm:py-20`}>
       <SectionHeading
         as="h1"
         eyebrow="AI tools · read-only"
         title="Connect via MCP"
-        lead="Connect a client, give your agent a real task, then review a matching workflow or useful cards before adapting anything locally. Public reads need no sign-in. DarkPrint does not run blueprints."
+        lead="Let your agent find blueprints and cards for your task. Public reads need no sign-in."
       />
 
       <section
         id="connect"
         aria-labelledby="connect-title"
-        className="mt-11 flex scroll-mt-24 flex-col gap-5"
+        className={`${guide.panel} mt-9 flex scroll-mt-24 flex-col gap-5`}
       >
-        <h2 id="connect-title" className="font-display text-2xl font-semibold text-fg">
-          1. Connect a client
-        </h2>
-        <p className="text-[15px] leading-relaxed text-muted">
-          Choose a client and use its setup command. The remote server is at{" "}
-          <code className="font-mono text-[13px] text-blueprint-ink">{MCP_ENDPOINT_URL}</code>;
-          there is nothing to install for the remote connection.
+        <GuideStepHeading id="connect-title" index={1} title="Connect a client" />
+        <p className={guide.prose}>
+          Choose your agent below. Remote server:{" "}
+          <code className="font-mono text-[13px] text-blueprint-ink">{MCP_ENDPOINT_URL}</code>.
+          There is nothing to install for the remote connection.
         </p>
         <InstallTabs />
         <p className="text-sm leading-relaxed text-dim">
-          For a client that cannot reach the remote server, the same MCP tools are available
-          locally over stdio with{" "}
-          <code className="font-mono text-[13px] text-blueprint-ink">{NPX_INVOCATION} mcp</code>.
+          For stdio, use{" "}
+          <code className="font-mono text-[13px] text-blueprint-ink">{NPX_INVOCATION} mcp</code>. This downloads the darkprint package from npm.
         </p>
         <p className="text-sm leading-relaxed text-dim">
-          Without a key, every call is anonymous and can read public blueprints and cards. Public
-          search needs no sign-in. A bearer key from{" "}
+          Without a key, every call is anonymous. A bearer key from{" "}
           <Link
             href="/settings"
             className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan"
           >
             Settings
           </Link>{" "}
-          raises the rate limit and lets addressed reads reach your own private blueprints. Search
-          stays public-only. This server is read-only and never executes a blueprint.
+          raises the rate limit and lets you fetch your own private blueprints by name.
+          Search stays public-only. MCP is read-only.
         </p>
       </section>
 
       <section
         id="tools"
         aria-labelledby="tools-title"
-        className="mt-11 flex scroll-mt-24 flex-col gap-5 border-t border-line pt-10"
+        className={`${guide.panel} mt-6 flex scroll-mt-24 flex-col gap-5`}
       >
-        <h2 id="tools-title" className="font-display text-2xl font-semibold text-fg">
-          2. Ask about a task
-        </h2>
-        <p className="text-[15px] leading-relaxed text-muted">
-          Give the agent a concrete task. It can search for a complete workflow or cards that do
-          one useful part of the work.
-        </p>
-        <div className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3">
-          <pre className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere font-mono text-xs leading-relaxed text-blueprint-line">
-            <code>{CONCRETE_PROMPT}</code>
-          </pre>
-          <CopyButton text={CONCRETE_PROMPT} ariaLabel="Copy the example MCP task prompt" />
-        </div>
+        <GuideStepHeading id="tools-title" index={2} title="Ask about a task" />
+        <CodePanel title="Try this in your agent" text={CONCRETE_PROMPT} ariaLabel="Copy the example MCP task prompt" prose />
       </section>
 
       <section
         id="results"
         aria-labelledby="results-title"
-        className="mt-11 flex scroll-mt-24 flex-col gap-5 border-t border-line pt-10"
+        className={`${guide.panel} mt-6 flex scroll-mt-24 flex-col gap-5`}
       >
-        <h2 id="results-title" className="font-display text-2xl font-semibold text-fg">
-          3. Review, then adapt locally
-        </h2>
-        <p className="text-[15px] leading-relaxed text-muted">
-          Search returns ranked matches and evidence, not a verdict. A similarity score says
-          nothing about quality. Open the source and decide what fits before using any of it.
+        <GuideStepHeading id="results-title" index={3} title="Review the files" />
+        <p className={guide.prose}>
+          A similarity score says nothing about quality. Read the matched files before adapting them.
         </p>
         <ol className="flex flex-col gap-4 border-t border-line pt-4">
-          <li className="text-[15px] leading-relaxed text-muted">
-            <strong className="font-medium text-fg">Start with a whole workflow:</strong> ask for
-            its graph, pinned cards, scorecard and provenance. A fetched bundle includes the
-            files and a release digest. Review the edges, limits and source, then ask your agent
-            to suggest local changes.
+          <li className={guide.prose}>
+            <strong className="font-medium text-fg">Blueprint:</strong> review the graph, version-pinned
+            cards, scorecard and provenance.
           </li>
-          <li className="text-[15px] leading-relaxed text-muted">
-            <strong className="font-medium text-fg">Reuse one useful node:</strong> read its full
-            card at <code className="font-mono text-[13px] text-blueprint-ink">id@version</code>.
-            Keep a reused card unchanged; an adapted card is a new versioned card with a new
-            identity.
+          <li className={guide.prose}>
+            <strong className="font-medium text-fg">Card:</strong> read the exact version,{" "}
+            <code className="font-mono text-[13px] text-blueprint-ink">id@version</code>.
+            Reuse it unchanged; adaptations need a new identity and version.
           </li>
         </ol>
         <p className="text-sm leading-relaxed text-dim">
-          Nothing here runs a blueprint. DarkPrint only supplies files and read-only tools.
-          Execution depends on a runner you choose and happens in your own environment, under
-          your direction.
+          Nothing here runs a blueprint. Execution depends on a runner you choose and happens in your own environment.
         </p>
       </section>
 
       <section
         id="details"
         aria-labelledby="details-title"
-        className="mt-11 flex scroll-mt-24 flex-col gap-5 border-t border-line pt-10"
+        className={`${guide.panel} mt-6 flex scroll-mt-24 flex-col gap-5`}
       >
         <h2 id="details-title" className="font-display text-2xl font-semibold text-fg">
           Tool reference
@@ -234,12 +211,12 @@ export default function McpPage() {
           <p className="text-sm leading-relaxed text-muted">
             Results combine vector similarity with matching words and return evidence. If vector
             search is unavailable, the response says so and uses word matches; the score still
-            says nothing about quality. A slug fetch follows the current release. A digest pins
-            the graph and cards in an exact release by SHA-256. A reused card is pinned by its
+            says nothing about quality. Fetching by name returns the current release. A digest, the release’s SHA-256 hash, pins
+            the graph and cards in an exact release. A reused card is pinned by its
             id and version.
           </p>
           <p className="text-sm leading-relaxed text-muted">
-            With a key, addressed reads can reach your private blueprints, while search remains
+            With a key, you can fetch your own private blueprints by name. Search remains
             public-only. Neither key scope can write. Attractor export documents settings the
             target format cannot represent; a runner may provide defaults or refuse when a
             required setting is missing.

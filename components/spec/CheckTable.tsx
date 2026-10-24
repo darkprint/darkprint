@@ -24,6 +24,7 @@
 
 import type { DiagnosticCode } from "@/lib/core";
 
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { Id } from "./parts";
 
 export interface CheckRow {
@@ -97,7 +98,7 @@ export function CheckTable({
       tabIndex={0}
       role="group"
       aria-label={`${caption}, scrollable`}
-      className="overflow-x-auto"
+      className={`${guide.reference} overflow-x-auto`}
     >
       <table className="w-full min-w-[38rem] border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>

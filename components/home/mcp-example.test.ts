@@ -71,6 +71,8 @@ describe("the landing's MCP example, against the archive", () => {
     }
     expect(overview).toContain(`${EXAMPLE_OWNER}/${EXAMPLE_HITS[0]}`);
     expect(overview).not.toContain(EXAMPLE_PROMPT);
+    expect(overview, "the local email step must be identified as an addition before the disclosure").toContain("Added locally");
+    expect(overview, "the registry match must not imply it already sends email").toContain("The published blueprint has no email node.");
     expect(summary).toContain("Full prompt, match, graph, and run contract");
     expect(plainText(disclosure.slice(summaryEnd - disclosureStart))).toContain(EXAMPLE_PROMPT);
     expect(disclosure).toContain("Covered by the blueprint");

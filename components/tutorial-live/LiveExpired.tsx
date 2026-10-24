@@ -1,3 +1,4 @@
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { ButtonLink } from "@/components/ui/Button";
 
 /**
@@ -6,9 +7,9 @@ import { ButtonLink } from "@/components/ui/Button";
  */
 export function LiveExpired() {
   return (
-    <section className="panel flex flex-col gap-4 p-5" aria-label="This live page has expired">
+    <section className={`${guide.panel} flex flex-col gap-4`} aria-label="This live page has expired">
       <p className="text-sm leading-relaxed text-muted">
-        This live page has expired, or its address is not one this site opened; a page lasts
+        This live page has expired or its address is unknown. A page lasts
         24 hours after it was opened or your agent last posted to it.
       </p>
       <div>

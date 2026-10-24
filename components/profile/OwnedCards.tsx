@@ -77,7 +77,7 @@ export function OwnedCards({
       </div>
 
       {visible.length === 0 && (
-        <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-8 text-center font-mono text-[13px] text-dim">
+        <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-8 text-center text-sm text-muted">
           {shelfEmptyMessage("cards", visibility, query)}
         </p>
       )}

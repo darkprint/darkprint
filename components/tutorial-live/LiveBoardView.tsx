@@ -14,7 +14,7 @@ import { blueprintHref, nodeHref } from "@/lib/href";
 import { InstallTabs } from "@/components/mcp/InstallTabs";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { ButtonLink } from "@/components/ui/Button";
-import { CopyButton } from "@/components/ui/CopyButton";
+import { CodePanel, guideStyles as guide } from "@/components/ui/Guide";
 import { DiagnosticList } from "@/components/ui/DiagnosticList";
 import { PanelHeading } from "@/components/ui/SectionHeading";
 import { REF_SEGMENT, enrichPrompt, livePageUrl, pictureOf, type DraftPicture } from "./draft";
@@ -87,7 +87,7 @@ export function PhaseStrip({ current }: { current: LivePhase }) {
 
 function LiveHeader({ draft }: { draft: LiveDraft }) {
   return (
-    <header className="flex flex-col gap-4">
+    <header className={`${guide.panel} ${guide.human} flex flex-col gap-4`}>
       <div className="flex flex-col gap-1">
         <span className="label">Task</span>
         <p className="text-lg leading-[1.6] text-fg sm:text-xl">
@@ -103,15 +103,15 @@ function LiveHeader({ draft }: { draft: LiveDraft }) {
 
 export function LiveWaiting({ liveUrl }: { liveUrl: string }) {
   return (
-    <section className="panel flex flex-col gap-3 p-5" aria-label="Waiting for the first draft">
-      <PanelHeading>Waiting for your agent&rsquo;s first answer</PanelHeading>
+    <section className={`${guide.panel} flex flex-col gap-3`} aria-label="Waiting for the first draft">
+      <PanelHeading>Waiting for your first draft</PanelHeading>
       <p className="text-sm leading-relaxed text-muted">
         This page is{" "}
-        <code className="rounded bg-surface-3 px-1 py-0.5 font-mono text-[12px] text-fg">
+        <code className="break-all rounded bg-surface-3 px-1 py-0.5 font-mono text-[12px] text-fg">
           {liveUrl}
         </code>
-        . Paste it into the prompt on the tutorial page, or hand it to the DarkPrint skill
-        when it offers a live preview, and the graph appears here as the interview goes.
+        . Add this address to your tutorial prompt, or give it to the DarkPrint skill when it
+        offers a live preview. Your draft will appear here.
       </p>
     </section>
   );
@@ -143,11 +143,11 @@ function PartialGraph({
 
       {!picture.parsed ? (
         <p className="px-4 py-5 text-sm leading-relaxed text-muted">
-          The topology has not parsed into a graph yet. The notes below say which line.
+          The topology cannot be parsed yet. Check the lines named below.
         </p>
       ) : picture.nodes.length === 0 ? (
         <p className="px-4 py-5 text-sm leading-relaxed text-muted">
-          The topology is open and no node is declared in it yet.
+          The topology has no nodes yet.
         </p>
       ) : (
         <div className="grid gap-4 p-4 lg:grid-cols-2">
@@ -209,7 +209,7 @@ function PartialGraph({
  */
 function NoGraphYet() {
   return (
-    <section className="panel flex flex-col gap-3 p-5" aria-label="No graph yet">
+    <section className={`${guide.panel} flex flex-col gap-3`} aria-label="No graph yet">
       <PanelHeading>No graph yet</PanelHeading>
       <p className="text-sm leading-relaxed text-muted">
         The graph appears here once your agent drafts its first node.
@@ -271,7 +271,7 @@ function hitHref(hit: LiveHit): string | undefined {
 
 export function RegistryHits({ hits }: { hits: readonly LiveHit[] }) {
   return (
-    <section className="panel flex flex-col gap-3 p-5" aria-labelledby="live-hits">
+    <section className={`${guide.panel} flex flex-col gap-3`} aria-labelledby="live-hits">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <PanelHeading>
           <span id="live-hits">Found in the registry</span>
@@ -326,30 +326,23 @@ export function NextStep({ draft, liveUrl }: { draft: LiveDraft; liveUrl: string
   if (phase === "written") {
     const prompt = enrichPrompt(draft.bundle.manifest.slug, liveUrl);
     return (
-      <section className="panel flex flex-col gap-4 p-5" aria-labelledby="live-next">
+      <section className={`${guide.panel} flex flex-col gap-4`} aria-labelledby="live-next">
         <PanelHeading>
-          <span id="live-next">Next: enrich it</span>
+          <span id="live-next">Next: add reusable steps</span>
         </PanelHeading>
         <p className="text-sm leading-relaxed text-muted">
-          Connect the DarkPrint MCP to your agent, then paste the prompt under it. Your agent
-          searches the registry for an observability blueprint and merges it into your folder
-          with the DarkPrint skill&rsquo;s enrich mode. This page shows the hits and the grown
-          graph when it posts again.
+          Connect MCP, then use the prompt below. Your agent finds an observability blueprint
+          and merges it into your folder with the DarkPrint skill’s enrich mode. The updated graph appears here after its next post.
         </p>
         <InstallTabs />
-        <div className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3">
-          <pre className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere font-mono text-xs leading-relaxed text-blueprint-line">
-            <code>{prompt}</code>
-          </pre>
-          <CopyButton text={prompt} ariaLabel="Copy the enrich prompt" />
-        </div>
+        <CodePanel title="Add observability" text={prompt} ariaLabel="Copy the enrich prompt" prose />
       </section>
     );
   }
 
   if (phase === "enriched") {
     return (
-      <section className="panel flex flex-col gap-4 p-5" aria-labelledby="live-next">
+      <section className={`${guide.panel} flex flex-col gap-4`} aria-labelledby="live-next">
         <PanelHeading>
           <span id="live-next">Next: keep it</span>
         </PanelHeading>
@@ -370,14 +363,14 @@ export function NextStep({ draft, liveUrl }: { draft: LiveDraft; liveUrl: string
   if (phase === "published") {
     const href = publishedHref(draft.publishedRef);
     return (
-      <section className="panel flex flex-col gap-4 p-5" aria-labelledby="live-next">
+      <section className={`${guide.panel} flex flex-col gap-4`} aria-labelledby="live-next">
         <PanelHeading>
           <span id="live-next">Published</span>
         </PanelHeading>
         <p className="text-sm leading-relaxed text-muted">
           {href === undefined
             ? "Your agent reported the blueprint published and did not say where. Your profile, in the account menu, lists it."
-            : "Your blueprint has its own page now. This one stops following."}
+            : "Open the published blueprint below. This live page has stopped updating."}
         </p>
         {/* No button without a ref: `/welcome` bounces a finished account back to the
             landing, and the profile address needs the handle this page does not have. */}
@@ -391,7 +384,7 @@ export function NextStep({ draft, liveUrl }: { draft: LiveDraft; liveUrl: string
   }
 
   return (
-    <section className="panel flex flex-col gap-2 p-5" aria-labelledby="live-next">
+    <section className={`${guide.panel} flex flex-col gap-2`} aria-labelledby="live-next">
       <PanelHeading>
         <span id="live-next">Keep going</span>
       </PanelHeading>

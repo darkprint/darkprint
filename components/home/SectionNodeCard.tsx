@@ -66,6 +66,7 @@
    they are, by construction rather than by an empty record.
    ============================================================ */
 
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { cardSource } from "@/lib/content";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -78,33 +79,23 @@ export function SectionNodeCard() {
   if (source === undefined) return null;
 
   return (
-    <section id="node-card" className="scroll-mt-24 bg-void py-20 sm:py-28">
+    <section id="node-card" className="scroll-mt-24 bg-void py-12 sm:py-16">
       <div className="container-page">
         <SectionHeading
           eyebrow="One node, line by line"
-          title="A node is a card, and the card is checkable"
+          title="A real card, annotated"
           lead={
             <>
               This is{" "}
               <code className="rounded bg-surface-3 px-1 py-0.5 font-mono text-[13px] text-fg">
                 {CARD_REF}
               </code>{" "}
-              as the archive stores it. Nine places on the card decide what the node is,
-              what it does, the brief it is handed, which model it runs, what it may
-              reach, what arrives and what must never arrive. The last of those is why
-              whoever writes the code never reads the tests the work is judged against.
-              {/* The affordance, said once in prose. The rail's hover hint and focus ring
-                  are the visual affordance, and neither is available to a reader who has
-                  not yet moved a pointer over the figure — which on this page is most of
-                  them, because the card is the first thing under the heading. One clause,
-                  and it describes what the figure does rather than instructing anybody:
-                  every part is already open and marked before a single click. */}{" "}
-              Pick one on the right and the lines it is about light up on the left.
+              from the registry. Select an annotation to highlight the matching YAML.
             </>
           }
         />
 
-        <div className="mt-10">
+        <div className={`${guide.diagram} ${guide.copper} mt-8`}>
           <CardBreakdown
             /* The trailing newline every file on disk ends with would otherwise render as
                a blank line 53 under a 52-line card, and would be counted and printed in

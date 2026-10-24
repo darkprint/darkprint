@@ -17,6 +17,7 @@
 /*  facts also go into `result.diagnostics` so they reach the report.  */
 /* ------------------------------------------------------------------ */
 
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { cx } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { SIGN_IN_HREF, type UploadSession } from "./session";
@@ -69,9 +70,10 @@ function AttributionRefusal({ session }: { session: UploadSession }) {
   if (session.state === "no-handle") {
     return (
       <>
-        <span className={token}>no handle yet</span>: your account has not chosen the name
-        it publishes under, and that name is what an import would write into every card.
-        Nothing on this page can set one.
+        <span className={token}>no handle yet</span>: imports need your handle for each
+        card&rsquo;s author field.{" "}
+        <a href="/welcome" className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan">Choose your handle</a>,
+        then return here.
       </>
     );
   }
@@ -159,7 +161,7 @@ function LossList({ losses }: { losses: readonly AttractorLoss[] }) {
 
 /* --------------------- the offer --------------------- */
 
-const SHELL = "flex flex-col gap-4 rounded-lg border p-5";
+const SHELL = `${guide.panel} flex flex-col gap-4`;
 
 /**
  * The panel that says a dropped `.dot` is an Attractor pipeline, and offers to read it.
@@ -189,9 +191,8 @@ export function AttractorOffer({
           <span className="font-mono text-cyan">{file.name}</span> reads as an Attractor
           pipeline. Its nodes carry{" "}
           <span className="font-mono">prompt</span> and <span className="font-mono">shape</span>{" "}
-          and pin no cards, so the validator has nothing to resolve and reports one missing
-          card for every node. DarkPrint can read it here instead, in this tab, into a draft
-          bundle you can correct and publish.
+          and pin no cards. The ordinary validator reports one missing card per node.
+          Import it in this tab to create a draft bundle you can edit and publish.
         </p>
       </div>
 
@@ -202,8 +203,7 @@ export function AttractorOffer({
             <span className="font-mono text-fg">{nodes}</span> cards, one for each node
             outside the pipeline boundary, plus a{" "}
             <span className="font-mono">topology.dot</span> that pins them and a manifest.
-            The boundary nodes go: Attractor resolves those by shape or by id (§3.2, §4.4)
-            and DarkPrint synthesises them again on the way out.
+            Boundary nodes are removed (§3.2, §4.4); DarkPrint adds them again on export.
           </li>
           <li>
             {author === undefined ? (
@@ -216,8 +216,7 @@ export function AttractorOffer({
             )}
           </li>
           <li>
-            A draft, and never a release. The cards do not resolve until you have read them,
-            and the version is the one an author is expected to edit.
+            A draft, and never a release. Review and edit the imported cards.
           </li>
         </ul>
       </div>

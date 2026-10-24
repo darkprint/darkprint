@@ -84,29 +84,34 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 
 | Path | Rendering | Shows |
 | --- | --- | --- |
-| `/` | static | the landing page: the band to the DarkPrint skill and MCP, the wordmark hero with a per-reader account line, an example of one task taken through MCP, beats on reproducible runs, a blueprint and a node card, what an account adds, and the tutorial door |
+| `/` | static | the wordmark hero, a task-to-MCP example with the published graph preview and a separately labelled local addition, a blue graph field with the Code Builder node visibly named and highlighted beside its copper-accented pinned card, ports and boundary, and a compact tutorial invitation; account guidance stays beside the actions |
 | `/blueprints` | dynamic | the registry index: browse filters and sorting; nonempty task queries call `/api/search/blueprints`, preserving relevance order and showing match evidence and encoder status |
 | `/blueprints/[owner]` | dynamic | a redirect only: a handle goes to its profile, a legacy slug to the owner that holds it |
 | `/blueprints/[owner]/[slug]` | dynamic | one blueprint: graph, files, releases, notes, downloads; the owner's controls when signed in |
-| `/capabilities` | static | every operation, from the CLI, MCP and the skill, with its status |
-| `/mcp` | static | connect an MCP client, try a concrete reuse task, and review requirements before local adaptation; the complete tool reference is expandable |
+| `/capabilities` | static | operations grouped into Find, Create, Check, Publish and Use locally; CLI, MCP and Assisted Design tabs retain the complete command, tool and skill references |
+| `/mcp` | static | numbered panels for client selection and connection, a copyable task prompt, and result review; the complete seven-tool reference is expandable |
 | `/new` | dynamic | create a draft bundle: slug and visibility |
 | `/nodes` | dynamic | browse the node card library or search tasks through `/api/search/cards`; ranked results retain individual versions and disclose their detail-page destination |
 | `/nodes/[...id]` | dynamic | one card: every field, versions, blueprints that pin it, notes, YAML download |
 | `/ontology/[...term]` | dynamic | one vocabulary term: its place in the lattice and its usage |
-| `/settings` | dynamic | handle, email, profile, default visibility, notifications, API keys, account deletion |
-| `/skill` | static | install the blueprint-writing skill, describe or adapt a task, then keep the folder locally or publish; detailed interview guidance is expandable |
+| `/settings` | dynamic | compact sections for profile, handle, email, default visibility, notifications, API keys and account deletion; email delivery remains unavailable |
+| `/skill` | static | three numbered panels for installation, a concrete task and the resulting folder; expandable interview guidance, source links and visible execution and sharing disclosures |
 | `/privacy`, `/terms` | static | what the database stores about a person and how to remove it; what a reader may do here and what the site promises back. Linked from the footer's legal row on every page, which is also where Google's OAuth consent screen reads the privacy link from |
-| `/spec/attractor`, `/spec/topology` | static | the Attractor crosswalk; the DOT dialect |
-| `/spec/card` | dynamic | the node card format, with the vocabulary browser |
-| `/tutorial` | static | the five-step walkthrough that has the reader write a blueprint in their own agent with the blueprint-writing skill, opens the live page the draft is posted to, and points at MCP and `/upload` |
-| `/tutorial/live/[token]` | per request, client-polled | one reader's live page: the draft the blueprint-writing skill posts, drawn as the graph takes shape, the registry hits, and the next step per phase; 404 on a malformed token, and an expired or unknown one renders the expired notice with a link back to `/tutorial` |
+| `/spec/attractor`, `/spec/topology` | static | the crosswalk pairs editable files with compiled output, then mappings, handlers, classes and compatibility limits; topology pairs real DOT with node, card-pin, port and branch explanations and complete validator rows |
+| `/spec/card` | dynamic | a copper-framed annotated card, complete field and validator references, and the vocabulary browser |
+| `/tutorial` | static | five numbered panels with installation commands, live-page controls, task prompts, reusable steps through MCP and keeping or publishing the files; expiry and sharing disclosures remain visible |
+| `/tutorial/live/[token]` | per request, client-polled | framed waiting, partial draft, reconnecting and published states with the graph, registry hits and next action; 404 on a malformed token, and an expired or unknown one renders the expiry panel linking back to `/tutorial` |
 | `/u/[username]` | dynamic | a profile |
 | `/u/[username]/[slug]` | dynamic | a permanent redirect to `/blueprints/[username]/[slug]` |
 | `/u/[username]/blueprints`, `/u/[username]/cards`, `/u/[username]/saved` | dynamic | the three shelves |
-| `/upload` | dynamic | the wizard: drop a folder or a single card, validate it (a folder in the browser, a card over `/api/validate/card`), publish |
+| `/upload` | dynamic | the framed wizard precedes supporting explanations: choose files, describe, check and publish; separate unfinished, rejected and successful states, with Attractor import losses beside its action; folder checks run in the browser and single-card checks use `/api/validate/card` |
 | `/welcome` | dynamic | sign in and choose a handle |
-| `/what-a-blueprint-is` | static | the entry page of the Learn section |
+| `/what-a-blueprint-is` | static | a plain definition and real folder, paired graph, card and vocabulary examples, optional vocabulary extensions, and supporting runner and evaluation background |
+
+AI Tools and Learn share the server-compatible `components/ui/Guide.tsx` panels and
+`Guide.module.css`: blue graph frames, copper card frames, violet human actions and command
+headers that keep copy controls above the source on phones. Diagrams expose their content
+without motion. Existing anchors, navigation groups and reference data remain shared.
 
 `sitemap.xml` is dynamic; `robots.txt`, `manifest.webmanifest`, `opengraph-image` and
 `icon.svg` are static. Every response carries the security headers set in `next.config.ts`
@@ -185,7 +190,7 @@ Postgres holds the index and the current projection.
 | --- | --- |
 | `account` | handle, display name, email, bio, avatar hue, default visibility, notification preferences |
 | `account_identity` | one row per (`provider`, `provider_id`): `github` or `google`, joined to an account |
-| `handle_reservation` | every handle ever claimed; a released handle stays unclaimable |
+| `handle_reservation` | every handle ever claimed; a released handle stays reserved to its original account, which may reclaim it |
 | `bundle` | one row per (owner, slug): visibility, lineage as three plain columns, draft fields for a bundle created before its first release |
 | `release` | append-only per bundle: version, digest, `dot`, manifest, card refs and digests, local vocabulary, `autonomy`, `security`, `phase_coverage` as jsonb |
 | `card_version` | one row per (card id, version): parsed `body`, `source` YAML verbatim, digest, owner, visibility; never updated by a product write path |
@@ -645,9 +650,9 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
     old one in one transaction, so the ten bundles, their releases, and the stars, forks and
     notes on them all keep resolving under the new handle. What moves is public: every
     `/blueprints/darkprint/<slug>` and `/u/darkprint` stops answering and the `autogen` form
-    starts, and `darkprint` goes into the reservation table as `released`, which
-    `checkHandle` refuses forever: no account claims it again, this one included, so the
-    rename is one-way.
+    starts, and `darkprint` goes into the reservation table as `released`.
+    `checkHandle` reports it as reserved. Allocation lets the original account reclaim
+    it; another account cannot.
     Retiring instead would destroy all of it, and refuses outright while another account's
     public fork pins a card version the archive also ships.
 11. `DATABASE_URL="$D" npm run bundle:delete -- --owner alessandro --slug smoke-checker`
@@ -697,8 +702,8 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
 Rollback while the old code is still promoted: `psql "$D" -v ON_ERROR_STOP=1 -f rb-prod.sql`,
 then `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres --check-manifest
 rb-prod.sql.manifest.tsv`. After step 9 only the dump from step 3 restores the dropped rows, and
-step 10 cannot be undone: the released handle is reserved permanently, so the old URLs stay
-gone. Every
+the original account can undo step 10 by reclaiming its reserved handle; other
+accounts cannot claim it. Every
 `/d/<digest>` address recorded before step 6 answers 404 after it; the embeddings are keyed by
 row id and refreshed by step 14.
 

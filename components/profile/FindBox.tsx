@@ -23,7 +23,7 @@ export function FindBox({ placeholder, label }: { placeholder: string; label: st
   const value = params.get("q") ?? "";
 
   return (
-    <span className="flex h-10 min-w-[16rem] flex-1 items-center gap-2 rounded-md border border-line bg-surface px-3 transition-colors focus-within:border-cyan/50">
+    <span className="flex h-10 min-w-0 basis-64 flex-1 items-center gap-2 rounded-md border border-line bg-surface px-3 transition-colors focus-within:border-cyan/50">
       <span aria-hidden className="text-[13px] text-dim">
         ⌕
       </span>

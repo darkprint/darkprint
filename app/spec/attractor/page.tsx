@@ -32,6 +32,7 @@ import { Id, SpecLink } from "@/components/spec/parts";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { CodePanel, guideStyles as guide } from "@/components/ui/Guide";
 import { NPX_INVOCATION } from "@/packages/cli/src/index";
 
 /* ============================================================
@@ -100,7 +101,7 @@ function ScrollTable({
   children: React.ReactNode;
 }) {
   return (
-    <div tabIndex={0} role="group" aria-label={`${caption}, scrollable`} className="overflow-x-auto">
+    <div tabIndex={0} role="group" aria-label={`${caption}, scrollable`} className={`${guide.reference} overflow-x-auto`}>
       <table className="w-full border-collapse text-sm" style={{ minWidth }}>
         <caption className="sr-only">{caption}</caption>
         {children}
@@ -202,9 +203,9 @@ function scopeLead(scope: AttractorScope): string {
   const total = attractor + darkprint;
   const carried =
     darkprint === 0
-      ? "all of them carrying Attractor's own meaning."
-      : `${attractor} carrying Attractor's own meaning and ${darkprint} carrying DarkPrint's, which a runner reads as nothing.`;
-  return `The compiled file writes ${total} attributes here, ${carried} Not every one is written every time: a row that can be missing says so under "when absent".`;
+      ? "all of them with Attractor semantics."
+      : `${attractor} with Attractor semantics and ${darkprint} with DarkPrint metadata ignored by the runner.`;
+  return `${total} exported attributes: ${carried} Optional values are described under "when absent".`;
 }
 
 /**
@@ -300,12 +301,20 @@ export default function SpecAttractorPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="One page for the reader who already knows Attractor, StrongDM's graph runner and the program the file darkprint export writes is written for. Which card field becomes which node attribute, which node type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. New to both? Start with the topology and the node card and come back."
+            lead="Compile your blueprint into a DOT pipeline for StrongDM’s Attractor runner. This reference shows the mappings and compatibility limits."
           />
           {/* The revision these tables were checked against, printed rather than dated in
               prose: an undated compatibility claim has no shelf life, and this is the only
               surface on the site that names the document. */}
-          <dl className="flex flex-col gap-2 border border-line bg-surface/40 p-4 font-mono text-[11px] sm:flex-row sm:flex-wrap sm:gap-x-8">
+          <div className={`${guide.panel} flex flex-col gap-5`}>
+            <div className={guide.flow}>
+              <div className={guide.file}><span className="text-sm text-muted">You edit</span><p className="mt-2 font-mono text-sm text-blueprint-ink">topology.dot + cards/</p></div>
+              <span aria-hidden className="text-xl text-blueprint-line">→</span>
+              <div className={guide.file}><span className="text-sm text-muted">Your runner reads</span><p className="mt-2 font-mono text-sm text-blueprint-ink">Compiled Attractor DOT</p></div>
+            </div>
+            <CodePanel title="Compile a blueprint folder" text={`${NPX_INVOCATION} export <dir> --attractor`} ariaLabel="Copy the Attractor export command" />
+          </div>
+          <dl className="flex flex-col gap-2 rounded-xl border border-line bg-surface/40 p-4 font-mono text-[11px] sm:flex-row sm:flex-wrap sm:gap-x-8">
             <div className="flex gap-2">
               <dt className="text-dim">checked against</dt>
               <dd className="min-w-0 break-all text-fg">
@@ -347,34 +356,13 @@ export default function SpecAttractorPage() {
           <div className="flex flex-col gap-3">
             <span className="label-lead">The crosswalk</span>
             <h2 id="crosswalk-heading" className={`${BAND_H2} scroll-mt-24`}>
-              Every attribute a bundle writes into the compiled file
+              Compiled attributes
             </h2>
           </div>
 
-          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-            <p>
-              A DarkPrint blueprint is a topology in DOT, one YAML card per node, and a
-              vocabulary the two resolve against. <Id>darkprint export &lt;dir&gt; --attractor</Id>{" "}
-              compiles those into a single DOT file. The tables below are what it writes,
-              read off the exporter&rsquo;s own constants rather than typed, so they cannot
-              drift from the file.
-            </p>
-            <p>
-              The last two node rows are DarkPrint&rsquo;s own. <Id>card</Id> pins the exact
-              card version a node is an instance of, and <Id>dp_node</Id> records an id the
-              grammar forced the exporter to rewrite. Neither name is in
-              §2.5, §2.6 or §2.7, neither is in any of Appendix A&rsquo;s three tables, and
-              none of §7.2&rsquo;s built-in lint rules is about an attribute name those tables
-              do not carry. So a runner parses them, finds nothing that reads them, and runs
-              the pipeline anyway, while a DarkPrint reader gets the pin back out of the same
-              file.
-            </p>
-            <p>
-              The right-hand column is computed rather than typed: each row is checked against the{" "}
-              {reservedTotal} names Attractor reserves across graph, node and edge. If a later
-              revision of the specification reserves <Id>card</Id> or <Id>dp_node</Id>, that
-              column will say so.
-            </p>
+          <div className={`${guide.panel} flex flex-col gap-4 text-base leading-relaxed text-muted`}>
+            <p>These tables list every attribute the exporter writes. They are generated from the exporter’s constants.</p>
+            <p><Id>card</Id> preserves an exact card version. <Id>dp_node</Id> preserves a node id changed to fit Attractor’s grammar. Attractor ignores both metadata attributes. The final column checks every name against Attractor’s {reservedTotal} reserved attributes.</p>
           </div>
 
           {CROSSWALK_SCOPES.map((scope) => (
@@ -427,30 +415,10 @@ export default function SpecAttractorPage() {
             </h2>
           </div>
 
-          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-            <p>
-              §2.6 makes <Id>shape</Id> the handler selector and §2.8 is the mapping. A
-              DarkPrint card&rsquo;s type is an ontology term inside the YAML and never a DOT
-              attribute, so this table is the only place the two vocabularies meet. A type a
-              blueprint declares in its own namespace is mapped through its parent types
-              (its <Id>broader</Id> chain), so a term only one publisher uses still lands on
-              a handler.
-            </p>
-            <p>
-              More than one type lands on {sharedShapes.length} of these shapes, and that
-              loses information on the way back: a pipeline imported from Attractor with no{" "}
-              <Id>class</Id> attribute to read comes home as an <Id>agent</Id> where it may
-              have meant a <Id>tool</Id> or a <Id>validation</Id> node. That is why the{" "}
-              <Id>class</Id> attribute is written at all; the next section covers it.
-            </p>
-            <p>
-              <Id>tool</Id> maps to <Id>box</Id> and §4.5&rsquo;s codergen handler, not to{" "}
-              <Id>parallelogram</Id>. A DarkPrint <Id>tool</Id> card carries a prose spec,
-              the MCP servers it may reach and a skill file, and has never carried a shell
-              command, so §4.10&rsquo;s handler would have failed it on sight. The type that
-              maps to <Id>parallelogram</Id> is <Id>shell-tool</Id>, and it is the one that
-              carries a command in <Id>params.tool_command</Id>.
-            </p>
+          <div className={`${guide.panel} flex flex-col gap-4 text-base leading-relaxed text-muted`}>
+            <p>Attractor uses <Id>shape</Id> to select a handler (§2.6, §2.8). The exporter derives the shape from the card’s type. Local types inherit the mapping through their <Id>broader</Id> parents.</p>
+            <p>Multiple types share {sharedShapes.length} shapes. On import, <Id>class</Id> preserves the distinction; without it, a node may become <Id>agent</Id> instead of <Id>tool</Id> or <Id>validation</Id>.</p>
+            <p><Id>tool</Id> maps to <Id>box</Id> and §4.5’s codergen handler: its card carries prose instructions, MCP servers and a skill document. The type that maps to <Id>parallelogram</Id> is <Id>shell-tool</Id>, which supplies §4.10’s command through <Id>params.tool_command</Id>.</p>
           </div>
 
           <ScrollTable
@@ -519,29 +487,10 @@ export default function SpecAttractorPage() {
             </h2>
           </div>
 
-          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-            <p>
-              §2.10 derives a class from a subgraph&rsquo;s label &ldquo;by lowercasing the
-              label, replacing spaces with hyphens, and stripping non-alphanumeric
-              characters (except hyphens)&rdquo;, so{" "}
-              <Id>subgraph &#123; label=&quot;Agent&quot; &#125;</Id> yields the class{" "}
-              <Id>agent</Id>. A bare <Id>agent</Id> emitted from a card&rsquo;s type would be
-              the same string on a different set of nodes, with nothing in §8.3 able to tell
-              the two apart. The prefix removes that collision.
-            </p>
-            <p>
-              The cost: a <Id>model_stylesheet</Id> rule written for Attractor&rsquo;s own{" "}
-              <Id>.agent</Id> matches none of these nodes, and a rule aimed at a DarkPrint
-              class has to name <Id>.dp-agent</Id>. Without the prefix, a subgraph somebody
-              added for layout could silently move every agent in the pipeline onto a
-              different model.
-            </p>
-            <p>
-              §2.12 makes the list comma-separated and §8.2&rsquo;s{" "}
-              <Id>ClassName ::= [a-z0-9-]+</Id> is what a name has to survive, which is why{" "}
-              <Id>/</Id> and <Id>.</Id> collapse to a hyphen. The classes below are computed
-              from real cards with the exporter&rsquo;s own function.
-            </p>
+          <div className={`${guide.panel} flex flex-col gap-4 text-base leading-relaxed text-muted`}>
+            <p>The <Id>dp-</Id> prefix prevents collisions with classes Attractor derives from subgraph labels (§2.10). For example, a subgraph labelled “Agent” creates <Id>agent</Id>; a DarkPrint card creates <Id>dp-agent</Id>.</p>
+            <p>Use <Id>.dp-agent</Id> in <Id>model_stylesheet</Id> rules (§8.3), rather than <Id>.agent</Id>. Otherwise a subgraph used for layout could change which model a rule selects.</p>
+            <p>Classes are comma-separated (§2.12) and use <Id>[a-z0-9-]+</Id> (§8.2). Slashes and dots become hyphens. The examples below are computed from published cards.</p>
           </div>
 
           <ScrollTable
@@ -599,11 +548,8 @@ export default function SpecAttractorPage() {
           </ScrollTable>
 
           <p className="text-[14px] leading-relaxed text-dim">
-            The type comes first, then its <Id>broader</Id> ancestors nearest-first, then the
-            card&rsquo;s phases. The ancestors are there because a rule written for every agent
-            should catch a local type subsumed under <Id>agent</Id> by an archive the rule&rsquo;s
-            author has never seen. A card with no phase declares none, and a node with no
-            phase class is not a node missing one.
+            Classes list the type, its <Id>broader</Id> ancestors nearest-first, then the card’s phases.
+            Parent classes let model rules match local subtypes. Cards with no phase get no phase class.
           </p>
         </div>
       </section>
@@ -615,50 +561,17 @@ export default function SpecAttractorPage() {
       >
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
-            <span className="label-lead">The gap</span>
+            <span className="label-lead">Compatibility limits</span>
             <h2 id="unexpressed-heading" className={`${BAND_H2} scroll-mt-24`}>
-              What a blueprint has no way to say
+              Settings a blueprint cannot include
             </h2>
           </div>
 
-          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-            <p>
-              The compatibility claim is about the format: an Attractor runner accepts this
-              file. It is not a claim that a blueprint can say everything a pipeline can.
-              Attractor reads {reservedTotal} reserved names across graph, node and edge;
-              this exporter writes {emittedTotal} of them with Attractor&rsquo;s own meaning.
-              The other {unexpressedTotal} are listed below, and leaving one unset is not an
-              error: a <Id>goal_gate</Id> nobody wrote is a gate that never fires.
-            </p>
-            <p>
-              {withheldTotal === 1 ? "One name is in neither list" : `${withheldTotal} names are in neither list`}, and it is a
-              decision rather than a gap. Node <Id>type</Id> is §2.6&rsquo;s explicit handler
-              override, which &ldquo;takes precedence over shape-based resolution&rdquo;. A
-              DarkPrint node&rsquo;s type is an ontology term inside the card and it reaches the
-              runner as <Id>shape</Id>, so writing <Id>type</Id> as well would override the
-              handler that shape just selected. Announcing it as unexpressed would say the
-              node&rsquo;s type was dropped on the way out, which is the opposite of what happens
-              to it, and a DOT that does write it is reported as{" "}
-              <Id>attractor/reserved-attribute</Id>.
-            </p>
-            <p>
-              The names fall into two groups. Most have a documented fallback: a blueprint
-              that says nothing gets the runner&rsquo;s own default. Three names in the
-              specification have none at all: §4.10 returns <Id>FAIL</Id> on an empty{" "}
-              <Id>tool_command</Id>, §6.5 sends a <Id>wait.human</Id> node round again rather
-              than choosing without a <Id>human.default_choice</Id>, and §4.11 hands{" "}
-              <Id>stack.child_dotfile</Id> to the child launcher with no default at all. The
-              exporter writes the first of those for a <Id>shell-tool</Id> card, leaving{" "}
-              {handlerNeededTotal} that a blueprint still cannot say.
-            </p>
-            <p>
-              Every file <Id>darkprint export --attractor</Id> writes opens with these same
-              two lists. The file will be read on a machine that has neither this page nor
-              the source, so what a blueprint cannot carry has to travel with it. The command
-              ships in the darkprint package on npm, so{" "}
-              <Id>{`${NPX_INVOCATION} export <dir> --attractor`}</Id> runs it with nothing
-              installed.
-            </p>
+          <div className={`${guide.panel} flex flex-col gap-4 text-base leading-relaxed text-muted`}>
+            <p>An Attractor runner accepts the compiled format and may need additional settings. Of {reservedTotal} reserved attributes, the exporter writes {emittedTotal} with Attractor’s meaning. The {unexpressedTotal} unsupported attributes below either use runner defaults or need explicit configuration. An omitted <Id>goal_gate</Id>, for example, never fires.</p>
+            <p>{withheldTotal === 1 ? "One reserved name is deliberately withheld" : `${withheldTotal} reserved names are deliberately withheld`}: node <Id>type</Id> overrides handler selection (§2.6). Card types already determine <Id>shape</Id>. A topology that sets the override reports <Id>attractor/reserved-attribute</Id>.</p>
+            <p>Three settings have no fallback: an empty <Id>tool_command</Id> fails (§4.10); a missing <Id>human.default_choice</Id> repeats the human wait (§6.5); and <Id>stack.child_dotfile</Id> must be supplied to the child launcher (§4.11). The exporter supplies <Id>tool_command</Id> for <Id>shell-tool</Id> cards, leaving {handlerNeededTotal} unsupported settings with no default.</p>
+            <p>Every exported file includes these compatibility lists in its header. The command comes from the darkprint package on npm; npx downloads it when needed.</p>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-2">
@@ -734,33 +647,10 @@ export default function SpecAttractorPage() {
             </h2>
           </div>
 
-          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-            <p>
-              A topology on its own is not a pipeline. It carries no prompts and neither of
-              the two boundary nodes Attractor requires, so a runner parses it and then
-              refuses to run it. <Id>darkprint export &lt;dir&gt; --attractor</Id> compiles
-              the graph and its cards into the file a runner takes, and that file opens with
-              a list of everything a blueprint had no way to say.
-            </p>
-            <p>
-              §7.2 is where the refusal is written down. <Id>start_node</Id> and{" "}
-              <Id>terminal_node</Id> are both ERROR and both require exactly one, and §7.1
-              says a runner &ldquo;must refuse to execute a pipeline with error-severity
-              diagnostics&rdquo;. <Id>reachability</Id> is a third ERROR, which is why the
-              exporter adds an edge from <Id>__start</Id> to every node a walk from the
-              entry would otherwise miss. A topology also has no prompts, so every node would
-              raise §7.2&rsquo;s <Id>prompt_on_llm_nodes</Id> warning even if the boundary were
-              there.
-            </p>
-            <p>
-              Both artefacts are DOT and only one of them runs. The topology is the file a
-              reader edits and a reviewer reads, and it is where the wiring lives; the
-              compiled file is what a runner takes, and it is where the prompts, the models
-              and the boundary appear. They are checked in different places for that reason:{" "}
-              <SpecLink href="/spec/topology">the topology page</SpecLink> lists the
-              diagnostics the validator raises about the first, and the compiled file&rsquo;s
-              own header carries the two lists above.
-            </p>
+          <div className={`${guide.panel} flex flex-col gap-4 text-base leading-relaxed text-muted`}>
+            <p>A topology on its own is not a pipeline. It has no prompts or Attractor boundary nodes. Compile it with its cards using <Id>darkprint export &lt;dir&gt; --attractor</Id>.</p>
+            <p>Attractor §7.2 requires one <Id>start_node</Id> and one <Id>terminal_node</Id>. Missing boundaries are errors, and §7.1 requires the runner to refuse execution. The exporter adds <Id>__start</Id>, <Id>__exit</Id> and entry edges to satisfy <Id>reachability</Id>. Card specifications provide prompts; without them, LLM nodes trigger <Id>prompt_on_llm_nodes</Id>.</p>
+            <p>Edit the topology and cards; give the compiled DOT to your runner. The <SpecLink href="/spec/topology">topology reference</SpecLink> covers blueprint validation. The compiled file’s header lists the remaining compatibility limits.</p>
           </div>
         </div>
       </section>

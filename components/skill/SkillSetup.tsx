@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@/components/site/Logo";
-import { CopyButton } from "@/components/ui/CopyButton";
-import { PanelHeading } from "@/components/ui/SectionHeading";
+import { CodePanel, GuideStepHeading, guideStyles as guide } from "@/components/ui/Guide";
 import { More } from "@/components/ui/More";
 import { cx } from "@/lib/format";
 import {
@@ -47,20 +45,20 @@ export interface SkillQuestion {
  * hand-written list of the same rows would be two answers to one question on two routes.
  */
 export const QUESTIONS: readonly SkillQuestion[] = [
-  { label: "the outcome", text: "what exists at the end that does not exist now" },
-  { label: "the check", text: "the command that exits non-zero when the work is wrong" },
+  { label: "the outcome", text: "the result you need" },
+  { label: "the check", text: "a command that fails when the result is wrong" },
   {
     label: "the registry",
-    text: "whether a published blueprint or card already does part of the job, searched before you describe a node",
+    text: "existing blueprints or cards that cover part of the task",
   },
   {
     label: "the nodes",
-    text: "who does each part, and whether that is an agent, a command, a check or a person",
+    text: "the agent, command, check or person responsible for each step",
   },
   { label: "the boundaries", text: "what has to reach each node, and what must never reach it" },
   {
     label: "the loop",
-    text: "where it closes, how many attempts it may take, and which way each fork goes",
+    text: "retry limits and the conditions for each branch",
   },
 ];
 
@@ -81,29 +79,12 @@ function CommandLine({
   command: string;
   ariaLabel: string;
 }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <span className="label">{label}</span>
-      {/* `min-w-0` is load-bearing: a grid item's default min-width is its min-content
-          width, which for this row is the whole command, and the page then overflows a
-          phone viewport by the width nobody can scroll to. */}
-      <div className="flex min-w-0 items-start gap-2">
-        <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-line bg-surface-2 px-3.5 py-3 font-mono text-xs leading-relaxed text-emerald">
-          <code>{command}</code>
-        </pre>
-        <CopyButton text={command} ariaLabel={ariaLabel} />
-      </div>
-    </div>
-  );
+  return <CodePanel title={label} text={command} ariaLabel={ariaLabel} />;
 }
 
 /** A step's ordinal and its title as one heading, so the outline a screen reader walks carries the sequence. */
 function StepHeading({ index, title }: { index: number; title: string }) {
-  return (
-    <PanelHeading as="h2" size="2xl">
-      {index}. {title}
-    </PanelHeading>
-  );
+  return <GuideStepHeading index={index} title={title} />;
 }
 
 /** Two columns of mono: the path, and what is in it. Not truncated, because a reader is about to look for the path on their own disk. */
@@ -129,7 +110,7 @@ export function SkillSetup({ className }: { className?: string }) {
   return (
     <ol className={cx("flex flex-col gap-11", className)}>
       {/* ---------- 01 · install ---------- */}
-      <li className="flex min-w-0 flex-col gap-4">
+      <li className={`${guide.panel} flex min-w-0 flex-col gap-4`}>
         <StepHeading index={1} title="Install it" />
 
         <div className="grid gap-6 md:grid-cols-2 md:items-start">
@@ -147,55 +128,50 @@ export function SkillSetup({ className }: { className?: string }) {
           </div>
 
           <div className="flex flex-col gap-3">
-            <p className="text-[15px] leading-relaxed text-muted">
-              Either line has npx fetch the{" "}
+            <p className="text-base leading-relaxed text-muted">
+              Both commands have npx fetch the{" "}
               <code className="font-mono text-[13px] text-fg">{SKILL_PACKAGE}</code> package
-              from npm and copy the DarkPrint skill it carries into{" "}
+              from npm. The DarkPrint skill is copied to{" "}
               <code className="font-mono text-[13px] text-fg">{SKILL_ARCHIVE_ROOT}</code> under
-              that agent&rsquo;s folder,{" "}
+              the agent folder:{" "}
               <code className="font-mono text-[13px] text-fg">{CLAUDE_CODE_SKILLS_PARENT}</code>{" "}
-              for Claude Code and{" "}
+              for Claude Code, or{" "}
               <code className="font-mono text-[13px] text-fg">{CODEX_SKILLS_PARENT}</code> for
-              Codex, where the agent reads its skills. The first run downloads the package
-              and npx keeps it in its own cache. Nothing else is installed and no account is
-              created. When you ask it to, the DarkPrint skill can post your draft to a live
+              Codex. Nothing else is installed and no account is created. When you ask it to, the DarkPrint skill can post your draft to a live
               page on this site while it interviews you, and it does nothing of the kind
               otherwise.
             </p>
-            <p className="text-[15px] leading-relaxed text-muted">
-              Read it before you run it if you like:{" "}
+            <p className="text-base leading-relaxed text-muted">
+              Inspect the files:{" "}
               <a href={`${SKILL_TREE_PATH}/SKILL.md`} className={LINK}>
                 SKILL.md
               </a>{" "}
-              and its references are served file by file, and a{" "}
+              and the{" "}
               <a href={SKILL_MANIFEST_PATH} className={LINK}>
                 manifest
               </a>{" "}
-              lists every file with its checksum, so the copy npx installed can be checked
-              against what this site serves. Running the line again replaces the copy with
-              the version the package carries.
+              of checksums. Run the command again to replace the installed copy.
             </p>
           </div>
         </div>
       </li>
 
       {/* ---------- 02 · describe and adapt ---------- */}
-      <li className="flex min-w-0 flex-col gap-4">
+      <li className={`${guide.panel} flex min-w-0 flex-col gap-4`}>
         <StepHeading index={2} title="Describe the task" />
 
         <div className="flex min-w-0 flex-col gap-4">
-          <p className="text-[15px] leading-relaxed text-muted">
-            Tell the DarkPrint skill what you want done. Before drawing, it searches public
-            workflows to adapt or cards to reuse for one part. Public reads need no sign-in.
-            Review the graph, pinned cards, scorecard and provenance before adapting. Search
-            matches are not quality judgments. A reused card stays unchanged; edits need a new
-            version and identity. Then shape the missing work together in an interview.
+          <p className="text-base leading-relaxed text-muted">
+            The DarkPrint skill searches for public blueprints and cards.
+            Public reads need no sign-in. Review the graph and its pinned cards, with the scorecard and provenance.
+            Search matches are not quality judgments. A reused card stays unchanged; edits need
+            a new version and identity.
           </p>
 
+          <CodePanel title="Try a task" text="Use the DarkPrint skill to design a workflow that reviews pull requests. Search for reusable blueprints and cards, then show me the graph. Do not run it." ariaLabel="Copy the Assisted Design example prompt" prose />
           <More summary="See what the interview covers" bare>
-            <p className="text-[15px] leading-relaxed text-muted">
-              An interview, not a generator. It asks about the outcome, a check, the nodes,
-              boundaries and loops, and looks up what the registry already holds.
+            <p className="text-base leading-relaxed text-muted">
+              The interview covers the work and how to check it.
             </p>
             {/* A list that happens to be aligned, not a table: `QUESTIONS` has no second axis.
                 The label and its sentence sit in one `<li>` so a screen reader takes them
@@ -209,54 +185,49 @@ export function SkillSetup({ className }: { className?: string }) {
                   <span className="font-mono text-[12px] leading-relaxed tracking-[0.06em] text-blueprint-ink">
                     {question.label}
                   </span>
-                  <span className="min-w-0 text-[15px] leading-relaxed text-muted">
+                  <span className="min-w-0 text-base leading-relaxed text-muted">
                     {question.text}
                   </span>
                 </li>
               ))}
             </ul>
 
-            <p className="text-[15px] leading-relaxed text-muted">
-              It can decline. If nobody can name the command that fails when the work is
-              wrong, it offers a two-node prototype to find one instead of drawing a graph
-              that cannot be checked.
+            <p className="text-base leading-relaxed text-muted">
+              It can decline a full workflow. Without a way to check the result, it offers a two-node prototype first.
             </p>
           </More>
         </div>
       </li>
 
       {/* ---------- 03 · the folder ---------- */}
-      <li className="flex min-w-0 flex-col gap-4">
+      <li className={`${guide.panel} flex min-w-0 flex-col gap-4`}>
         <StepHeading index={3} title="Keep or publish the folder" />
 
         {/* The only box in the tutorial, drawn like the command's frame one step up, so the
             two things a reader takes away from this page are drawn the same way. The mark
             is `aria-hidden`: the list beside it says everything it says, and it is the one
             place on the site where the logo is also a diagram, a folder holding a graph. */}
-        <div className="flex flex-col items-center gap-8 rounded-xl border border-line bg-surface-2 px-6 py-7 sm:flex-row sm:items-center sm:px-8">
-          <Logo size={192} className="shrink-0" />
+        <div className={`${guide.diagram} ${guide.copper} p-5 sm:p-6`}>
           <div className="flex min-w-0 flex-1 flex-col gap-3.5">
-            <span className="label">What it writes</span>
+            <span className="label">Your blueprint folder</span>
             {/* The names come from `bundle-export.ts`, which writes them into every folder
                 under `public/bundles/`, so the figure and the disk cannot disagree. */}
             <FileListing
               lines={[
-                [TOPOLOGY_DOT, "the graph: who is wired to whom, and the guard on every fork"],
-                [`${BUNDLE_CARDS_DIR}/<node>.yaml`, "one card per node, reused cards byte for byte"],
-                ["blueprint.yaml", "the slug, title and one-line summary the registry files it under"],
-                [BUNDLE_README, "what it is, which validator checked it, and what it leaves to the runner"],
+                [TOPOLOGY_DOT, "nodes, connections and branch conditions"],
+                [`${BUNDLE_CARDS_DIR}/<node>.yaml`, "one version-pinned card per node"],
+                ["blueprint.yaml", "registry title, slug and summary"],
+                [BUNDLE_README, "setup and runner instructions"],
               ]}
             />
 
-            <p className="text-[15px] leading-relaxed text-muted">
-              Before you see the folder, the DarkPrint skill runs the registry&rsquo;s own
-              validator over it, with the darkprint CLI when it is installed and through this
-              site&rsquo;s API when you say yes, and reads every warning back to you. Drop the
-              folder on{" "}
+            <p className="text-base leading-relaxed text-muted">
+              The DarkPrint skill validates locally with the CLI, or through the API with your
+              permission, and reports warnings. Keep the folder locally or upload it at{" "}
               <Link href="/upload" className={LINK}>
                 Publish
               </Link>
-              , or publish it from your terminal with a write-scoped API key from{" "}
+              . To publish from your terminal, use a write-scoped API key from{" "}
               <Link href="/settings" className={LINK}>
                 Settings
               </Link>

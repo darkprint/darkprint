@@ -13,6 +13,8 @@ import {
 } from "@/components/learn/PartFigures";
 import { SPEC_LAYERS, SPEC_OVERVIEW } from "@/components/spec/sequence";
 import { SpecPager } from "@/components/spec/SpecPager";
+import { guideStyles as guide } from "@/components/ui/Guide";
+import { More } from "@/components/ui/More";
 import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -43,7 +45,7 @@ export const metadata: Metadata = {
 /** The blueprint every worked example on this site opens with. */
 const STARTER_SLUG = "starter-software-factory";
 
-const PROSE = "text-[15px] leading-relaxed text-muted";
+const PROSE = guide.prose;
 
 /**
  * One of the three parts, as a full-width band whose figure alternates sides.
@@ -94,14 +96,14 @@ function Part({
          right-hand band would hand the figure the `1fr` track. The prose runs about 93
          characters at this tier, past the site's reading measure, which is the priced cost
          of that alignment and applies to these three paragraphs only. */
-      className={`scroll-mt-24 grid items-center gap-6 lg:col-span-12 lg:col-start-1 lg:gap-8 ${
+      className={`${guide.diagram} scroll-mt-24 grid items-center lg:col-span-12 lg:col-start-1 ${
         side === "left"
           ? "lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]"
           : "lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]"
       }`}
     >
       <div className={side === "right" ? "lg:order-2" : undefined}>{figure}</div>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 bg-void p-5 sm:p-7">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
           <div className="flex items-baseline gap-3">
             {/* The Learn-sequence stop this band sends a reader to, which is why the
@@ -145,17 +147,17 @@ const BUNDLE_FILES: readonly { name: string; role: string }[] = [
   {
     name: "topology.dot",
     role:
-      "The graph, as a person wrote it: which node hands what to which, and which edges were deliberately left out. This is the file the rest of the folder is pinned to.",
+      "Graph nodes and connections.",
   },
   {
     name: "cards/*.yaml",
     role:
-      "One versioned card per node, pinned by the topology at an exact version. What runs there, which model it uses, what it may reach and what must never reach it.",
+      "Each node’s job and interface, pinned to an exact version.",
   },
   {
     name: "README.md",
     role:
-      "This blueprint, explained for a person: the shape in a sentence, a checksum (the digest) you can verify the files against, and how to run it with your own harness.",
+      "Setup and a digest for verifying the files.",
   },
 ];
 
@@ -171,7 +173,7 @@ function WhereNext() {
         <SectionHeading
           eyebrow="Reference"
           title="Explore the formats"
-          lead="The graph comes first, then the node card and the vocabulary it uses. The tutorial is next in Start here."
+          lead="Look up the graph syntax or a card field."
         />
         {/* Two columns for two doors, so the card door sits at the right edge the way
             the pager's "Next" does on every other Learn page. */}
@@ -254,8 +256,8 @@ export default function WhatABlueprintIsPage() {
           <SectionHeading
             as="h1"
             eyebrow={SPEC_OVERVIEW.eyebrow}
-            title="A pattern for getting work done by agents"
-            lead="A blueprint records the shape of the work: which agents exist, what each one is handed, what each one is kept away from, and where a person acts. Start from a task, reuse a whole workflow or one version-pinned card, then adapt it locally. Public blueprints and cards need no sign-in. You choose the runner that executes the files."
+            title="What a blueprint is"
+            lead="A blueprint is a reusable agent workflow: a graph of steps, with a versioned card defining each step. Public reads need no sign-in."
           />
           <Link
             href="/tutorial"
@@ -271,18 +273,17 @@ export default function WhatABlueprintIsPage() {
           so a reader who met it there meets the same object one page deeper. */}
       <section id="bundle" className="scroll-mt-24 border-t border-line bg-void py-14 sm:py-16">
         <div className="container-page">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-14">
+          <div className={`${guide.panel} grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-12`}>
             {/* Centred in its own track so the drawing reads as the list's subject rather
                 than as an orphan against the container's edge. */}
             <div className="flex justify-center">
-              <Folder label="Blueprint" caption="open the folder" />
+              <Folder label="Blueprint" caption="the files you download" />
             </div>
 
             <div className="flex min-w-0 flex-col gap-4">
-              <PanelHeading>A blueprint is the folder</PanelHeading>
+              <PanelHeading>The files you download</PanelHeading>
               <p className={PROSE}>
-                One graph, one folder, three kinds of file. Every file shown on these pages is
-                the real one from the archive, so what you copy from here is a file that loads.
+                The examples below use registry files.
               </p>
               <dl className="flex flex-col">
                 {BUNDLE_FILES.map((file) => (
@@ -308,8 +309,8 @@ export default function WhatABlueprintIsPage() {
         <div className="container-page flex flex-col gap-8">
           <SectionHeading
             eyebrow="Three parts"
-            title="A blueprint, a card for every node, one vocabulary"
-            lead="Each part is a plain text file, and each is checked against the others."
+            title="How the files fit together"
+            lead="Cards define each node’s work and interface. Shared terms let the validator check the connections."
           />
 
           {/* `gap-y-14` rather than a rule between bands: the figure changing sides already
@@ -322,7 +323,7 @@ export default function WhatABlueprintIsPage() {
               side="left"
               figure={
                 starter === undefined ? null : (
-                  <FigureFrame caption={<GraphKey graph={starter.graph} />}>
+                  <FigureFrame caption={<GraphKey graph={starter.graph} />} flush>
                     {/* Two placements, one per width: the same drawing in a wider and a
                         squarer frame. Both carry the DOT id rather than the display name,
                         because a luminous node says one line. */}
@@ -336,10 +337,8 @@ export default function WhatABlueprintIsPage() {
                 )
               }
             >
-              A directed graph in a subset of Graphviz&rsquo;s DOT language, saying which node
-              hands what to which. An edge nobody drew is a connection somebody decided
-              against. The dashed one above is an edge the validator refuses, because the
-              card on the receiving node forbids what it would carry.
+              A Graphviz DOT graph connects the nodes. Numbered edges show what flows between
+              them. The dashed edge is forbidden by the receiving card.
             </Part>
 
             <Part
@@ -356,9 +355,8 @@ export default function WhatABlueprintIsPage() {
                 )
               }
             >
-              Each card names the node&rsquo;s job, the brief it is handed, the model it runs on,
-              the tools it may reach, and the data types that must never reach it. A card is
-              pinned by version, so the same card can serve in more than one blueprint.
+              A YAML card defines one node’s job and interface, including its model, tools and
+              limits. The same card version can be reused in other blueprints.
             </Part>
 
             <Part
@@ -371,9 +369,9 @@ export default function WhatABlueprintIsPage() {
                 </FigureFrame>
               }
             >
-              A controlled list of terms the topology and the cards are both written
-              against, so that two authors naming the same thing write the same word and the
-              validator can tell when they have not.
+              Shared terms describe node types, phases and data. Use the core vocabulary, or add
+              local terms in the optional ontology/extensions.yaml file. The validator checks
+              that graphs and cards use the terms consistently.
             </Part>
           </div>
         </div>
@@ -389,9 +387,11 @@ export default function WhatABlueprintIsPage() {
           <SectionHeading
             eyebrow="What surrounds a run"
             title="What a blueprint needs before it runs"
-            lead="A blueprint is a specification, and a specification does not run by itself. Three other things surround every run, and DarkPrint supplies only the first of the four."
+            lead="A runner is the software that executes the workflow in your environment. DarkPrint supplies the files."
           />
-          <RunSystemMap />
+          <More summary="Harnesses, rubrics and evaluations">
+            <RunSystemMap />
+          </More>
         </div>
       </section>
 

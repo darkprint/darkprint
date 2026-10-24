@@ -9,6 +9,7 @@ import { draftBundle } from "@/lib/server/registry";
 import { SKILL_ROUTE } from "@/lib/skill";
 import { readSession } from "@/components/profile/session";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { UploadFlow, type ExampleBundle, type PublishTarget } from "@/components/upload/UploadFlow";
 
 /**
@@ -213,184 +214,41 @@ async function TargetedUploadFlow({
  */
 export default function UploadPage({ searchParams }: PageProps<"/upload">) {
   return (
-    <div className="container-page py-12">
-      {/* `as="h1"`. The page a contributor lands on had no level-one heading at all: its
-          outline opened at `h2` and a screen reader reached the route with no title.
-
-          The lead was 89 words and did five jobs in one breath: what to drop, what comes
-          back, how a human node resolves, which four axes stay empty and why, and that
-          publishing is not built. Four of those five qualify things further down the
-          page, so they now sit beside what they qualify. `max-w-2xl` came off with them,
-          the same full-width rule the other heroes follow. */}
+    <div className={`${guide.page} container-page py-16 sm:py-20`}>
       <header>
-        {/* CONTRIBUTE, and the h1 under it, both promised publishing. See the note on
-            `metadata.title`: the chrome sends a reader here calling it "Upload
-            blueprint", so that is what they must land on.
-
-            The eyebrow does the work the old title used to do badly. "Upload blueprint"
-            names the action; "Check your work" names the outcome, one line above it, so
-            the two are read together and a reader knows before the fold that uploading
-            here is how a bundle gets checked and not how it gets somewhere. */}
-        <Eyebrow>Check it, then publish it</Eyebrow>
-        <SectionHeading
-          as="h1"
-          className="mt-3"
-          title="Publish"
-          lead="Drop a blueprint folder: the topology.dot graph and the cards it names. This page checks it in your browser: every node has a card, the cards' inputs and outputs line up along each edge, and every term they use is known. Each problem it finds says where and why. Publishing a release needs an account, or a write-scoped API key from your settings."
-        />
-        {/* ── Where the folder in front of the reader came from ──
-            The population arriving here changed. Until now the only person with a bundle
-            in hand had downloaded one from `/blueprints` or exported one from `/build`,
-            and both of those handed over something finished. `/build` was deleted on
-            2026-09-06, which leaves `/blueprints` as the only such source and makes the
-            paragraph below more true rather than less. The DarkPrint skill writes the
-            registry shape into a working directory a card at a time, and it points at
-            this route, so the ordinary visitor is now an author halfway through — which
-            is what the second sentence is for and what `components/upload/progress.ts`
-            re-frames the wizard around.
-
-            Named, not merely accommodated: a reader who has never heard of the skill
-            learns from this paragraph that it exists, which is the only mention of it on
-            the route. "The DarkPrint skill" and never "the skill" — `lib/skill.ts` sets
-            that rule out, and the reason is that `skill:` is already a field on a node
-            card meaning something one level down. The link goes to `SKILL_ROUTE` rather
-            than to a path written here, so this sentence follows the page that explains
-            the skill wherever it lives. */}
-        {/* `text-muted`, not the `text-dim` the two paragraphs under it wear. Both of
-            those qualify something — a promise about later, and an asymmetry in the
-            vocabulary — and dim is this site's register for a qualification. This one is
-            wayfinding, the first thing a reader arriving from the skill needs to read, and
-            at dim it sat in the same tier as the fine print and was skimmed with it. */}
-        {/* Full width, on the author's instruction 2026-08-07: `max-w-2xl` off this one.
-            The paragraphs around it keep their measure; this is a named exception. */}
-        <p className="mt-5 text-sm leading-relaxed text-muted">
-          If your coding agent wrote the folder with the{" "}
-          <Link href={SKILL_ROUTE} className={PROSE_LINK}>
-            DarkPrint skill
-          </Link>
-          , drop it in as it is. The DarkPrint skill writes exactly what this page reads, a{" "}
-          <span className="font-mono text-cyan">topology.dot</span> and the{" "}
-          <span className="font-mono text-cyan">cards/</span> it names, so there is nothing
-          to export or convert. You can bring it before it is finished: a graph whose cards
-          are half written is checked as far as it goes, and the report says how far.
-        </p>
-        {/* ── The other folder a reader can arrive with (§11.0 Q20 c) ──
-            A person holding an Attractor pipeline was, until now, the one visitor this
-            route had nothing for. `importAttractorDot` has been complete and tested for
-            releases and its only non-test caller was a CLI whose npm package is
-            unpublished, so dropping a `.dot` here produced one `bundle/missing-card` per
-            node and advice about an authoring format the reader had not asked about.
-
-            The owner ruled it runs in the browser (2026-09-04): `lib/core` is isomorphic by
-            contract, `importAttractorDot` is pure, and this route already resolves whole
-            bundles in the tab. So there is no endpoint behind this paragraph and no seam to
-            cite, which is why it carries no badge.
-
-            "offers" and never "converts". `components/upload/AttractorOffer.tsx` shows what
-            the import cannot carry across before anything is written, and refuses outright
-            when the session has no handle to attribute the cards to. A sentence here
-            promising a conversion would describe a button that is deliberately not that. */}
-        <p className="mt-5 text-sm leading-relaxed text-muted">
-          An Attractor pipeline works here too. Drop its{" "}
-          <span className="font-mono text-cyan">.dot</span> and this page offers to read it
-          into a draft bundle in your browser, one card per node, attributed to you. Before
-          it writes anything it lists what the two formats cannot express in each other.
-        </p>
-        {/* The other door. The DarkPrint skill's hand-off ends with a publish command for
-            the terminal it runs in, over `POST /api/bundles` with a write-scoped API key
-            from the reader's settings, so this page is one of two ways a folder arrives.
-            Said here because the paragraph above names a tool inside the reader's editor
-            that writes a folder for this page, and the next question anybody asks is how it
-            gets here. `components/site/honesty.test.ts` holds the sentence. */}
-        <p className="mt-5 max-w-2xl text-[13px] leading-relaxed text-dim">
-          The DarkPrint skill ends with a publish command for the terminal it runs in, using
-          a write-scoped API key from your settings. This page is the other door.
-        </p>
-        {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
-            removed. It is a statement about this page, and it was the only unconditional
-            statement of it on the site: `BundleDropzone` says the bundle is read against
-            the curated core alone, but only once a dropped bundle has already tripped a
-            vocabulary problem, so a reader comparing what a blueprint page says about a
-            bundle against what the wizard says never sees it first.
-
-            ── D-263-01: this REMAINED, rewritten, and the premise for deleting it was false ──
-            The contract said the divergence "is resolved once the server resolves against
-            published overlays". It is not. `app/api/validate/bundle/route.ts` never calls
-            `openView`: `validateBundle` falls back to `ontologyView(CORE_ONTOLOGY,
-            extensions)`, which is bit-for-bit the vocabulary this tab already builds. What
-            the cutover changed is the PUBLISH leg, where `publish.ts` opened the STORED
-            ontology at the version the manifest named. So the gap did not close, it moved:
-            a bundle can read clean here and be refused at publish, and the reverse. That
-            last sentence is still true and its mechanism is not: the version half of this
-            paragraph is history, and what separates the two readings today is the overlay
-            alone. The 2026-09-04 note below is where that is worked out.
-
-            The client-side pass stays on purpose — the same Contract line says so, and
-            `docs/ARCHITECTURE.md` §7 puts the server's authoritative pass at publish time.
-            Deleting this sentence on the stated premise would have replaced a true
-            disclosure with silence about a divergence that is still there.
-
-            Not folded, and not shortened: two HIGH findings in this project were disclaimers
-            going missing while somebody was cutting for pace.
-
-            ── 2026-09-04: the VERSION half of it went, the disclosure did not ──
-            Two sentences here made the divergence a version story: the registry resolved
-            "against the ontology version the manifest names", and "a bundle pinning an older
-            version can be judged on different terms there than here". The owner removed
-            ontology versioning outright, and both sentences now describe a mechanism that
-            has no parts — a manifest names no version and `lib/server/registry/graphs.ts`
-            records that `openView` reaches no store to select one from.
-
-            What is NOT deleted is the last two sentences, and the reason is D-263-01's own:
-            the subject decides whether a sentence retires. Their subject is which of the two
-            passes is authoritative, and the answer is unchanged. A reader is still owed the
-            fact that the check in front of them is the fast one and the publish leg is the
-            one that decides. The illustration this note used to carry, `frontline-triage`
-            reading 4 here and 2 on its page, went with the number on the page rather than
-            with the divergence. */}
-        <p className="mt-5 max-w-2xl text-sm leading-relaxed text-dim">
-          The terms your cards use are checked against DarkPrint&rsquo;s core vocabulary, plus
-          any <span className="font-mono text-cyan">ontology/extensions.yaml</span> in the
-          folder. When you publish, the registry runs the same check on its side. The reading
-          on this page is the quick one. The registry&rsquo;s reading decides.
-        </p>
+        <Eyebrow>Check your files</Eyebrow>
+        <SectionHeading as="h1" className="mt-3" title="Publish" lead="Check a blueprint folder or a node card, then publish it to the registry. Publishing needs an account." />
       </header>
-
-      {/* Two facts the lead used to carry about the result, moved to where the result
-          appears. Both qualified what the reader is about to look at, which is the one place
-          a limit belongs: a graph with a person in it is read, not penalised, and the
-          scorecard that came back had four axes nothing could fill.
-
-          The second one is gone since 2026-09-04. It read "Two of the six axes are read off
-          the graph. Efficacy, reliability and transparency need votes. Cost and time need a
-          run." — and the votes half of it stopped being true when the ballot was deleted
-          from the site: `components/bundle/VoteControl.tsx` is not in the tree any more, so
-          nothing anywhere collects a vote and a sentence telling a reader three axes are
-          waiting for one is describing a queue with no door. It goes rather than gets
-          reworded: the axes it counted are still drawn inside the wizard, and rewording it
-          into a quieter version of the same promise on the page ABOVE the wizard would put
-          the header's name on a claim the header cannot keep.
-
-          `components/upload/UploadFlow.tsx` and `ValidationReport.tsx` said the votes
-          sentence beside the result itself until 2026-09-05, when §11.0 Q28 reached them:
-          the wizard's "Filled in later" legend keeps its cost/time half whole and has lost
-          the three community axes, and the downloadable report no longer counts six of
-          anything. Nothing on this route names a ballot now.
-
-          The first sentence stays and is doc 2 §1.1's, which nothing in the scoring removal
-          touches: a person standing in the graph is a design decision the analyzer reports
-          and never a shortfall it deducts for. That claim is the one this paragraph exists
-          to make on the one page where somebody is being asked to hand over their work. */}
-      <p className="mt-5 text-sm leading-relaxed text-dim">
-        A graph with a human step in it is checked the same way as one without. The report
-        names the node where a person acts and treats it as a design choice.
-      </p>
 
       <div className="mt-10">
         <Suspense fallback={<UploadFlowSkeleton />}>
           <TargetedUploadFlow searchParams={searchParams} />
         </Suspense>
       </div>
+
+      <section className={`${guide.panel} mt-8 flex flex-col gap-4`} aria-labelledby="about-checks">
+        <h2 id="about-checks" className="font-display text-xl font-semibold text-fg">About these checks</h2>
+        <p className={guide.prose}>
+          A blueprint folder contains <code>topology.dot</code> and the <code>cards/</code> it pins.
+          Folders from the registry or the <Link href={SKILL_ROUTE} className={PROSE_LINK}>DarkPrint skill</Link> work as they are.
+          Unfinished folders are checked as far as their files allow.
+        </p>
+        <p className={guide.prose}>
+          The terms your cards use are checked against DarkPrint’s core vocabulary, plus any <code>ontology/extensions.yaml</code> in the folder.
+          When you publish, the registry checks the submitted files again. The registry’s reading decides.
+        </p>
+        <p className={guide.prose}>
+          A graph with a human step in it is checked the same way as one without. The report names the node where a person acts and treats it as a design choice.
+        </p>
+        <p className={guide.prose}>
+          An Attractor pipeline works here too. Drop its <code>.dot</code> file to create a draft bundle in your browser.
+          Before importing, the page lists what cannot be carried across. Imported cards are attributed to your handle.
+        </p>
+        <p className={guide.prose}>
+          The DarkPrint skill ends with a publish command for the terminal it runs in, using a write-scoped API key from your settings.
+          You can also publish from this page.
+        </p>
+      </section>
     </div>
   );
 }

@@ -20,6 +20,7 @@ import Link from "next/link";
 import type { Diagnostic } from "@/lib/core";
 import { summarize } from "@/lib/core";
 import { cx } from "@/lib/format";
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { KindBadge } from "@/components/ui/Badge";
 import type { CardPublishOutcome } from "./publish-client";
@@ -101,7 +102,7 @@ export function CardPublishStep({
   const errors = check.state === "done" ? summarize(check.diagnostics).error : 0;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={`${guide.panel} ${guide.copper} flex flex-col gap-6`}>
       <div className="panel flex flex-col gap-4 bg-surface-2/40 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <KindBadge kind="node" />
@@ -121,7 +122,7 @@ export function CardPublishStep({
             `The validator reported ${errors} error${errors === 1 ? "" : "s"}.`}
           {check.state === "checking" && "Checking…"}
           {check.state === "failed" && check.detail}
-          {check.state === "idle" && "Nothing dropped yet. Go back to the first step."}
+          {check.state === "idle" && "No card selected. Add a card on the Upload step."}
         </p>
         {card !== undefined && (
           <p className="border-t border-line pt-4 text-xs leading-relaxed text-muted">
@@ -182,9 +183,9 @@ export function CardPublishStep({
             </>
           ) : session.state === "no-handle" ? (
             <>
-              <span className="font-mono text-amber">no handle yet</span>: your account has
-              not chosen the name a card is published under. Nothing on this page can set
-              one.
+              <span className="font-mono text-amber">no handle yet</span>: your account needs
+              a name before publishing. <a href="/welcome" className={DOOR}>Choose your handle</a>,
+              then return here.
             </>
           ) : session.state === "unreachable" ? (
             <>
@@ -241,9 +242,9 @@ function CardOutcome({
         <div className="flex min-w-0 flex-col gap-3">
           <h3 className="font-display text-xl font-semibold text-fg">
             {published
-              ? "Published. The registry holds it."
+              ? "Published to the registry."
               : outcome.state === "refused"
-                ? "Not published. The registry declined it."
+                ? "The registry declined this submission."
                 : "Not published."}
           </h3>
           <p className="prose-lane text-sm leading-relaxed text-muted">
@@ -262,8 +263,8 @@ function CardOutcome({
               </>
             ) : (
               <>
-                {outcome.state === "rejected" ? outcome.title : "The registry could not be reached"}
-                : {outcome.detail} Your card is still here.
+                {outcome.state === "rejected" ? outcome.title : "Could not reach the registry"}
+                : {outcome.detail} Your card is still here. Try publishing again.
               </>
             )}
           </p>

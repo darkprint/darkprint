@@ -34,7 +34,7 @@ describe("InstallTabs", () => {
 
   it("is introduced as the client's remote setup, without implying a local install", () => {
     const page = plainText(renderToStaticMarkup(createElement(McpPage as never))).toLowerCase();
-    expect(page).toContain("choose a client and use its setup command");
+    expect(page).toContain("choose your agent below");
     expect(page).toContain(MCP_ENDPOINT_URL.toLowerCase());
     expect(page).toContain("there is nothing to install for the remote connection");
   });

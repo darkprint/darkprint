@@ -5,7 +5,7 @@ import Link from "next/link";
 import { SurfaceTabs, type Surface } from "@/components/capabilities/SurfaceTabs";
 import { MCP_CLIENTS, MCP_ENDPOINT_URL } from "@/components/mcp/clients";
 import { QUESTIONS } from "@/components/skill/SkillSetup";
-import { CopyButton } from "@/components/ui/CopyButton";
+import { CodePanel, guideStyles as guide } from "@/components/ui/Guide";
 import { KeyValueList, KeyValueRow } from "@/components/ui/KeyValueList";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SpecPager } from "@/components/spec/SpecPager";
@@ -50,31 +50,36 @@ export const metadata: Metadata = {
  */
 const INTENTS: readonly {
   readonly intent: string;
+  readonly group: "Find" | "Create" | "Check" | "Publish" | "Use locally";
   readonly how: React.ReactNode;
   readonly status: CapabilityStatus;
   /** Why this row carries this status. Not rendered: it is for whoever changes the row. */
   readonly because: string;
 }[] = [
   {
-    intent: "Find one for a task",
+    intent: "Find a blueprint",
+    group: "Find",
     how: <code className="font-mono text-blueprint-ink">find_blueprints {"{ task: \"…\" }"}</code>,
     status: "live",
     because: "`app/api/mcp/blueprints/find/route.ts` answers, over HTTP and over the remote MCP endpoint.",
   },
   {
-    intent: "Find a node for a task",
+    intent: "Find a card",
+    group: "Find",
     how: <code className="font-mono text-blueprint-ink">find_cards {"{ task: \"…\" }"}</code>,
     status: "live",
     because: "`app/api/mcp/cards/find/route.ts`, same as above.",
   },
   {
-    intent: "Read a card before you depend on it",
+    intent: "Read a card version",
+    group: "Find",
     how: <code className="font-mono text-blueprint-ink">read_card {"{ ref: \"…@1.0.0\" }"}</code>,
     status: "live",
     because: "`app/api/mcp/cards/[...ref]/route.ts`, same as above.",
   },
   {
-    intent: "Fetch an exact release by its digest",
+    intent: "Fetch a release by hash",
+    group: "Find",
     how: (
       <span>
         <code className="font-mono text-blueprint-ink">inspect_provenance</code> for the digest,
@@ -86,6 +91,7 @@ const INTENTS: readonly {
   },
   {
     intent: "Get the files on disk",
+    group: "Use locally",
     how: (
       <span>
         <code className="font-mono text-blueprint-ink">get_blueprint</code> from your agent, or{" "}
@@ -98,7 +104,8 @@ const INTENTS: readonly {
       "bytes on any machine with Node, since npx pulls the package from npm.",
   },
   {
-    intent: "Check a folder is valid",
+    intent: "Validate a folder",
+    group: "Check",
     how: <Verb name="validate" />,
     status: "live",
     because:
@@ -107,6 +114,7 @@ const INTENTS: readonly {
   },
   {
     intent: "Run one",
+    group: "Use locally",
     how: (
       <span className="text-muted">
         nothing here runs a blueprint: your own harness does, and{" "}
@@ -126,7 +134,8 @@ const INTENTS: readonly {
       "over MCP; the running is the reader's runner's.",
   },
   {
-    intent: "Bring a foreign pipeline in",
+    intent: "Import an Attractor pipeline",
+    group: "Create",
     how: <Verb name="import" />,
     status: "live",
     because:
@@ -134,7 +143,8 @@ const INTENTS: readonly {
       "through the same `lib/core` import, so a reader with no terminal has a way in too.",
   },
   {
-    intent: "Write one from nothing",
+    intent: "Start with the tutorial",
+    group: "Create",
     how: (
       <span className="text-muted">
         <Link href="/tutorial">follow the tutorial</Link>: the DarkPrint skill interviews you in
@@ -147,7 +157,8 @@ const INTENTS: readonly {
       "written on the reader's machine and this site draws the draft it posts.",
   },
   {
-    intent: "Have your agent write one",
+    intent: "Use Assisted Design",
+    group: "Create",
     how: (
       <span className="text-muted">
         install the DarkPrint skill with one npx line; it interviews you and writes the folder
@@ -162,6 +173,7 @@ const INTENTS: readonly {
   },
   {
     intent: "Check a version bump matches the change",
+    group: "Check",
     how: <Verb name="bump" />,
     status: "live",
     because:
@@ -169,7 +181,8 @@ const INTENTS: readonly {
       "and writes nothing at all, so the intent is a check rather than a release.",
   },
   {
-    intent: "Say what a run cost",
+    intent: "Report run cost",
+    group: "Use locally",
     how: <Verb name="report" />,
     status: "live",
     because:
@@ -178,6 +191,7 @@ const INTENTS: readonly {
   },
   {
     intent: "Publish a release from your agent",
+    group: "Publish",
     how: (
       <span className="text-muted">
         <code className="font-mono text-blueprint-ink">POST /api/bundles</code> with a
@@ -196,6 +210,7 @@ const INTENTS: readonly {
   },
   {
     intent: "Publish one card on its own",
+    group: "Publish",
     how: (
       <span className="text-muted">
         <code className="font-mono text-blueprint-ink">POST /api/cards</code> with a write-scoped
@@ -212,6 +227,7 @@ const INTENTS: readonly {
   },
   {
     intent: "Change who can see a blueprint",
+    group: "Publish",
     how: (
       <span className="text-muted">
         <code className="font-mono text-blueprint-ink">
@@ -230,6 +246,7 @@ const INTENTS: readonly {
   },
   {
     intent: "Read a private blueprint over MCP",
+    group: "Find",
     how: (
       <span className="text-muted">
         send your API key as a bearer token; get_blueprint, read_card, inspect_provenance and
@@ -289,13 +306,14 @@ function Ticks({ text }: { text: string }) {
 
 /** The panel's own intro line, so the three tabs open the same way. */
 function Framing({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm leading-relaxed text-dim">{children}</p>;
+  return <p className={guide.prose}>{children}</p>;
 }
 
-function TableShell({ children }: { children: React.ReactNode }) {
+function TableShell({ children, label }: { children: React.ReactNode; label: string }) {
   return (
-    <div className="panel min-w-0 overflow-x-auto">
+    <div tabIndex={0} role="group" aria-label={`${label}, scrollable`} className={`${guide.reference} min-w-0 overflow-x-auto`}>
       <table className="w-full min-w-[44rem] table-fixed border-collapse text-left">
+        <caption className="sr-only">{label}</caption>
         {children}
       </table>
     </div>
@@ -339,7 +357,7 @@ export default function CapabilitiesPage() {
         and keep it in its own cache, so nothing lands in your project. The table below is what
         each command takes. Exit code 0 on success, 1 on anything else.
       </Framing>
-      <TableShell>
+      <TableShell label="CLI command reference">
         <thead>
           <tr className="border-b border-line">
             <Th width="w-[40%]">Verb</Th>
@@ -370,11 +388,10 @@ export default function CapabilitiesPage() {
         </tbody>
       </TableShell>
       <p className="text-sm leading-relaxed text-dim">
-        One of the eight needs more than the package.{" "}
+        {" "}
         <code className="font-mono text-blueprint-ink">report</code> is the only verb that
-        writes. It needs a signed-in session cookie, passed through the session variable below,
-        or a write-scoped API key from <Link href="/settings">Settings</Link>. It also refuses
-        offline until five facts about the run are supplied or found in the run manifest.
+        writes. It uses the session cookie described below and does not send an API key.
+        It checks five required run facts locally before sending the report.
       </p>
       <KeyValueList>
         {CLI_ENV.map((variable) => (
@@ -404,18 +421,12 @@ export default function CapabilitiesPage() {
         The MCP server
       </h2>
       <Framing>
-        A remote MCP server at{" "}
-        <code className="font-mono text-blueprint-ink">{MCP_ENDPOINT_URL}</code>, nothing to
-        install. Two tools search the public registry by task, one returns a whole blueprint with
-        notes for instantiating it under your harness, three read one thing by its address, and
-        one compiles a release into a pipeline for Attractor, the runner DarkPrint compiles to.
-        Every tool reads. Without a key every call reads as anonymous and sees public blueprints
-        and cards only; a key sent as a bearer token raises the rate limit and lets the four
-        addressed tools reach your own private blueprints. Ranking is a similarity between your
-        task and each document, and a score says nothing about quality. Nothing here runs a
-        blueprint.
+        Connect to <code className="font-mono text-blueprint-ink">{MCP_ENDPOINT_URL}</code> without installing a package.
+        All seven tools are read-only. Without a key every call reads as anonymous and sees public content.
+        A bearer key raises the rate limit and lets you fetch your own private blueprints by name;
+        search remains public-only. A match score says nothing about quality. Nothing here runs a blueprint.
       </Framing>
-      <TableShell>
+      <TableShell label="MCP tool reference">
         <thead>
           <tr className="border-b border-line">
             <Th width="w-[22%]">Tool</Th>
@@ -458,30 +469,11 @@ export default function CapabilitiesPage() {
           })}
         </tbody>
       </TableShell>
-      <KeyValueList>
-        {MCP_CLIENTS.map((client) => (
-          <KeyValueRow
-            key={client.id}
-            keyWidth={240}
-            term={<span className="text-sm text-fg">{client.label}</span>}
-          >
-            {/* `data-client` is the row's identity in the markup, for the guard: asserting
-                that the page contains every snippet is satisfied by a page that prints them
-                all against the wrong labels. */}
-            <pre
-              data-client={client.id}
-              className="min-w-0 overflow-x-auto whitespace-pre font-mono text-xs leading-relaxed text-blueprint-ink"
-            >
-              <code>{client.snippet}</code>
-            </pre>
-          </KeyValueRow>
-        ))}
-      </KeyValueList>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        {MCP_CLIENTS.map((client) => <CodePanel key={client.id} title={client.label} text={client.snippet} ariaLabel={`Copy the ${client.label} MCP configuration`} preProps={{ "data-client": client.id }} />)}
+      </div>
       <p className="text-sm leading-relaxed text-dim">
-        Copy the one for your client. The same server also runs on your own machine over stdio,
-        as <code className="font-mono text-blueprint-ink">{NPX_INVOCATION} mcp</code>, out of the
-        same package that carries the CLI and the DarkPrint skill; the remote address above needs
-        no package at all.
+        Use the configuration for your client. The stdio server runs locally as <code className="font-mono text-blueprint-ink">{NPX_INVOCATION} mcp</code>, from the same npm package. The remote connection needs no package.
       </p>
     </section>
   );
@@ -501,15 +493,8 @@ export default function CapabilitiesPage() {
         <code className="font-mono text-blueprint-ink">skill:</code> field points at a document
         for one node, while the DarkPrint skill writes the whole graph.
       </Framing>
-      <div className="flex min-w-0 flex-wrap items-start gap-2">
-        <pre className="panel min-w-0 flex-1 overflow-x-auto px-3.5 py-3 font-mono text-xs leading-relaxed text-blueprint-ink">
-          <code>{SKILL_INSTALL_COMMAND}</code>
-        </pre>
-        <CopyButton
-          text={SKILL_INSTALL_COMMAND}
-          ariaLabel="Copy the command that installs the DarkPrint skill"
-        />
-      </div>
+      <CodePanel title="Install for Claude Code" text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the command that installs the DarkPrint skill" />
+
       {/* The package name is named again here, and not only on the CLI panel: the three
           surfaces are tabs, so a reader on this one sees no sentence written over there, and
           this panel prints a whole command under a copy button. */}
@@ -542,8 +527,7 @@ export default function CapabilitiesPage() {
             ))}
           </KeyValueList>
           <p className="text-sm leading-relaxed text-dim">
-            Some of the questions it asks. The full interview is longer, walks a risk sheet for
-            each node, and picks every name and version itself.
+            The full interview also reviews each node’s risks and chooses names and versions.
           </p>
         </div>
         <div className="flex min-w-0 flex-col gap-3">
@@ -553,7 +537,7 @@ export default function CapabilitiesPage() {
               keyWidth={168}
               term={<span className="font-mono text-xs text-fg">{TOPOLOGY_DOT}</span>}
             >
-              <span className="text-sm leading-relaxed text-muted">who is wired to whom</span>
+              <span className="text-sm leading-relaxed text-muted">nodes and their connections</span>
             </KeyValueRow>
             <KeyValueRow
               keyWidth={168}
@@ -564,7 +548,7 @@ export default function CapabilitiesPage() {
               }
             >
               <span className="text-sm leading-relaxed text-muted">
-                one per node the graph pins
+                one exact version per graph node
               </span>
             </KeyValueRow>
             <KeyValueRow
@@ -572,7 +556,7 @@ export default function CapabilitiesPage() {
               term={<span className="font-mono text-xs text-fg">{BUNDLE_README}</span>}
             >
               <span className="text-sm leading-relaxed text-muted">
-                for a person opening the folder
+                setup and runner instructions
               </span>
             </KeyValueRow>
           </KeyValueList>
@@ -586,12 +570,12 @@ export default function CapabilitiesPage() {
   );
 
   return (
-    <div className="container-page py-16 sm:py-20">
+    <div className={`${guide.page} container-page py-16 sm:py-20`}>
       <SectionHeading
         as="h1"
         eyebrow="Reference"
         title="What you can do"
-        lead="Everything you can do with DarkPrint, and where: the darkprint command line, an MCP server your coding agent connects to, and a skill your agent installs to write blueprints. Each row says whether it works today."
+        lead="Find the right command or tool for your task. Use the CLI, connect through MCP, or write files with the DarkPrint skill."
       />
       <p className="mt-3 text-sm leading-relaxed text-dim">
         <span className="text-emerald">live</span>: works as printed ·{" "}
@@ -602,20 +586,21 @@ export default function CapabilitiesPage() {
         <h2 id="intent-title" className="label scroll-mt-24">
           By intent
         </h2>
-        <KeyValueList>
-          {INTENTS.map((row) => (
-            <KeyValueRow
-              key={row.intent}
-              keyWidth={240}
-              term={<span className="text-sm text-fg">{row.intent}</span>}
-              aside={<StatusPill status={row.status} />}
-            >
-              <span className="font-mono text-xs leading-relaxed text-blueprint-ink">
-                {row.how}
-              </span>
-            </KeyValueRow>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {(["Find", "Create", "Check", "Publish", "Use locally"] as const).map((group) => (
+            <div key={group} className={`${guide.panel} ${group === "Publish" ? guide.copper : ""}`}>
+              <h3 className="mb-4 font-display text-xl font-semibold text-fg">{group}</h3>
+              <ul className="divide-y divide-line">
+                {INTENTS.filter((row) => row.group === group).map((row) => (
+                  <li key={row.intent} className="flex min-w-0 flex-col gap-2 py-4 first:pt-0 last:pb-0">
+                    <div className="flex items-baseline justify-between gap-3"><span className="text-sm font-medium text-fg">{row.intent}</span><StatusPill status={row.status} /></div>
+                    <div className="min-w-0 text-sm leading-relaxed text-muted [overflow-wrap:anywhere]">{row.how}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </KeyValueList>
+        </div>
       </section>
 
       <section

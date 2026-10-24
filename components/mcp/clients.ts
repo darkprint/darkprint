@@ -34,14 +34,14 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     id: "claude-code",
     label: "Claude Code",
     snippet: `claude mcp add --transport http darkprint ${MCP_ENDPOINT_URL}`,
-    note: "One command in the terminal. Claude Code connects over HTTP and installs nothing.",
+    note: "Run this command in your terminal.",
     docsHref: "https://code.claude.com/docs/en/mcp",
   },
   {
     id: "codex",
     label: "Codex",
     snippet: `codex mcp add darkprint --url ${MCP_ENDPOINT_URL}`,
-    note: "The same entry serves Codex CLI, the IDE extension and the desktop app; they read one configuration.",
+    note: "Codex CLI, the IDE extension and the desktop app share this configuration.",
     docsHref: "https://developers.openai.com/codex/mcp",
   },
   {

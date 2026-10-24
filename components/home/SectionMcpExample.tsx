@@ -2,13 +2,14 @@ import Link from "next/link";
 
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { MCP_FIRST_PROMPT } from "@/components/mcp/clients";
+import { ButtonLink } from "@/components/ui/Button";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { getBlueprintBySlug } from "@/lib/content";
 import { cx } from "@/lib/format";
 import { blueprintRecordHref } from "@/lib/href";
 
-import { BeatCaption } from "./BeatCaption";
+import styles from "./SectionMcpExample.module.css";
 
 /* ============================================================
    One task taken through the MCP server, from the prompt to the run.
@@ -69,6 +70,30 @@ function Route({ ids }: { ids: readonly string[] }) {
   );
 }
 
+function OverviewStep({
+  index,
+  title,
+  person = false,
+  className,
+  children,
+}: {
+  index: string;
+  title: string;
+  person?: boolean;
+  className: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className={cx(styles.overviewStep, className)} data-person={person || undefined}>
+      <div className={styles.stepHeading}>
+        <span className={styles.stepIndex}>{index}</span>
+        <h3 className="text-sm font-medium text-fg">{title}</h3>
+      </div>
+      {children}
+    </li>
+  );
+}
+
 /**
  * One row of the exchange. Violet marks the rows where the person acts and blueprint blue the
  * rows where the agent calls a tool, the same two meanings those colours carry site-wide.
@@ -85,17 +110,10 @@ function Step({
   children: React.ReactNode;
 }) {
   return (
-    <li className="grid gap-3 border-t border-line px-5 py-6 first:border-t-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-6 sm:px-6">
-      <div className="flex items-center gap-2.5 self-start font-mono text-[13px]">
-        <span className="text-dim">{index}</span>
-        <span
-          aria-hidden
-          className={cx(
-            "h-[7px] w-[7px] shrink-0 rounded-full",
-            person ? "bg-violet" : "bg-blueprint-line",
-          )}
-        />
-        <span className={person ? "text-violet" : "text-blueprint-line"}>{who}</span>
+    <li className={`${styles.detailStep} flex min-w-0 flex-col gap-4`} data-person={person || undefined}>
+      <div className={styles.stepHeading}>
+        <span className={styles.stepIndex}>{index}</span>
+        <h3 className="font-mono text-sm text-fg">{who}</h3>
       </div>
       <div className="flex min-w-0 flex-col gap-4 text-[15px] leading-relaxed text-muted">
         {children}
@@ -117,42 +135,62 @@ export function SectionMcpExample() {
       <div className="container-page">
         <SectionHeading
           title="A real task, matched to a blueprint"
-          lead="MCP finds a close fit. Your agent adapts it locally, and you approve the graph before it runs."
-          align="center"
-          className="mx-auto"
+          lead="Find a starting point for your task, then adapt it with your agent."
         />
 
-        <ol className="panel mt-8">
-          <Step index="01" who="Your task" person>
-            <p>
+        <ol className={`${styles.overview} mt-8`}>
+          <OverviewStep index="01" title="Your task" person className={styles.task}>
+            <p className={styles.taskText}>
               Process each night&apos;s new orders, load valid records, and email the sales team a
-              one-page summary.
+              <span className="text-fg"> one-page summary.</span>
             </p>
-          </Step>
-          <Step index="02" who="MCP match" person={false}>
-            <p>
-              The top registry hit is{" "}
-              <Link
-                href={blueprintRecordHref({ slug: chosen.slug, ownerHandle: EXAMPLE_OWNER })}
-                className={cx("font-mono text-[13px]", LINK)}
-              >
-                {EXAMPLE_OWNER}/{chosen.slug}
-              </Link>
-              , a real {chosen.graph.nodes.length}-node blueprint.
+            <div className="mt-auto flex items-center gap-3 pt-6 font-mono text-xs text-blueprint-line">
+              <span aria-hidden className="text-muted">↳</span>
+              <code>find_blueprints</code>
+              <span aria-hidden className="h-px max-w-20 flex-1 bg-blueprint-line/25" />
+              <span aria-hidden>→</span>
+            </div>
+          </OverviewStep>
+          <OverviewStep index="02" title="MCP match" className={styles.match}>
+            <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-muted">
+              <span>First registry hit</span>
+              <span aria-hidden className="h-1 w-1 rounded-full bg-dim" />
+              <span>{chosen.graph.nodes.length} nodes</span>
+            </div>
+            <Link
+              href={blueprintRecordHref({ slug: chosen.slug, ownerHandle: EXAMPLE_OWNER })}
+              className={styles.matchLink}
+            >
+              <span className="font-display text-2xl font-semibold tracking-tight text-blueprint-ink">{chosen.title}</span>
+              <span className="mt-1 block font-mono text-xs text-cyan">{EXAMPLE_OWNER}/{chosen.slug} <span aria-hidden>↗</span></span>
+            </Link>
+            <div className={styles.graphPreview}>
+              <GraphThumbnail graph={chosen.graph} className="h-24 w-full" ariaLabel={`The published ${chosen.title} graph, before local adaptation`} />
+            </div>
+          </OverviewStep>
+          <OverviewStep index="03" title="Adapt locally" className={styles.adaptation}>
+            <div className={styles.localChange}>
+              <div className="min-w-0">
+                <span className="mb-2 block text-xs text-muted">Existing node</span>
+                <code className={styles.existingNode}>{EXAMPLE_ADDED_AFTER}</code>
+              </div>
+              <span aria-hidden className={styles.changeArrow}>→</span>
+              <div className="min-w-0">
+                <span className="mb-2 block text-xs text-muted">Added locally</span>
+                <code className={styles.addedNode}>{EXAMPLE_ADDED}</code>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-muted">
+              The agent adds the email summary. The published blueprint has no email node.
             </p>
-          </Step>
-          <Step index="03" who="Adapt locally" person={false}>
-            <p>
-              The agent adds <Id>{EXAMPLE_ADDED}</Id> after <Id>{EXAMPLE_ADDED_AFTER}</Id> for the
-              email summary. The published blueprint has no email node.
-            </p>
-          </Step>
-          <Step index="04" who="You approve" person>
-            <p>
-              Review and approve the graph first. Your agent then runs it locally, one node at a time,
+          </OverviewStep>
+          <OverviewStep index="04" title="You approve" person className={styles.approval}>
+            <p className="mt-5 font-display text-xl font-medium text-fg">Review and approve the graph first.</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted">
+              Your agent then runs it locally, one node at a time,
               following the card-marked stop at irreversible work.
             </p>
-          </Step>
+          </OverviewStep>
         </ol>
 
         <details className="panel group mt-5">
@@ -162,7 +200,7 @@ export function SectionMcpExample() {
               +
             </span>
           </summary>
-          <ol className="border-t border-line">
+          <ol className="divide-y divide-line border-t border-line bg-void">
             <Step index="01" who="You ask" person>
               <div className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3">
                 <pre className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere font-mono text-xs leading-relaxed text-blueprint-line">
@@ -186,7 +224,7 @@ export function SectionMcpExample() {
                     <span className="font-mono text-[13px] text-dim">{i + 1}</span>
                     <Link
                       href={blueprintRecordHref({ slug: hit.slug, ownerHandle: EXAMPLE_OWNER })}
-                      className={cx("font-mono text-[13px]", LINK)}
+                      className={cx("min-w-0 wrap-anywhere font-mono text-[13px]", LINK)}
                     >
                       {EXAMPLE_OWNER}/{hit.slug}
                     </Link>
@@ -247,9 +285,10 @@ export function SectionMcpExample() {
           </ol>
         </details>
 
-        <BeatCaption href="/mcp" cta="Connect your agent">
-          DarkPrint hands out the files and the run contract, and executes nothing.
-        </BeatCaption>
+        <div className="mt-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <p className="max-w-xl text-sm leading-relaxed text-muted">DarkPrint hands out the files and the run contract, and executes nothing.</p>
+          <ButtonLink href="/mcp" variant="outline" className="shrink-0">Connect your agent <span aria-hidden>→</span></ButtonLink>
+        </div>
       </div>
     </section>
   );

@@ -206,10 +206,9 @@ export function ApiKeys() {
           picker, because it is no longer one sentence: the read sentence is the promise
           existing keys were issued under and it is reproduced verbatim in `SCOPE_COPY`. */}
       <p className="text-[13px] leading-relaxed text-muted">
-        A key raises the rate ceiling for an agent reading the registry over the MCP
-        endpoints. What else it may do is its scope, which you choose when you mint it and
-        cannot change afterwards. The key is shown to you once, at that moment. DarkPrint
-        never stores it. If you lose it, revoke it and mint a new one.
+        Keys raise MCP read limits. Choose a scope when creating a key; it cannot change
+        later. Copy the secret when it appears: it is shown once and never stored. Lost a
+        key? Revoke it and create another.
       </p>
 
       {minted !== undefined && (

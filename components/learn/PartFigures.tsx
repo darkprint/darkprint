@@ -85,14 +85,16 @@ import {
 function Frame({
   caption,
   children,
+  flush = false,
 }: {
   caption: React.ReactNode;
   children: React.ReactNode;
+  flush?: boolean;
 }) {
   return (
-    <figure className="flex flex-col gap-3 rounded-xl border border-line bg-void p-5">
+    <figure className={cx("flex flex-col gap-3 rounded-xl border border-line bg-void", flush ? "p-0" : "p-5")}>
       <div className="flex flex-1 items-center justify-center">{children}</div>
-      <figcaption className="border-t border-line/70 pt-3 font-mono text-[11px] leading-relaxed text-dim">
+      <figcaption className={cx("border-t border-line/70 pt-3 font-mono text-[11px] leading-relaxed text-dim", flush && "mx-4 mb-4")}>
         {caption}
       </figcaption>
     </figure>
@@ -163,12 +165,8 @@ interface Placement {
    `components/viz/flow.ts` sets. `components/learn/figures.test.ts` does that arithmetic
    for all three real placements and fails if either frame is widened.
 
-   Both placements carry the DOT id rather than the card's display name, and that is not a
-   downgrade at the wide end. A luminous node says one line — there is no second line in
-   this register — and "Acceptance Tester" set on one line is 137 units of a 452-unit
-   frame, which runs under the numeral of every curve arriving at it. The ids are what the
-   DOT file actually contains, so the drawing is the more literal picture of the file this
-   part is about; `FlowNode`'s `name` hands a screen reader the display name anyway. */
+   DOT ids keep compact labels clear of edge numerals. The paired-card placement uses
+   the card’s name for its highlighted node so readers can match the two. */
 const WIDE: Placement = { r: 10, padX: 90, padTop: 48, padBottom: 6, colGap: 136, rowStep: 130 };
 
 const COMPACT: Placement = { r: 8, padX: 78, padTop: 44, padBottom: 6, colGap: 107, rowStep: 128 };
@@ -196,11 +194,18 @@ export function GraphFigure({
   graph,
   title,
   compact = false,
+  nodeMark = "lamp",
+  highlightedNode,
+  highlightedNodeLabel,
 }: {
   graph: BlueprintGraph;
   title: string;
   /** The squarer frame, for placements under `sm`. See the note on `WIDE`/`COMPACT`. */
   compact?: boolean;
+  nodeMark?: "lamp" | "schematic";
+  highlightedNode?: string;
+  /** Use the paired card’s name for the highlighted node. Other nodes keep their DOT ids. */
+  highlightedNodeLabel?: string;
 }) {
   const place = compact ? COMPACT : WIDE;
   const xs = [...new Set(graph.nodes.map((n) => n.position.x))].sort((a, b) => a - b);
@@ -314,20 +319,21 @@ export function GraphFigure({
       {graph.nodes.map((n) => {
         const [x, y] = centre(n);
         const tone = NODE_TONE[n.kind];
-        /* The visible word is the id and the accessible name is the card's display name,
-           which is the split `FlowNode.name` is for. Undefined where the two would say
-           the same thing, so a screen reader is never handed a word twice. */
-        const name = n.label === n.id ? undefined : n.label;
+        const label = n.id === highlightedNode ? highlightedNodeLabel ?? n.id : n.id;
+        const name = n.label === label ? undefined : n.label;
         return tone === "human" ? (
-          <HumanFlowNode key={n.id} x={x} y={y} r={place.r} label={n.id} reveal="always" />
+          <HumanFlowNode key={n.id} id={n.id} x={x} y={y} r={place.r} label={label} reveal="always" />
         ) : (
           <FlowNode
             key={n.id}
+            id={n.id}
             x={x}
             y={y}
             r={place.r}
             tone={tone}
-            label={n.id}
+            mark={nodeMark}
+            lit={n.id === highlightedNode}
+            label={label}
             name={name}
             reveal="always"
           />

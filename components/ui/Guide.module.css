@@ -1,0 +1,154 @@
+.page {
+  --guide-accent: var(--color-blueprint-line);
+}
+
+.panel {
+  --guide-accent: var(--color-blueprint-line);
+  min-width: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--guide-accent) 4%, var(--color-void)), var(--color-void) 75%);
+  box-shadow: 0 16px 48px -40px var(--guide-accent);
+}
+
+.copper { --guide-accent: var(--color-copper-line); }
+.human { --guide-accent: var(--color-violet); }
+
+.stepHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  color: var(--color-fg);
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.stepNumber {
+  display: inline-grid;
+  min-width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-self: flex-start;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--guide-accent) 30%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--guide-accent) 5%, transparent);
+  color: var(--guide-accent);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.prose {
+  max-width: 72ch;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+
+.command {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--color-blueprint-line) 22%, var(--color-line));
+  border-radius: 0.75rem;
+  background: var(--color-void);
+}
+
+.commandHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid var(--color-line);
+  background: color-mix(in oklab, var(--color-blueprint-deep) 18%, var(--color-void));
+  color: var(--color-muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+}
+
+.source {
+  margin: 0;
+  overflow-x: auto;
+  padding: 1rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-blueprint-ink);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  line-height: 1.75;
+}
+
+.prompt {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 1rem;
+  color: var(--color-fg);
+}
+
+.diagram {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background-color: var(--color-void);
+  background-image: radial-gradient(circle, color-mix(in oklab, var(--guide-accent, var(--color-blueprint-line)) 10%, transparent) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.fileHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-void);
+  color: var(--guide-accent, var(--color-blueprint-line));
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.reference {
+  min-width: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--guide-accent, var(--color-blueprint-line)) 3%, var(--color-void)), var(--color-void));
+}
+
+.reference :global(td), .reference :global(dd) { line-height: 1.7; }
+.reference :global(th[scope="row"]) { color: var(--guide-accent, var(--color-blueprint-line)); }
+
+.flow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.file {
+  min-width: 0;
+  flex: 1 1 auto;
+  border: 1px solid color-mix(in oklab, var(--guide-accent, var(--color-blueprint-line)) 35%, var(--color-line));
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  background: var(--color-void);
+}
+
+@media (min-width: 40rem) {
+  .panel { padding: 1.75rem; }
+  .reference { padding: 1.5rem; }
+}
+
+.flow > span[aria-hidden] { align-self: center; rotate: 90deg; }
+@media (min-width: 40rem) {
+  .flow { flex-direction: row; align-items: center; }
+  .flow > span[aria-hidden] { rotate: 0deg; }
+  .file { flex-basis: 12rem; }
+}

@@ -132,7 +132,7 @@ describe("the connection command", () => {
    know the run happens in their own agent rather than here. */
 describe("what /mcp says to do once the server is connected", () => {
   it("prints the concrete task prompt and says execution belongs to a chosen runner", () => {
-    const concretePrompt = MCP_FIRST_PROMPT.replace("<your task>", "review my pull requests");
+    const concretePrompt = MCP_FIRST_PROMPT.replace("<your task>", "reviewing pull requests");
     expect(MCP_PAGE).toContain(concretePrompt.toLowerCase());
     expect(MCP_PAGE).toContain(
       "execution depends on a runner you choose and happens in your own environment",

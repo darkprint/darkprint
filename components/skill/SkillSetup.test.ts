@@ -124,9 +124,9 @@ describe("the task-first path and its optional interview details", () => {
 
   it("leads from describing a task to adapting a workflow or reusing cards", () => {
     expect(text).toContain("2. describe the task");
-    expect(text).toContain("public workflows to adapt or cards to reuse for one part");
+    expect(text).toContain("public blueprints and cards");
     expect(text).toContain("public reads need no sign-in");
-    expect(text).toContain("review the graph, pinned cards, scorecard and provenance");
+    expect(text).toContain("review the graph and its pinned cards, with the scorecard and provenance");
     expect(text).toContain("search matches are not quality judgments");
     expect(text).toContain("a reused card stays unchanged");
     expect(text).toContain("version and identity");
@@ -139,7 +139,7 @@ describe("the task-first path and its optional interview details", () => {
   it("keeps the interview checklist available in a native disclosure", () => {
     expect(SETUP).toContain('<summary');
     expect(text).toContain("see what the interview covers");
-    expect(allText).toContain("interview, not a generator");
+    expect(allText).toContain("the interview covers the work and how to check it");
     expect(allText).toContain("it can decline");
   });
 
@@ -200,11 +200,11 @@ describe("the route", () => {
 
   it("prints the commands first and the three limits after the tutorial", () => {
     const command = page.indexOf(SKILL_INSTALL_COMMAND);
-    const never = page.indexOf("What it never does");
+    const never = page.indexOf("Execution and sharing");
     expect(command).toBeGreaterThan(-1);
     expect(never).toBeGreaterThan(command);
-    for (const label of ["run", "publish by itself", "send"]) {
-      expect(page.indexOf(label, never), label).toBeGreaterThan(never);
+    for (const label of ["Execution", "Publishing", "Task searches"]) {
+      expect(page.indexOf(label, never + "Execution and sharing".length), label).toBeGreaterThan(never);
     }
   });
 

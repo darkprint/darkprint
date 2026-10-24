@@ -37,8 +37,9 @@ describe("the blueprint-first landing", () => {
     const html = render(Wordmark);
     const text = plainText(html);
     expect(text).toContain(
-      "Your agent retrieves shared workflows and reusable nodes through MCP, adapts a blueprint to your task, and runs it locally.",
+      "Reusable blueprints for agent workflows.",
     );
+    expect(text).toContain("Find a workflow for your coding agent to adapt and run locally.");
     expect(text).toContain("Browse blueprints");
     expect(html).toContain('href="/blueprints"');
     expect(text).toContain("Connect your agent");
@@ -285,15 +286,15 @@ describe("the blueprint-first landing", () => {
     ).toBe(10);
   });
 
-  it("puts the registry beat after the card and before the ending", () => {
+  it("puts the graph and card together between the example and tutorial", () => {
     const page = readFileSync(join(process.cwd(), "app/page.tsx"), "utf8");
     const at = (tag: string) => {
       const index = page.indexOf(tag);
       expect(index, `app/page.tsx does not render ${tag}`).toBeGreaterThan(-1);
       return index;
     };
-    expect(at("<SectionNodeIsCard")).toBeLessThan(at("<SectionRegistry"));
-    expect(at("<SectionRegistry")).toBeLessThan(at("<SectionFirstBlueprint"));
+    expect(at("<SectionMcpExample")).toBeLessThan(at("<SectionBlueprintFiles"));
+    expect(at("<SectionBlueprintFiles")).toBeLessThan(at("<SectionFirstBlueprint"));
   });
 
   /* The ending: the heading, four steps, and exactly one link. The registry and the account

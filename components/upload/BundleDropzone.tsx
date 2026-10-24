@@ -649,7 +649,7 @@ export function BundleDropzone({
           }}
           {...dropHandlers}
           className={cx(
-            "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-14 text-center transition-colors",
+            "flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border border-dashed bg-blueprint-deep/10 px-5 py-10 text-center transition-colors",
             dragging
               ? "border-cyan bg-cyan/5"
               : "border-line-bright hoverable:hover:border-cyan/60 hoverable:hover:bg-surface-2/40",
@@ -689,10 +689,8 @@ export function BundleDropzone({
                 and `cards/` the download carries — so "as it stands" is true of both, and
                 a half-written one is expected here (`components/upload/progress.ts`). */}
             <p className="text-xs text-dim">
-              A folder downloaded from a blueprint page works as it stands, and so does one
-              the DarkPrint skill wrote, finished or not. Bring{" "}
-              <span className="font-mono">extensions.yaml</span> along with it when it has
-              one: it defines the local terms its cards declare.
+              Use a registry download or a DarkPrint skill draft, including unfinished drafts. Include{" "}
+              <span className="font-mono">extensions.yaml</span> when the folder has local terms.
             </p>
             {/* Named at the target, because a person holding an Attractor pipeline has no
                 reason to guess that this box takes one. Until now it did not: a dropped
@@ -702,10 +700,9 @@ export function BundleDropzone({
                 stops at what the reader can check here — the offer appears, and it names
                 what an import costs before anything is converted. */}
             <p className="text-xs text-dim">
-              An Attractor pipeline works too. Drop the{" "}
-              <span className="font-mono">.dot</span> on its own and this page offers to
-              read it into a draft bundle, in this tab, saying first what the import cannot
-              carry across.
+              For an Attractor pipeline, drop its{" "}
+              <span className="font-mono">.dot</span> file. Review the import losses before
+              creating a draft bundle in this tab.
             </p>
           </div>
           {picker}

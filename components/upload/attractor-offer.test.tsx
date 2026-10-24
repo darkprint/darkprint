@@ -178,6 +178,7 @@ describe("attribution, on the surface where it is refused", () => {
     const markup = offer({ state: "no-handle", accountId: "acct_1" });
     expect(buttonIsDisabled(markup)).toBe(true);
     expect(text(markup)).toContain("no handle yet");
+    expect(markup).toContain('href="/welcome"');
     // T050 AC1's middle state: signed in, sign-up unfinished. Nothing here can fix it, and
     // saying "sign in" at somebody who already has would be the wrong sentence with a
     // working link under it.

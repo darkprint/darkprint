@@ -8,6 +8,7 @@ import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { DotBreakdown } from "@/components/panes/DotBreakdown";
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { NPX_INVOCATION } from "@/packages/cli/src/index";
 
 /* ============================================================
@@ -58,7 +59,7 @@ export default function SpecTopologyPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="The wiring, in one file. A topology is a Graphviz DOT graph: one node per step, one edge per hand-off. DarkPrint adds a few attribute names of its own, and the one every node carries, card, pins the node to the YAML card that describes the step."
+            lead="A directed graph connects the steps. Each node pins the card that defines its work, using an exact id@version."
           />
         </div>
       </header>
@@ -70,77 +71,44 @@ export default function SpecTopologyPage() {
           <div className="flex flex-col gap-3">
             <span className="label-lead">The file</span>
             <h2 id="dot-file-heading" className={`${BAND_H2} scroll-mt-24`}>
-              One file, and the names DarkPrint adds
+              The DOT file
             </h2>
           </div>
           {/* No `.prose-lane` here, on the owner's instruction for this section only: the
               paragraphs sit on the same full column as the figure directly beneath them, so
               prose and figure read as one band. Nothing else inherits the exception. */}
-          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
+          <div className={`${guide.panel} flex flex-col gap-4 text-base leading-relaxed text-muted`}>
             <p>
-              DOT attribute values are flat strings. That is why the format splits in two:
-              the graph carries the wiring, and every piece of detail lives in a card beside
-              it. DarkPrint reads a subset of Graphviz DOT.{" "}
-              <SpecLink href="https://github.com/strongdm/attractor" external>
-                Attractor
-              </SpecLink>
-              , StrongDM&rsquo;s graph runner and the program the compiled file is written
-              for, reads a narrower grammar still and ignores any attribute name it does not
-              reserve. That is what lets DarkPrint&rsquo;s own <Id>card</Id> attribute sit in
-              a file Attractor also parses.
-            </p>
-            {/* Every claim here is read off `lib/core/attractor/emit.ts`: the node attributes
-                it writes are `card` and `dp_node`, and its edge list is `label`, `condition`
-                and `weight`, which is why `in` and `out` compile to nothing. The sentence
-                says what the exporter writes and claims no limit on what a runner reads. */}
-            <p>
-              Two of the names in that file are DarkPrint&rsquo;s own and are in no Attractor
-              document: a node&rsquo;s <Id>card</Id>, which pins it to the card that describes
-              it, and an edge&rsquo;s <Id>in</Id> and <Id>out</Id>, which name ports the two
-              cards declare. When the folder is compiled for Attractor, <Id>card</Id> is
-              copied through unchanged. By then the exporter has used it: the card&rsquo;s{" "}
-              <Id>spec</Id> becomes the node&rsquo;s <Id>prompt</Id>, and its <Id>type</Id>{" "}
-              picks the node&rsquo;s <Id>shape</Id>, which is how Attractor chooses a handler,
-              the program that runs the node. The runner then ignores the attribute.{" "}
-              <Id>in</Id> and <Id>out</Id> are not copied at all; a compiled edge carries
-              only <Id>label</Id>, <Id>condition</Id> and <Id>weight</Id>.{" "}
-              <SpecLink href="/spec/attractor">The Attractor crosswalk</SpecLink> lists every
-              attribute the compiled file gets and where each one comes from.
+              DarkPrint reads a subset of Graphviz DOT. Each node pins a YAML card with
+              <Id>card</Id>; edge attributes <Id>in</Id> and <Id>out</Id> name ports on those cards.
             </p>
             <p>
-              A topology on its own is not a pipeline. It carries no prompts and neither of
-              the two boundary nodes Attractor requires, so a runner parses it and then
-              refuses to run it. <Id>darkprint export &lt;dir&gt; --attractor</Id> compiles
-              the graph and its cards into the file a runner takes, and that file opens with
-              a list of everything a blueprint has no way to say. The command ships in the
-              darkprint package on npm, so{" "}
-              <Id>{`${NPX_INVOCATION} export <dir> --attractor`}</Id> runs it with nothing
-              installed.
+              A topology carries no prompts or Attractor boundary nodes. Compile the graph
+              and cards with <Id>{`${NPX_INVOCATION} export <dir> --attractor`}</Id>, from the
+              darkprint package on npm. The output lists settings a blueprint cannot express.
             </p>
             <p>
-              Do not write <Id>type=</Id> on a node. To Attractor, a node&rsquo;s{" "}
-              <Id>type</Id> attribute overrides the handler its shape would select, so a
-              DarkPrint type such as <Id>agent</Id> would be read as a handler name. A
-              card&rsquo;s type therefore stays inside the YAML, and a DOT that writes{" "}
-              <Id>type=</Id> is reported as <Id>attractor/reserved-attribute</Id>.
+              The exporter turns card instructions into Attractor prompts and card types into handlers.
+              See the <SpecLink href="/spec/attractor">Attractor crosswalk</SpecLink> for the complete mapping.
             </p>
             <p>
-              <Id>shape</Id> is the attribute that override would replace. Attractor picks the
-              handler that runs a node from the node&rsquo;s shape, so in a compiled file the
-              shape decides what the node does. In a topology, <Id>shape</Id> is only a
-              drawing hint: DarkPrint ignores it, and the exporter writes each node&rsquo;s
-              shape from its card&rsquo;s type.
+              Keep <Id>type</Id> in the card. A DOT node’s <Id>type=</Id> overrides the runner’s
+              handler and produces <Id>attractor/reserved-attribute</Id>. A topology’s
+              <Id>shape</Id> is only a drawing hint; the exporter derives it from the card.
             </p>
           </div>
 
           {/* `downloadName` because this route has no download disclosure of its own, and
               `verbatim` because this page shows the file whole, comments included. */}
-          <DotBreakdown
-            source={dot}
-            title={`${STARTER}/topology.dot`}
-            downloadName="topology.dot"
-            verbatim
-          />
+          <div className={guide.diagram}>
+            <div className={guide.fileHeader}>topology.dot <span className="text-muted">{STARTER}</span></div>
+            <DotBreakdown
+              source={dot}
+              title={`${STARTER}/topology.dot`}
+              downloadName="topology.dot"
+              verbatim
+            />
+          </div>
         </div>
       </section>
 

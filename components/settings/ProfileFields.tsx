@@ -74,7 +74,7 @@ export function ProfileFields({
   const over = bio.length > BIO_LIMIT;
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
       <div className="flex flex-col gap-5">
         <Field id="display-name" label="Display name">
           <input
@@ -97,8 +97,7 @@ export function ProfileFields({
               <span className={over ? "text-amber" : undefined}>
                 {bio.length} / {BIO_LIMIT}
               </span>{" "}
-              · one sentence is enough; it shows under your name on your
-              profile
+              · shown on your profile
             </>
           }
         >
@@ -116,8 +115,7 @@ export function ProfileFields({
           label="Avatar hue"
           hint={
             <>
-              {hue}° · avatars are generated from one number, so no image is uploaded or
-              stored
+              {hue}° · generated color; no image is uploaded
             </>
           }
         >
@@ -163,7 +161,7 @@ export function ProfileFields({
           <span className="font-mono text-[11px] text-cyan">✦ validator badge</span>
         )}
         <p className="text-center font-mono text-[11px] leading-relaxed text-dim">
-          Follows what you type. Save changes writes it to your account.
+          Preview. Save changes to update your profile.
         </p>
       </div>
     </div>

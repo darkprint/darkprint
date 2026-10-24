@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { SkillSetup } from "@/components/skill/SkillSetup";
 
 /* ============================================================
@@ -24,35 +25,22 @@ const LINK = "text-cyan underline decoration-cyan/40 underline-offset-4 transiti
 /** The three limits, each with where the capability lives instead. */
 const NEVER: readonly { label: string; body: React.ReactNode }[] = [
   {
-    label: "run",
-    body: "the DarkPrint skill does not execute the blueprint or its nodes, or call a model on your behalf. The folder is text; a runner you choose executes it",
+    label: "Execution",
+    body: "your own runner executes the blueprint",
   },
   {
-    label: "publish by itself",
+    label: "Publishing",
     body: (
       <>
-        publishing is your step. Sign in at{" "}
-        <Link href="/welcome" className={LINK}>
-          Welcome
-        </Link>
-        , name the blueprint at{" "}
-        <Link href="/new" className={LINK}>
-          New blueprint
-        </Link>
-        , then drop the folder on{" "}
-        <Link href="/upload" className={LINK}>
-          Publish
-        </Link>{" "}
-        or POST it from your terminal with a write-scoped API key from{" "}
-        <Link href="/settings" className={LINK}>
-          Settings
-        </Link>
+        publishing is your step. Upload the folder at{" "}
+        <Link href="/upload" className={LINK}>Publish</Link>, or use a write-scoped API key from{" "}
+        <Link href="/settings" className={LINK}>Settings</Link>.
       </>
     ),
   },
   {
-    label: "send",
-    body: "the DarkPrint skill sends your one-sentence task to the registry's search while it drafts, and nothing else leaves your machine on its own. Checking the folder against the registry's validator, publishing it, and opening a live page are steps it asks you for and you take",
+    label: "Task searches",
+    body: "the DarkPrint skill sends your one-sentence task to the registry's search while it drafts, and nothing else leaves your machine on its own. Validation, publishing and live previews need your permission",
   },
 ];
 
@@ -64,26 +52,25 @@ export const metadata: Metadata = {
   /* The shared-link preview owes a reader the limit before they open the tab, so the
      description carries the same sentence the closing section prints. */
   description:
-    "One command puts the DarkPrint skill in your own agent. It interviews you, searches public blueprints and cards with no sign-in, and writes topology.dot, one card per node, blueprint.yaml and README.md. The DarkPrint skill runs nothing and sends nothing on its own; publishing is a step you take on this site or with an API key.",
+    "Install the DarkPrint skill to write blueprints with your coding agent. It runs nothing and sends nothing on its own beyond task searches. Publishing is your step.",
 };
 
 export default function SkillPage() {
   return (
-    <div className="container-page py-16 sm:py-20">
+    <div className={`${guide.page} container-page py-16 sm:py-20`}>
       <SectionHeading
         as="h1"
         eyebrow="Setup"
         title="Assisted Design"
-        lead="One command puts the DarkPrint skill in your own agent. It interviews you about the work, searches the registry for a blueprint or cards that already do part of it, and writes what you decided as a folder the registry can store."
+        lead="Write a blueprint with your coding agent. The DarkPrint skill finds reusable work and helps define the rest."
       />
 
       <SkillSetup className="mt-10" />
 
-      <section className="mt-11 flex flex-col gap-5 border-t border-line pt-10">
-        <h2 className="font-display text-2xl font-semibold text-fg">What it never does</h2>
+      <section className={`${guide.panel} ${guide.human} mt-6 flex flex-col gap-5`}>
+        <h2 className="font-display text-2xl font-semibold text-fg">Execution and sharing</h2>
         <p className="text-[15px] leading-relaxed text-muted">
-          The DarkPrint skill writes files and runs nothing. Whatever it is asked, three
-          limits hold.
+          The DarkPrint skill writes files and runs nothing.
         </p>
 
         {/* The same hairline rows step 2 draws, in blueprint ink rather than amber: amber is

@@ -54,8 +54,7 @@ export default async function Page({ params }: PageProps<"/u/[username]/saved">)
           </div>
           {view.saves.length === 0 ? (
             <EmptyState title="Nothing saved yet" action={{ href: "/nodes", label: "Browse cards" }}>
-              Star a card to save it here. The list is private; the star itself is public
-              and counted on the card.
+              Star a card to save it here. Your list is private; stars are public.
             </EmptyState>
           ) : (
             <SavedList saves={view.saves} />
@@ -67,8 +66,7 @@ export default async function Page({ params }: PageProps<"/u/[username]/saved">)
             title="Saves are private"
             action={{ href: `/u/${view.author.username}`, label: "Back to the profile" }}
           >
-            Only {view.author.displayName} can see this list or its size. The star counts on
-            the cards are public.
+            Only {view.author.displayName} can see this list and its size. Card star counts are public.
           </EmptyState>
         </div>
       )}

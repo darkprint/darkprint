@@ -207,14 +207,14 @@ export function AccountForm({
         className="scroll-mt-24"
         step="02"
         title="Account & handle"
-        note={<SectionNote>who you are on the registry</SectionNote>}
+        note={<SectionNote>your registry address</SectionNote>}
       >
         <div className="flex flex-col gap-5">
           <Field
             id="handle"
             label="Handle"
             className="max-w-[36rem]"
-            hint="Your handle is written into every card you publish as its author. If you rename, the old handle stays reserved: nobody else can ever take it, and you can claim it back."
+            hint="Your cards credit this handle. After a rename, the old handle stays reserved to you; you can claim it back."
           >
             {/* D-70-15's product bound, 32. Written as a literal and NOT imported from
                 `@/lib/server/naming`: this is a client component, and that barrel reaches
@@ -236,8 +236,7 @@ export function AccountForm({
 
           {saved.author.handle === null && (
             <p className="rounded-md border border-cyan/30 bg-cyan/[0.06] px-4 py-3 text-[13px] leading-relaxed text-muted">
-              This account does not have a handle yet, so it has no public profile. Choose
-              one here and your profile appears at the address above.
+              Choose a handle to create your public profile.
             </p>
           )}
 
@@ -297,9 +296,7 @@ export function AccountForm({
             ))}
           </ul>
           <p className="text-[13px] leading-relaxed text-muted">
-            Your email and the four preferences above are stored on your account.{" "}
-            <span className="text-fg">Save changes</span> writes both. The mailer is not
-            built yet: no mail goes out for any of them, whatever you choose here.
+            Preferences save to your account. Email delivery is not available yet; no mail goes out.
           </p>
         </div>
       </SettingsSection>
@@ -309,7 +306,7 @@ export function AccountForm({
         id="default-visibility"
         className="scroll-mt-24"
         step="04"
-        title="Default visibility for new blueprints"
+        title="Default visibility"
         note={<SectionNote>per blueprint, changeable later</SectionNote>}
       >
         <fieldset className="flex flex-col gap-4">
@@ -323,9 +320,7 @@ export function AccountForm({
               selected={visibility === "private"}
               onSelect={() => setVisibility("private")}
             >
-              A new blueprint is visible to you alone. It appears on your profile only
-              while you are signed in, and if it is a fork of somebody else&rsquo;s, that
-              author is not told.
+              Only you can see it. Private forks are not announced to the original author.
             </ChoiceCard>
             <ChoiceCard
               name="default-visibility"
@@ -334,13 +329,11 @@ export function AccountForm({
               selected={visibility === "public"}
               onSelect={() => setVisibility("public")}
             >
-              Every new blueprint appears on your public profile as soon as you create
-              it, and a fork says which blueprint it came from.
+              Listed on your public profile. Forks link to their source blueprint.
             </ChoiceCard>
           </div>
           <p className="text-xs leading-relaxed text-dim">
-            Visibility is set per blueprint and you can change it later from your profile.
-            Public and private blueprints are checked the same way.
+            Change visibility later from your profile. The same validation applies to both.
           </p>
         </fieldset>
       </SettingsSection>
@@ -374,23 +367,23 @@ export function AccountForm({
 const NOTIFICATIONS: readonly { id: EventKind; title: string; note: string }[] = [
   {
     id: "repin",
-    title: "A card one of your blueprints uses publishes a new version",
-    note: "The one notification a version-pinned registry needs.",
+    title: "Card updates",
+    note: "New versions of cards your blueprints use.",
   },
   {
     id: "fork",
-    title: "Somebody forks a blueprint you published",
-    note: "Public forks only: a private fork is never announced to the author it was forked from.",
+    title: "Blueprint forks",
+    note: "Public forks of your blueprints. Private forks stay private.",
   },
   {
     id: "deprecation",
-    title: "A vocabulary term you authored is deprecated",
-    note: "Carries the successor term to it, when the registry has one.",
+    title: "Deprecated terms",
+    note: "Changes to terms you authored, with a replacement when available.",
   },
   {
     id: "digest",
-    title: "A weekly summary of what changed in the registry",
-    note: "Off by default. Nothing on this site is urgent enough to arrive uninvited.",
+    title: "Weekly summary",
+    note: "Registry updates. Off by default.",
   },
 ];
 
@@ -430,8 +423,7 @@ function SettingsFooter({
           Discard
         </Button>
         <span className="font-mono text-[11px] text-dim sm:ml-auto">
-          Changes here update your account. They never rewrite the files you have
-          published.
+          Published files stay unchanged.
         </span>
       </div>
       {error !== undefined && (

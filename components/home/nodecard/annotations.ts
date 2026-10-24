@@ -52,27 +52,21 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     keys: ["id", "name", "type", "phase"],
     title: "What this node is",
     body:
-      "The first four lines fix the node's identity. `code-builder` is the id a graph pins by " +
-      "version. `agent` is the node type: a model runs this box. " +
-      "`implementation` places it in the lifecycle the vocabulary defines.",
+      "The graph pins `code-builder` by version. `agent` means a model performs the work; `implementation` is its lifecycle phase.",
   },
   {
     id: "action",
     keys: ["action"],
     title: "What it does, in a line",
     body:
-      "The operation, in one sentence a person can read at a glance. Nothing checks it. " +
-      "`action` is prose for whoever opens the card. It travels into the " +
-      "download unchanged. The instruction the agent is handed is the block under it.",
+      "`action` is a one-line description for readers. The validator does not check it. `spec` contains the instructions given to the agent.",
   },
   {
     id: "spec",
     keys: ["spec"],
     title: "The brief it is handed",
     body:
-      "The prose an agent is given when somebody runs this graph on their own machine. " +
-      "It has to stand alone, because whatever reads it never sees the rest of the graph. Only " +
-      "its length is checked here: under forty characters raises `card/spec-too-thin`.",
+      "The instructions your runner uses on your own machine. They must stand alone: the agent does not see the rest of the graph. Fewer than forty characters raises `card/spec-too-thin`.",
   },
   {
     id: "model",
@@ -81,46 +75,35 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     body:
       // The model line lands in the compiled graph and never in `topology.dot`, which
       // carries no `model` at all.
-      "The model this agent runs on. The compiled graph writes it as " +
-      "`llm_model`, and Attractor reads that field. Spec §8.5 ranks an explicit node " +
-      "attribute above every model stylesheet rule, and DarkPrint writes none. A card " +
-      "with no such line inherits whatever the run supplies.",
+      "Export writes this model as `llm_model`. Spec §8.5 ranks an explicit node attribute above every model stylesheet rule. DarkPrint emits no stylesheet. Without a model, the node inherits the run’s configuration.",
   },
   {
     id: "reach",
     keys: ["tools", "mcp"],
     title: "What it can reach",
     body:
-      "`tools` is empty. `mcp` names one server. This node touches the filesystem and " +
-      "nothing else. The reach of a whole blueprint can be read off its cards before " +
-      "anything runs.",
+      "`tools` is empty and `mcp` names the filesystem server. Read these declarations before running the blueprint.",
   },
   {
     id: "skill",
     keys: ["skill"],
     title: "The behaviour document",
     body:
-      "`skills/code-builder.md` is where this agent's behaviour is written. The field is a " +
-      "pointer. Nothing here reads what it points at, and no skill document travels in " +
-      "the download. Each blueprint's README lists the paths you supply yourself.",
+      "A path to the node’s behaviour document. The validator does not read it, and skill documents are not included in downloads. The README lists the paths you must supply.",
   },
   {
     id: "inputs",
     keys: ["inputs"],
     title: "What arrives",
     body:
-      "One input. It carries a type. `brief` is a `plan`, a term from the shared vocabulary " +
-      "rather than free text. The validator checks an incoming edge against it. In the " +
-      "starter blueprint nothing points at this node. The brief arrives with the run.",
+      "The input `brief` has type `plan`. The validator checks incoming edges against this type. In the starter graph, no edge enters this node; the runner supplies the brief.",
   },
   {
     id: "outputs",
     keys: ["outputs"],
     title: "What it hands on",
     body:
-      "One output, typed the same way. `build` is `code`. It is what the edge to the " +
-      "acceptance tester carries. A downstream node declares its own input against that " +
-      "type. A mismatch is reported as `bundle/type-mismatch`.",
+      "The output `build` has type `code`. It feeds the acceptance tester. Incompatible input and output types report `bundle/type-mismatch`.",
   },
   {
     /* Two keys, one step, and the walk still has nine parts: `geometry.ts` sizes the rail
@@ -130,10 +113,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     keys: ["cannot", "will_not"],
     title: "What must never arrive",
     body:
-      "Two fields, because the validator can hold the graph to only one of them. `cannot` " +
-      "takes data types: an edge carrying `acceptance-criteria` in fails the whole blueprint " +
-      "with `bundle/prohibition-violated`. `will_not` takes the author's sentences, and " +
-      "nothing reads those.",
+      "`cannot` declares checked data-type prohibitions. Receiving `acceptance-criteria` fails the blueprint with `bundle/prohibition-violated`. `will_not` contains behavioural promises the validator cannot check.",
   },
 ];
 

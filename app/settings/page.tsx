@@ -116,12 +116,11 @@ function SignedOut() {
         as="h1"
         eyebrow="Account"
         title="Settings"
-        lead="What DarkPrint stores about your account, and what each setting changes."
+        lead="Manage your profile, preferences and API keys."
       />
       <div className="flex flex-col items-start gap-4 rounded-lg border border-line bg-surface-2/50 px-6 py-6">
         <p className="text-[15px] leading-relaxed text-muted">
-          Settings belong to an account, so sign in first. The page then shows your
-          profile, handle, email, default visibility and API keys.
+          Sign in to manage your account.
         </p>
         <SignInButtons />
         <p className="font-mono text-[11px] leading-relaxed text-dim">{SIGN_IN_PRIVACY_NOTE}</p>
@@ -215,12 +214,12 @@ export default async function Page() {
         )
       }
     >
-      <div className="container-page flex flex-col gap-10 py-10 lg:py-12">
+      <div className="container-page flex flex-col gap-6 py-10 lg:py-12">
         <SectionHeading
           as="h1"
           eyebrow="Account"
           title="Settings"
-          lead="What DarkPrint stores about your account, and what each setting changes."
+          lead="Manage your profile, preferences and API keys."
         />
 
         {/* The "What saves" strip stood here and came off on the owner's instruction
@@ -239,7 +238,7 @@ export default async function Page() {
                   instruction (2026-08-25): once every figure here is a real count, a
                   badge saying so is noise on a number nobody doubts. */}
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="label">Authored under this handle</span>
+                <span className="label">Your contributions</span>
               </div>
               <div className="flex flex-wrap gap-x-8 gap-y-2 font-mono text-[13px] text-muted">
                 <span>
@@ -254,9 +253,6 @@ export default async function Page() {
                   {(profile?.counts.terms ?? 0) === 1 ? "" : "s"}
                 </span>
               </div>
-              <p className="text-[13px] leading-relaxed text-muted">
-                Counted from the registry each time this page loads.
-              </p>
             </div>
           }
         >

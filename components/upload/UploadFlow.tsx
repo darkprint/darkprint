@@ -16,6 +16,7 @@ import {
   type OntologyTerm,
 } from "@/lib/core";
 import { autonomyStatement, cx } from "@/lib/format";
+import { guideStyles as guide } from "@/components/ui/Guide";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { KindBadge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
@@ -84,10 +85,10 @@ type StepId = 1 | 2 | 3 | 4;
  * to hold at all.
  */
 const STEPS: { id: StepId; label: string; heading: string }[] = [
-  { id: 1, label: "Upload", heading: "Drop the folder" },
-  { id: 2, label: "Details", heading: "Describe it" },
-  { id: 3, label: "Preview", heading: "What the check found" },
-  { id: 4, label: "Publish", heading: "The registry entry" },
+  { id: 1, label: "Upload", heading: "Choose your files" },
+  { id: 2, label: "Details", heading: "Describe your blueprint" },
+  { id: 3, label: "Preview", heading: "Review the checks" },
+  { id: 4, label: "Publish", heading: "Publish to the registry" },
 ];
 
 /**
@@ -109,15 +110,15 @@ const KINDS: {
   {
     key: "blueprint",
     label: "Blueprint",
-    hint: "A whole graph with its cards",
+    hint: "Graph and node cards",
     color: "var(--color-cyan)",
     ready: true,
   },
   {
     key: "node",
     label: "Card",
-    hint: "One node card on its own",
-    color: "var(--color-amber)",
+    hint: "A single YAML card",
+    color: "var(--color-copper-line)",
     ready: true,
   },
   {
@@ -1331,9 +1332,9 @@ export function UploadFlow({
   }
 
   return (
-    <div className="panel overflow-hidden">
+    <div className={`${guide.diagram} ${kind === "node" ? guide.copper : ""}`}>
       {/* Header: step indicator */}
-      <div className="border-b border-line bg-surface-2/40 px-5 py-4 sm:px-8">
+      <div className="border-b border-line bg-blueprint-deep/20 px-5 py-4 sm:px-8">
         <StepIndicator step={step} canAdvance={canAdvance} onJump={jump} />
       </div>
 
@@ -1360,7 +1361,7 @@ export function UploadFlow({
           {STEPS[step - 1].heading}
         </h2>
 
-        <div className="mt-10">
+        <div className="mt-6">
         {step === 1 && (
           <div className="flex flex-col gap-8">
             {/* Content kind selector, ABOVE the drop target now: which one renders below
@@ -1414,22 +1415,17 @@ export function UploadFlow({
               <p className="max-w-xl text-xs leading-relaxed text-dim">
                 {kind === "blueprint" ? (
                   <>
-                    The check reads the graph and the cards it names together, so drop the
-                    whole folder.
+                    Select the whole folder so the graph and its cards can be checked together.
                   </>
                 ) : kind === "node" ? (
                   <>
-                    A node card on its own checks against the curated core vocabulary
-                    alone, the same reading a bundle&rsquo;s own cards get before any local
-                    overlay is layered on. A card that resolves publishes on the last step,
-                    under your handle, and your blueprints can pin it from there.
+                    A single card checks against the curated core vocabulary without local
+                    extensions. Publish it under your handle, then pin it from your blueprints.
                   </>
                 ) : (
                   <>
-                    An ontology on its own checks against the curated core vocabulary
-                    alone, the same reading a bundle&rsquo;s own overlay gets. Publishing
-                    one by itself is not built. The registry stores an ontology today only
-                    when pinned inside a blueprint bundle that publishes.
+                    An ontology checks against the curated core vocabulary. Publishing
+                    one by itself is not built. Include it in a blueprint bundle to publish it.
                   </>
                 )}
               </p>
@@ -1523,12 +1519,9 @@ export function UploadFlow({
             )}
 
             <p className="max-w-xl text-sm leading-relaxed text-muted">
-              These fields become the bundle&rsquo;s manifest. A{" "}
-              <span className="font-mono text-cyan">blueprint.yaml</span> in the
-              selection fills them in for you.{" "}
-              {parts.manifest === undefined
-                ? "There is none here, so a minimal one is synthesised from what you type."
-                : `They were read from ${parts.manifest.name}.`}
+              Describe this blueprint. {parts.manifest === undefined
+                ? "No blueprint.yaml was selected; this form creates a minimal manifest."
+                : `Fields were filled from ${parts.manifest.name}.`}
             </p>
 
             <div className="flex flex-col gap-2">
@@ -1607,9 +1600,7 @@ export function UploadFlow({
                 Publish button two steps on can mean anything. */}
             <div className="flex flex-col gap-5 border-t border-line pt-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                <span className="text-fg">The release.</span> A bundle is published as a
-                numbered release you own, and each later release of the same slug has to
-                be numbered above the last.
+                Each release needs a version. Later releases of this blueprint must use a higher version.
               </p>
 
               <div className="flex flex-col gap-2 sm:max-w-xs">
@@ -1675,9 +1666,8 @@ export function UploadFlow({
 
             <div className="flex flex-col gap-5 border-t border-line pt-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                <span className="text-fg">Read off your cards.</span> The agents and tools
-                listed below are what your cards declare, so a reader knows what the graph
-                needs before running it. You do not type them here.
+                <span className="text-fg">Declared by your cards.</span> These agents and tools show what the workflow needs.
+                They are filled in from the card files.
               </p>
 
               <DerivedChips
@@ -1822,10 +1812,10 @@ export function UploadFlow({
                   <h3 className="font-display text-xl font-semibold text-fg">
                     {outcome.state === "published"
                       ? outcome.release.created
-                        ? "Published. The registry holds it."
-                        : "Released. The registry holds the new version."
+                        ? "Published to the registry."
+                        : "New version published."
                       : outcome.state === "refused"
-                        ? "Not published. The registry declined it."
+                        ? "The registry declined this submission."
                         : "Not published."}
                   </h3>
                   {/* AC3. The success sentence states what was STORED — the owner, the
@@ -1855,7 +1845,7 @@ export function UploadFlow({
                       refusalSentence(outcome.kind, outcome.detail, progress)
                     ) : (
                       <>
-                        {outcome.state === "rejected" ? outcome.title : "The registry could not be reached"}
+                        {outcome.state === "rejected" ? outcome.title : "Could not reach the registry"}
                         : {outcome.detail} Your bundle is still here and the report below
                         carries the whole reading.
                       </>
@@ -1988,7 +1978,7 @@ export function UploadFlow({
                 )}
                 {singleValidation.state === "idle" && (
                   <p className="text-sm leading-relaxed text-muted">
-                    Nothing dropped yet. Go back to the first step.
+                    No files selected. Add files on the Upload step.
                   </p>
                 )}
               </div>
@@ -2170,9 +2160,10 @@ export function UploadFlow({
                     </>
                   ) : session.state === "no-handle" ? (
                     <>
-                      <span className="font-mono text-amber">no handle yet</span>: your
-                      account has not chosen the name a blueprint is published under, and a
-                      release is stored beneath it. Nothing on this page can set one.
+                      <span className="font-mono text-amber">no handle yet</span>: your account
+                      needs a name before publishing.{" "}
+                      <a href="/welcome" className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan">Choose your handle</a>,
+                      then return here.
                     </>
                   ) : session.state === "unreachable" ? (
                     <>

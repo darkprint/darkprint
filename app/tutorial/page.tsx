@@ -4,8 +4,8 @@ import Link from "next/link";
 import { MCP_CLIENTS } from "@/components/mcp/clients";
 import { SpecPager } from "@/components/spec/SpecPager";
 import { LivePrompt, StartLive } from "@/components/tutorial/StartLive";
-import { CopyButton } from "@/components/ui/CopyButton";
-import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
+import { CodePanel, GuideStepHeading, guideStyles as guide } from "@/components/ui/Guide";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
   SKILL_ARCHIVE_ROOT,
   SKILL_INSTALL_COMMAND,
@@ -69,47 +69,30 @@ function CommandLine({
   command: string;
   ariaLabel: string;
 }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <span className="label">{label}</span>
-      <div className="flex min-w-0 items-start gap-2">
-        <pre
-          data-command={row}
-          className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-line bg-surface-2 px-3.5 py-3 font-mono text-xs leading-relaxed text-emerald"
-        >
-          <code>{command}</code>
-        </pre>
-        <CopyButton text={command} ariaLabel={ariaLabel} />
-      </div>
-    </div>
-  );
+  return <CodePanel title={label} text={command} ariaLabel={ariaLabel} preProps={{ "data-command": row }} />;
 }
 
 /** A step's ordinal and its title as one heading, so the outline a screen reader walks carries the sequence. */
 function StepHeading({ index, title }: { index: number; title: string }) {
-  return (
-    <PanelHeading as="h2" size="2xl">
-      {index}. {title}
-    </PanelHeading>
-  );
+  return <GuideStepHeading index={index} title={title} />;
 }
 
-const P = "text-[15px] leading-relaxed text-muted";
+const P = guide.prose;
 
 export default function TutorialPage() {
   return (
-    <div className="container-page py-16 sm:py-20">
+    <div className={`${guide.page} container-page py-16 sm:py-20`}>
       <SectionHeading
         as="h1"
         eyebrow="Tutorial"
         title="Write your first blueprint"
-        lead="Write a small pipeline that checks a few card prices every morning. The DarkPrint skill interviews you in your own agent, and a live page here draws the graph as you answer."
+        lead="Build a small price-checking workflow with your own agent. Watch its graph take shape on a live page."
       />
 
-      <ol className="mt-14 flex flex-col gap-14">
+      <ol className="mt-10 flex flex-col gap-6">
         {/* ---------- 1 · install ---------- */}
         <li>
-          <section id="install" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
+          <section id="install" className={`${guide.panel} flex min-w-0 scroll-mt-24 flex-col gap-4`}>
             <StepHeading index={1} title="Install the DarkPrint skill" />
             <div className="grid gap-6 md:grid-cols-2 md:items-start">
               <div className="flex min-w-0 flex-col gap-4">
@@ -128,23 +111,23 @@ export default function TutorialPage() {
               </div>
               <div className="flex flex-col gap-3">
                 <p className={P}>
-                  Either line has npx fetch the{" "}
+                  Both commands download the{" "}
                   <code className="font-mono text-[13px] text-fg">{SKILL_PACKAGE}</code> package
-                  from npm and copy the DarkPrint skill it carries into{" "}
+                  from npm and copy the DarkPrint skill into{" "}
                   <code className="font-mono text-[13px] text-fg">{SKILL_ARCHIVE_ROOT}</code>{" "}
-                  under your agent&rsquo;s folder, where it reads its skills. Nothing else is
+                  under your agent&rsquo;s folder. Nothing else is
                   installed and no account is created.
                 </p>
                 <p className={P}>
-                  To read it first, open{" "}
+                  Read{" "}
                   <a href={`${SKILL_TREE_PATH}/SKILL.md`} className={LINK}>
                     SKILL.md
                   </a>
-                  , the interview it runs.{" "}
+                   before installing.{" "}
                   <Link href="/skill" className={LINK}>
                     Assisted Design
                   </Link>{" "}
-                  explains what it writes.
+                  shows the files it writes.
                 </p>
               </div>
             </div>
@@ -153,13 +136,11 @@ export default function TutorialPage() {
 
         {/* ---------- 2 · the live page ---------- */}
         <li>
-          <section id="open-live" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
+          <section id="open-live" className={`${guide.panel} flex min-w-0 scroll-mt-24 flex-col gap-4`}>
             <StepHeading index={2} title="Open your live page" />
             <p className={P}>
-              The interview runs in your terminal. The live page is where you watch it: the
-              DarkPrint skill posts its draft there after every phase, the page lists the nodes
-              and edges as they are named, and once every node has its card it draws the graph.
-              Nothing runs on this site. It shows what your agent posts.
+              The DarkPrint skill posts each interview draft here so you can review its graph.
+              Nothing runs on this site.
             </p>
             <StartLive />
           </section>
@@ -167,71 +148,53 @@ export default function TutorialPage() {
 
         {/* ---------- 3 · the task ---------- */}
         <li>
-          <section id="design" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
+          <section id="design" className={`${guide.panel} flex min-w-0 scroll-mt-24 flex-col gap-4`}>
             <StepHeading index={3} title="Describe the task" />
             <p className={P}>
-              Paste this into Claude Code or Codex. The task is small on purpose, so the interview
-              stays short.
+              Paste this into Claude Code or Codex:
             </p>
             <LivePrompt name="design" />
             <p className={P}>
-              The first questions come one per turn: what exists at the end, and which command
-              fails when the work is wrong. Then the DarkPrint skill searches the registry on its
-              own and asks about nodes, ports and isolation in numbered rounds. Keep the live tab
-              open. The graph grows after each phase.
+              Answer the interview questions in your agent; review the draft on the live page.
             </p>
           </section>
         </li>
 
         {/* ---------- 4 · enrich ---------- */}
         <li>
-          <section id="enrich" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
-            <StepHeading index={4} title="Enrich it through MCP" />
+          <section id="enrich" className={`${guide.panel} flex min-w-0 scroll-mt-24 flex-col gap-4`}>
+            <StepHeading index={4} title="Add reusable steps with MCP" />
             <p className={P}>
-              Once the folder is written, connect your agent to the registry. The server is
-              remote, so the line installs nothing.{" "}
+              Connect your agent to the remote registry. These commands install nothing.{" "}
               <Link href="/mcp" className={LINK}>
                 The MCP page
               </Link>{" "}
-              has the same entry for Cursor, VS Code, Gemini CLI and Claude Desktop.
+              has setup for other clients.
             </p>
             <div className="grid gap-4 md:grid-cols-2 md:items-start">
               {TERMINAL_CLIENTS.map((client) => (
                 <div key={client.id} className="flex min-w-0 flex-col gap-1.5">
-                  <span className="label">{client.label}</span>
-                  <div className="flex min-w-0 items-start gap-2">
-                    <pre
-                      data-client={client.id}
-                      className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-line bg-surface-2 px-3.5 py-3 font-mono text-xs leading-relaxed text-emerald"
-                    >
-                      <code>{client.snippet}</code>
-                    </pre>
-                    <CopyButton
-                      text={client.snippet}
-                      ariaLabel={`Copy the command that connects ${client.label} to the DarkPrint MCP server`}
-                    />
-                  </div>
+                  <CodePanel title={client.label} text={client.snippet} ariaLabel={`Copy the command that connects ${client.label} to the DarkPrint MCP server`} preProps={{ "data-client": client.id }} />
                 </div>
               ))}
             </div>
-            <p className={P}>Then ask for observability by what it does, and let the search find it.</p>
+            <p className={P}>Add monitoring to the workflow:</p>
             <LivePrompt name="enrich" />
             <p className={P}>
-              Your agent calls <code className="font-mono text-[13px] text-fg">find_blueprints</code>,
-              which searches by meaning, fetches the hit with{" "}
+              Your agent searches with <code className="font-mono text-[13px] text-fg">find_blueprints</code>,
+              fetches the match with{" "}
               <code className="font-mono text-[13px] text-fg">get_blueprint</code>, and merges it
-              into your folder in the DarkPrint skill&rsquo;s enrich mode. The live page lists the
-              hits and draws the grown graph.
+              into your folder using the DarkPrint skill. Review the changes on your live page.
             </p>
           </section>
         </li>
 
         {/* ---------- 5 · keep ---------- */}
         <li>
-          <section id="keep" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
-            <StepHeading index={5} title="Keep it on your account" />
+          <section id="keep" className={`${guide.panel} flex min-w-0 scroll-mt-24 flex-col gap-4`}>
+            <StepHeading index={5} title="Keep the files" />
             <p className={P}>
-              A live page expires 24 hours after the last post. To keep the blueprint,{" "}
+              Keep the folder locally. The live page expires 24 hours after the last post. To publish,{" "}
               <Link href="/welcome" className={LINK}>
                 sign in
               </Link>{" "}
@@ -239,8 +202,7 @@ export default function TutorialPage() {
               <Link href="/upload" className={LINK}>
                 Publish
               </Link>
-              , where visibility defaults to private. An account also gives you releases by
-              version and an API key for publishing from the terminal.
+              , where visibility defaults to private. An API key also lets you publish from your terminal.
             </p>
           </section>
         </li>

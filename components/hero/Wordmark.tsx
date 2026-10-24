@@ -105,7 +105,7 @@ const MARK_TONE_SPLIT = 4;
  * nodes.
  */
 const CLAIM =
-  "Your agent retrieves shared workflows and reusable nodes through MCP, adapts a blueprint to your task, and runs it locally.";
+  "Reusable blueprints for agent workflows.";
 
 /** The rule under the name, in scene units. Tall enough for the pulse's stroke. */
 const RULE = { width: 900, height: 6 } as const;
@@ -500,6 +500,10 @@ export function Wordmark() {
           {CLAIM}
         </span>
       </h1>
+
+      <p className="mt-5 text-center text-base leading-relaxed text-muted">
+        Find a workflow for your coding agent to adapt and run locally.
+      </p>
 
       {/* Browse and connect stay visible independently of the entrance timeline. */}
       <div className="mt-8">

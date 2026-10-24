@@ -25,8 +25,9 @@ describe("Wordmark", () => {
     const text = plainText(html);
     expect(html).toMatch(/Dark<[^>]+>Print</);
     expect(text).toContain(
-      "Your agent retrieves shared workflows and reusable nodes through MCP, adapts a blueprint to your task, and runs it locally.",
+      "Reusable blueprints for agent workflows.",
     );
+    expect(text).toContain("Find a workflow for your coding agent to adapt and run locally.");
 
     const browse = setupAction(html, "browse");
     const connect = setupAction(html, "connect");

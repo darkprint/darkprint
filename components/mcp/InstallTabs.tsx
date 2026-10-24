@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
-import { CopyButton } from "@/components/ui/CopyButton";
+import { CodePanel } from "@/components/ui/Guide";
 import { cx } from "@/lib/format";
 import { MCP_CLIENTS } from "./clients";
 
@@ -107,72 +107,15 @@ export function InstallTabs({ className }: { className?: string } = {}) {
         })}
       </div>
 
-      {/* The reserved height is gone, and it is the reason this component was opened.
-          ------------------------------------------------------------
-          It was `min-h-[248px]`, and the arithmetic behind it was right: the snippets run
-          1 line and 8 lines, so switching from Claude Code to Claude Desktop shoves
-          everything below this block 112px down the page in a single frame — the reader
-          clicks a tab and the thing they were reading leaves the screen. Reserving the
-          tallest client's height fixed that.
-
-          What it cost is what the author saw: the default tab is the ONE-line client, so
-          every reader who never touches a tab meets 200px of empty box under a single
-          command. A fix for an interaction nobody has performed yet, paid for on arrival by
-          everybody. The mock draws the block at the height of its contents and this follows
-          it.
-
-          The jump is therefore back, and it is worth naming rather than leaving to be
-          rediscovered: selecting Claude Desktop, Cursor, VS Code or Gemini CLI grows this
-          box by about 110px and moves the rest of the page down with it. If that becomes
-          the complaint, the fix is not this `min-h` again — it is to stop the growth
-          mattering, by putting the block last in its section or by giving the `<pre>` its
-          own scroll at a fixed height. */}
       <div
         role="tabpanel"
         id={`${tabsId}-panel`}
         aria-labelledby={`${tabsId}-tab-${current.id}`}
         className="flex min-w-0 flex-col gap-3"
       >
-        {/* The `{label} configuration` heading and the emerald `configuration` chip stood
-            here, one above the snippet and one opposite it, and between them they printed
-            the word twice over a box whose contents are self-evidently configuration. The
-            mock has neither, and §1's own intro carries the claim now: "The shape of the
-            configuration, so the proposal can be read against a real host."
-            `InstallTabs.test.ts` follows that move rather than the wording. */}
+        {/* Reset copy feedback when the selected command changes. */}
+        <CodePanel key={current.id} title={current.label} text={current.snippet} ariaLabel={`Copy the ${current.label} configuration`} />
 
-        {/* `key` remounts the box on a tab change so `starting:opacity-0` has a first style
-            to transition from — a 120ms fade that says the text under the cursor was
-            replaced, not merely re-rendered. Pure CSS, resting state at full opacity: the
-            snippet is readable with no script, and in a browser without `@starting-style`
-            the rule is dropped and the snippet simply appears.
-
-            The copy control is `CopyButton`, which is what every other command on the site
-            hands its string to, and the mock draws one here. It was absent while this block
-            was framed as a specimen rather than as something to use. */}
-        <div
-          key={current.id}
-          className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3 transition-opacity duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] starting:opacity-0"
-        >
-          {/* `--color-blueprint-line`, on the author's instruction, and it is the site's
-              blue rather than A blue. The two candidates are not interchangeable:
-              `app/globals.css` reserves `--color-cyan` for one meaning — "cyan is
-              interactive, and the site does not spend it elsewhere" — and this snippet is
-              text a reader copies, not a control. `--color-blueprint-line` is the
-              cyanotype pole's own line colour, which is what the register this page is
-              drawn in uses for the thing being drawn.
-
-              It is also the counterpart to `/skill`'s emerald command, and the difference
-              between the two is exactly right: emerald is "a figure read off the engine",
-              spent there on a command that genuinely reaches one, and this command reaches
-              nothing. Blueprint blue says drawing, not engine. */}
-          <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-relaxed text-blueprint-line">
-            <code>{current.snippet}</code>
-          </pre>
-          <CopyButton
-            text={current.snippet}
-            ariaLabel={`Copy the ${current.label} configuration`}
-          />
-        </div>
         <div className="flex flex-wrap items-start justify-between gap-3 text-sm leading-relaxed text-dim">
           <p>{current.note}</p>
           {current.docsHref !== undefined && (

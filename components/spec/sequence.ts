@@ -178,11 +178,11 @@ export const SPEC_OVERVIEW: SpecPage = {
   nav: "What a blueprint is",
   eyebrow: "What a blueprint is",
   title: "What a blueprint is",
-  question: "What blueprints are, what you can reuse, and which files define one.",
+  question: "The graph and cards that define an agent workflow.",
   sections: [
-    { id: "bundle", label: "The blueprint contents" },
-    { id: "parts", label: "The three parts" },
-    { id: "run", label: "What surrounds a run" },
+    { id: "bundle", label: "The files" },
+    { id: "parts", label: "How they fit" },
+    { id: "run", label: "Running a blueprint" },
   ],
 };
 
@@ -221,8 +221,8 @@ export const SPEC_CROSSWALK: SpecPage = {
     { id: "crosswalk-heading", label: "The crosswalk" },
     { id: "shapes-heading", label: "Types and handlers" },
     { id: "classes-heading", label: "The class attribute" },
-    { id: "unexpressed-heading", label: "The gap" },
-    { id: "not-a-pipeline-heading", label: "Not a pipeline" },
+    { id: "unexpressed-heading", label: "Compatibility limits" },
+    { id: "not-a-pipeline-heading", label: "Compile a pipeline" },
   ],
 };
 
@@ -341,8 +341,8 @@ const TUTORIAL: SpecPage = {
     { id: "install", label: "Install the DarkPrint skill" },
     { id: "open-live", label: "Open a live page" },
     { id: "design", label: "Describe the task" },
-    { id: "enrich", label: "Enrich over MCP" },
-    { id: "keep", label: "Keep it" },
+    { id: "enrich", label: "Add reusable steps" },
+    { id: "keep", label: "Keep the files" },
   ],
 };
 

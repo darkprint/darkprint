@@ -1,3 +1,4 @@
+import IntroPage from "@/app/what-a-blueprint-is/page";
 /* ============================================================
    Every word inside a Learn SVG, measured in the pixels it lands in.
 
@@ -203,3 +204,17 @@ describe("the card beat's node strip", () => {
    arithmetic to copy is the `scale = render ÷ viewBox` line the
    graph rows still run.
    ============================================================ */
+
+// The nested frame includes both the section border and the figure border.
+it("keeps the introduction graph readable inside its phone frame", () => {
+  const html = renderToStaticMarkup(createElement(IntroPage));
+  const figure = [...html.matchAll(/<figure\b[\s\S]*?<\/figure>/g)].map(m => m[0]).find(frame => frame.includes("data-viz-flow"))!;
+  const classes = figure.match(/class="([^"]*)"/)![1];
+  const padding = Number(classes.match(/(?:^| )p-(\d+)(?: |$)/)![1]) * 4;
+  const svg = figure.match(/<svg[\s\S]*?<\/svg>/)![0];
+  const width = Number(svg.match(/viewBox="[^ ]+ [^ ]+ ([^ ]+)/)![1]);
+  const available = 360 - 16 - 48 - 4 - padding * 2;
+  const sizes = [...svg.matchAll(/font-size="([\d.]+)"/g)].map(m => Number(m[1]));
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const size of sizes) expect(size * available / width, "the introduction graph label falls below the phone legibility floor").toBeGreaterThanOrEqual(FLOW.frame.legible);
+});

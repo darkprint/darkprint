@@ -143,21 +143,21 @@ export function WhatACardReaches({
      `code-builder` declares no risk markers, and the row says so: the field exists on every
      card and this card leaves it empty. */
   return (
-    <ReachList label="One card, seven rows">
+    <ReachList label="One card, seven rows" still>
       <ReachRow
         field="model"
         value={model}
         /* The direction is the claim: a graph-level model_stylesheet looks like the outer
            scope, so a reader arriving from the DOT side reads it as the thing that wins,
            and Attractor spec §8.5 ranks it the other way. `rows.test.ts` reads this note. */
-        note="A stylesheet on the graph is a default for the nodes that name no model; a line here outranks it. A reader can still point the run at something else."
+        note="A stylesheet on the graph is a default for the nodes that name no model; a line here outranks it. Your runner may override the model."
       >
-        The model this step runs on, named the way the provider names it.
+        The model used for this node.
       </ReachRow>
       <ReachRow
         field="tools"
         value={tools}
-        note="The card names a capability rather than a vendor, so a graph says what it touches and never what you bought."
+        note="Capability names describe access, independent of the vendor."
       >
         Capabilities it may reach for: a shell, a search index, a browser.
       </ReachRow>
@@ -167,10 +167,9 @@ export function WhatACardReaches({
         /* Equal reach and nothing more: a card only names a server, nothing on this site
            runs a graph, and whether a runner opens one connection or two is the runner's
            business. */
-        note="Two nodes naming the same server have the same reach; two naming different servers do not. Reach is declared per card, so a graph says what each node may touch rather than what the whole system may."
+        note="Access is declared per card. Nodes naming the same server have the same reach."
       >
-        An MCP server this step may talk to, by the name it is registered under on the
-        machine that runs the graph.
+        An MCP server, named as registered on the machine running the graph.
       </ReachRow>
       <ReachRow
         field="skill"
@@ -191,19 +190,17 @@ export function WhatACardReaches({
         field="cannot"
         value={cannot}
         barred
-        note="Data types from the vocabulary, and nothing else. Writing one here is what turns a stated rule into a checked one."
+        note="Known data types. The validator checks incoming connections against this list."
       >
-        What must never arrive. The validator enforces it against every incoming edge, no
-        matter which node draws the edge.
+        Data this node must never receive, checked on every incoming edge.
       </ReachRow>
       <ReachRow
         field="will_not"
         value={willNot}
         barred
-        note="The prohibitions nothing can check, kept apart from the ones the validator can, so a reader can tell them apart without running anything."
+        note="Free-text promises. The validator cannot check whether a runner honors them."
       >
-        What the card promises, in the author&rsquo;s own sentences. It reaches whoever
-        runs the node, and the model that is handed the specification at run time.
+        Instructions for the runner and the model receiving the specification.
       </ReachRow>
       <ReachRow
         field="risk_markers"
@@ -212,10 +209,9 @@ export function WhatACardReaches({
            number beside a card. What the row teaches is that a marker is a term out of the
            vocabulary rather than a sentence, which is what makes a stated blast radius a
            checked one. */
-        note="Risk-marker terms from the vocabulary, and nothing else. Writing one here puts the blast radius in the file, where the validator can hold the author to a word the vocabulary defines."
+        note="The validator checks that each marker is a known vocabulary term."
       >
-        The blast radius, declared. The card states what this step could break if it goes
-        wrong.
+        Risks declared by the author.
       </ReachRow>
     </ReachList>
   );

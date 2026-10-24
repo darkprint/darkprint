@@ -63,12 +63,12 @@ function AuthShell({ children }: { children: React.ReactNode }) {
 function SignedOut() {
   return (
     <AuthShell>
-      <SectionHeading as="h1" align="center" eyebrow="Account" title="Sign in" />
+      <SectionHeading as="h1" align="center" eyebrow="Account" title="Sign in" lead="Publish blueprints and keep your cards together." />
       <div className="flex flex-col gap-5 rounded-xl border border-line bg-surface-2/50 px-6 py-7">
         {/* Stacked and full width: two equal doors, which is what a reader is choosing
             between. Side by side in a 26rem column the second one wraps anyway. */}
         <SignInButtons block />
-        <p className="text-center font-mono text-[11px] leading-relaxed text-dim">
+        <p className="text-center text-xs leading-relaxed text-muted">
           {SIGN_IN_PRIVACY_NOTE}
         </p>
       </div>
@@ -93,7 +93,7 @@ export default async function WelcomePage() {
         align="center"
         eyebrow="One step left"
         title="Choose your handle"
-        lead="Your handle is your address on DarkPrint and the author name on every card you publish. Once chosen it is yours for good."
+        lead="Your address on DarkPrint and the author credit on your cards."
       />
       {/* Empty rather than seeded from the GitHub login: nothing published exposes that
           field, and inventing a reader to pre-fill one input would put a second source on

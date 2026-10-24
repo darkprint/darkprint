@@ -78,11 +78,7 @@ export function ProfileHeader({
   viewerSignedIn?: boolean;
 }) {
   return (
-    <header className="relative overflow-hidden rounded-xl border border-line bg-surface p-5 sm:p-8">
-      <div
-        aria-hidden
-        className="tech-grid pointer-events-none absolute inset-0 opacity-40"
-      />
+    <header className="relative overflow-hidden border-b border-line pb-6">
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
         <Avatar author={author} size="xl" />
 
@@ -106,7 +102,7 @@ export function ProfileHeader({
             )}
             {owner && (
               <span className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
-                This is you
+                Your profile
               </span>
             )}
           </div>
