@@ -1,0 +1,14 @@
+.overview { overflow: hidden; border: 1px solid var(--color-blue-rule); border-top: 2px solid var(--color-cyan); border-radius: var(--radius-lg); background: var(--color-surface); }
+.flow { display: grid; gap: 0.5rem; padding: 1rem; background: color-mix(in oklab, var(--color-blue-paper) 45%, var(--color-surface)); }
+.ports { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 0.375rem; overflow-wrap: anywhere; }
+.ports li > span { min-width: 0; }
+.node { display: flex; min-width: 0; flex-direction: column; gap: 0.25rem; border: 1px solid var(--color-copper-line); border-radius: var(--radius-md); padding: 0.875rem; background: var(--color-surface); overflow-wrap: anywhere; }
+.arrow { align-self: center; justify-self: center; color: var(--color-cyan); font-size: 1.125rem; line-height: 1; rotate: 90deg; }
+.constraints { display: grid; gap: 1rem; border-top: 1px solid var(--color-line); padding: 1rem; overflow-wrap: anywhere; }
+@media (min-width: 40rem) {
+  .flow { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr) auto minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem; }
+  .ports { gap: 0.75rem; }
+  .node { gap: 0.5rem; padding: 1rem; }
+  .arrow { font-size: 1.5rem; rotate: 0deg; }
+  .constraints { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 1.5rem; }
+}

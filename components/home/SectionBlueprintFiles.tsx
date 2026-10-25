@@ -5,11 +5,12 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { getBlueprintBySlug, getNodeCard } from "@/lib/content";
 import type { NodeCard } from "@/lib/core";
 
+import { BlueprintFilesMotion } from "./BlueprintFilesMotion";
 import styles from "./SectionBlueprintFiles.module.css";
 
 function CardPort({ direction, port }: { direction: "in" | "out"; port: NodeCard["inputs"][number] }) {
   return (
-    <dl className="min-w-0">
+    <dl className={`${styles.port} min-w-0`}>
       <dt className="font-mono text-[11px] uppercase tracking-widest text-muted">{direction}</dt>
       <dd className="mt-2 break-words font-mono text-base text-copper-ink">{port.name}</dd>
       <dd className="mt-1 break-words font-mono text-xs text-muted">{port.type}</dd>
@@ -33,7 +34,7 @@ function PinnedCard({ card }: { card: NodeCard }) {
       </dl>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 py-5">
         <CardPort direction="in" port={card.inputs[0]} />
-        <span aria-hidden className="text-xl text-copper-line">→</span>
+        <span aria-hidden className={`${styles.portArrow} text-xl text-copper-line`}>→</span>
         <CardPort direction="out" port={card.outputs[0]} />
       </div>
       <dl className="flex flex-wrap gap-x-4 gap-y-1 border-t border-copper-line/15 pt-4 font-mono text-xs">
@@ -61,7 +62,7 @@ export function SectionBlueprintFiles() {
           title="A graph. A card for each step."
           lead="The graph connects the work. Each card defines one node’s job and limits."
         />
-        <div className={`${styles.workbench} mt-8 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]`}>
+        <BlueprintFilesMotion className={`${styles.workbench} mt-8 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]`}>
           <figure className={`${styles.graphPanel} flex min-w-0 flex-col p-0`}>
             <figcaption className={styles.caption}>
               <span className={styles.fileIcon} aria-hidden />
@@ -85,8 +86,8 @@ export function SectionBlueprintFiles() {
             </figcaption>
             <div className="px-4 pb-5 pt-4 sm:px-6 sm:pb-6">
               <div className="mb-4 flex items-center gap-3 font-mono text-xs">
-                <span className="rounded-md border border-copper-line/35 bg-copper-line/5 px-2.5 py-1 text-copper-ink">{card.name}</span>
-                <span aria-hidden className="h-px flex-1 bg-copper-line/25" />
+                <span className={styles.nodePin}>{card.name}</span>
+                <span aria-hidden className={styles.cardLink} />
                 <span className="text-muted">card for this node</span>
               </div>
               <PinnedCard card={card} />
@@ -95,7 +96,7 @@ export function SectionBlueprintFiles() {
               </p>
             </div>
           </figure>
-        </div>
+        </BlueprintFilesMotion>
         <Link href="/what-a-blueprint-is" className="mt-6 inline-flex text-sm text-cyan underline underline-offset-4">
           What a blueprint is <span aria-hidden className="ml-2">→</span>
         </Link>

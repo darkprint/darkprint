@@ -78,13 +78,13 @@ export function ProfileHeader({
   viewerSignedIn?: boolean;
 }) {
   return (
-    <header className="relative overflow-hidden border-b border-line pb-6">
+    <header className="relative overflow-hidden border-b border-t-2 border-blue-rule border-t-cyan pb-6 pt-6">
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
         <Avatar author={author} size="xl" />
 
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-fg">
+            <h1 className="font-display text-4xl font-normal tracking-tight text-cyan">
               {author.displayName}
             </h1>
             {author.validator && (

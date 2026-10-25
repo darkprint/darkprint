@@ -137,10 +137,10 @@ const RULE_LIVE: Record<BandState, string> = {
 
 /* A step number IS a word, so the attached weight is 80% (5.4:1) rather than the rule's
    60%. Below 80 the register stops clearing AA at 11px. */
-const STEP_MARKED = "text-copper-line/80";
+const STEP_MARKED = "text-copper-line";
 const STEP_LIVE: Record<BandState, string> = {
-  pending: "lg:text-dim/60",
-  attached: "lg:text-copper-line/80",
+  pending: "lg:text-dim",
+  attached: "lg:text-copper-line",
   active: "lg:text-copper-line",
 };
 
@@ -348,7 +348,7 @@ export function YamlListing({
             </span>
             <span
               aria-hidden
-              className="shrink-0 select-none pr-3 pl-1 text-right text-dim/80"
+              className="shrink-0 select-none pr-3 pl-1 text-right text-dim"
               style={{ width: `${gutter + 1.5}ch` }}
             >
               {line.no}

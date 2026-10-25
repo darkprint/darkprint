@@ -98,8 +98,8 @@ export function SourcePanel({
   }
 
   return (
-    <div className={cx("overflow-hidden rounded-lg border border-line bg-surface", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2">
+    <div className={cx("overflow-hidden rounded-lg border border-line border-t-2 border-t-cyan bg-surface", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-rule bg-blue-paper px-4 py-3">
         <Heading id={headingId}>
           {collapsible ? (
             <button

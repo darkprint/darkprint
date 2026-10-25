@@ -67,25 +67,19 @@ const RAW = readFileSync(`${ROOT}${PAGE_FILE}`, "utf8");
  * `indexOf` below then counts. Non-greedy, so two comments never collapse into one span
  * that eats the code between them — which `code is still here` is what catches.
  */
-const SOURCE = RAW.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "").replace(/^\s*\/\/.*$/gm, "");
+function stripComments(source: string): string {
+  return source.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "").replace(/^\s*\/\/.*$/gm, "");
+}
+const SOURCE = stripComments(RAW);
 
 /** Every `className="…"` literal, which is where a width cap would be if there were one. */
 const CLASS_LISTS = [...SOURCE.matchAll(/className="([^"]*)"/g)].map((match) => match[1]);
 
 describe("the instrument", () => {
-  /*
-   * The one cell that fails when the strip is wrong rather than when the page is.
-   *
-   * A regex that ate too much would delete the mounts and green every `not.toContain`
-   * below at once, which is the failure mode that reads exactly like a clean page. So: the
-   * strip removed a lot (this file is more comment than code and always has been), the code
-   * it was supposed to keep is still there, and a sentence that exists only inside a comment
-   * is gone.
-   */
+  // A fixed sample catches overmatching without depending on the page's comment length.
   it("strips the prose and keeps the code", () => {
-    expect(SOURCE.length, "the strip removed nothing; every cell below reads raw prose").toBeLessThan(
-      RAW.length - 20000,
-    );
+    expect(stripComments("/* prose */code\n// prose\n{/* prose */}<Panel />"), "comments must be removed without consuming adjacent code").toBe("code\n\n<Panel />");
+    expect(SOURCE.length, "the strip removed nothing; every cell below reads raw prose").toBeLessThan(RAW.length);
     expect(SOURCE, "the strip ate the page itself").toContain("export default async function Page");
     expect(SOURCE).toContain("<SynchronisedPanes");
     expect(SOURCE).toContain("<FileTree");
@@ -290,7 +284,7 @@ describe("the action row: star, fork, download blueprint", () => {
   });
 });
 
-describe("the page reads: band, tool scopes, graph, files, readme, history, comments", () => {
+describe("the page reads: band, graph, tool scopes, files, readme, history, comments", () => {
   /**
    * Every section's position in one place, so the order is one fact asked once.
    *
@@ -316,17 +310,14 @@ describe("the page reads: band, tool scopes, graph, files, readme, history, comm
     }
   });
 
-  it("mounts them in the order the owner listed", () => {
+  it("leads with the graph before tool capabilities and reference sections", () => {
     const order = Object.entries(AT)
       .sort(([, a], [, b]) => a - b)
       .map(([name]) => name);
     expect(
       order,
-      "the page's sections are in a different order from the one the owner asked for: " +
-        "`move the tool scopes right below the section attached` (the identity band), and " +
-        "`move on that part the The graph panel`, that part being where the description was, " +
-        "above the file list.",
-    ).toEqual(["band", "toolScopes", "graph", "files", "readme", "history", "comments"]);
+      "the graph must lead the page after its identity header, followed by tool capabilities and the existing references",
+    ).toEqual(["band", "graph", "toolScopes", "files", "readme", "history", "comments"]);
   });
 
   /*
@@ -372,7 +363,7 @@ describe("the page reads: band, tool scopes, graph, files, readme, history, comm
       "#blueprint-workspace is no longer the wrapper directly around <SynchronisedPanes>, " +
         "so the rail's `Graph and cards` row lands somewhere else on the page",
     ).not.toBeNull();
-    expect(wrapper?.[1], "the graph's anchor lost its scroll offset").toContain("scroll-mt-24");
+    expect(wrapper?.[1], "the graph's anchor must clear the header and horizontal navigation").toContain("scroll-mt-32");
   });
 });
 

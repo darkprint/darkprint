@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BlueprintSummary, CardSummary } from "@/lib/server/registry";
 import type { Blueprint } from "@/lib/types";
+import { allBlueprints } from "@/lib/content";
 import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { GalleryBrowser } from "./GalleryBrowser";
 import { NodeBrowser } from "@/components/nodes/NodeBrowser";
@@ -87,4 +88,30 @@ describe("honest search presentation", () => {
     expect(html).not.toContain("<script>");
     expect(html).not.toContain("<img src=x");
   });
+});
+
+it("retired blueprint filters cannot silently narrow old gallery links", () => {
+  mock.query = "";
+  mock.params = new URLSearchParams("phase=nonexistent&autonomy=nonexistent&sort=title");
+  const blueprints = allBlueprints().slice(0, 2);
+  expect(blueprints).toHaveLength(2);
+  const html = renderToStaticMarkup(createElement(GalleryBrowser, { blueprints, categories: [] }));
+  for (const item of blueprints) expect(html).toContain(item.title);
+  for (const removed of ["All phases", "All autonomy classes", "Filter by phase covered", "Filter by autonomy class", "nobody in the loop", "Closed-loop", "Covers", "Required agents", "Required tools"]) {
+    expect(html, `retired gallery metadata: ${removed}`).not.toContain(removed);
+  }
+  expect(html).toContain("Filter by category");
+  expect(html).toContain("Order the blueprints");
+});
+
+it("retired phase links leave every node card available", () => {
+  mock.query = "";
+  mock.params = new URLSearchParams("phase=nonexistent&sort=name");
+  const node = (id: string): NodeSummary => ({ id, name: id, type: "agent", typeLabel: "Agent", version: "1.0.0", ref: `${id}@1.0.0`, action: "Checks output", phases: [], tools: [], riskMarkers: [], requiresHuman: false, usedIn: 0 });
+  const html = renderToStaticMarkup(createElement(NodeBrowser, { nodes: [node("Alpha node"), node("Beta node")], types: [] }));
+  expect(html).toContain("Alpha node");
+  expect(html).toContain("Beta node");
+  expect(html).not.toContain("All phases");
+  expect(html).not.toContain("Filter by phase");
+  expect(html).toContain("Filter by type");
 });

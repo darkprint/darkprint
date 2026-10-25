@@ -194,7 +194,7 @@ export function NodeCardSummary({
   return (
     <article
       className={cx(
-        "group relative flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 transition-all duration-200 hoverable:hover:border-line-bright hoverable:hover:shadow-[0_12px_40px_-24px_var(--color-amber)]",
+        "rubric-entry group relative flex flex-col gap-3 rounded-lg border border-line border-t-2 border-t-amber bg-surface p-4 transition-all duration-200 hoverable:hover:border-line-bright",
         /* `!` for the reason `DeadControl` and `DraftRow` both already carry it: `cx` is a
            plain string join (`lib/format.ts`), not a specificity-aware merge, so appending
            `border-violet/60` after `border border-line` leaves both classes in the DOM and

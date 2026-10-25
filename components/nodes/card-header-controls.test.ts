@@ -506,7 +506,7 @@ describe("the clone line is a command the CLI can actually run", () => {
   });
 });
 
-describe("the specification runs the full container width", () => {
+describe("the specification uses a comfortable reading width", () => {
   /**
    * The paragraph that draws `card.spec`, found from its one child rather than by counting
    * `<p>`s. The comment above it names `max-w-[68ch]` to record what was removed, which is
@@ -527,10 +527,10 @@ describe("the specification runs the full container width", () => {
     expect(SPEC_TAG).toContain("text-base");
   });
 
-  it("carries no width cap", () => {
-    expect(
-      SPEC_TAG,
-      "the specification is capped again; app/globals.css records the full container as the default and the owner asked this cap off on 2026-09-05",
-    ).not.toMatch(/max-w-/);
+  it("uses the shared prose measure", () => {
+    expect(SPEC_TAG, "instructions must use the shared reading measure").toContain("detailStyles.prose");
+    const css = readFileSync(new URL("../ui/DetailPage.module.css", import.meta.url), "utf8");
+    expect(css, "instructions must keep the 72-character reading measure").toMatch(/\.prose\s*\{[^}]*max-width:\s*72ch/);
+
   });
 });

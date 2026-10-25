@@ -113,7 +113,7 @@ export const COLS = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-line bg-surface/40">
+    <footer className="rubric-footer border-t border-blue-rule bg-blue-paper">
       {/* Four link columns now rather than three, so the brand block stops spanning three
           of four and the columns get a row of their own until there is width for five. */}
       <div className="container-page grid grid-cols-2 gap-8 py-12 sm:grid-cols-4 lg:grid-cols-5">

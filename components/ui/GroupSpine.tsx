@@ -66,8 +66,8 @@ export interface GroupSpineItem {
  * uses for a filter that is merely on.
  */
 const ACCENT = {
-  cyan: { pill: "border-cyan bg-cyan text-void", count: "text-void/70" },
-  copper: { pill: "border-copper-line bg-copper-line text-void", count: "text-void/70" },
+  cyan: { pill: "border-cyan bg-cyan text-void", count: "text-void" },
+  copper: { pill: "border-copper-line bg-copper-line text-void", count: "text-void" },
 } as const;
 
 /**

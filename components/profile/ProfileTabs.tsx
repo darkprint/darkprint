@@ -54,7 +54,7 @@ export function ProfileTabs({
               className={cx(
                 "-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 py-3 text-sm transition-colors",
                 current
-                  ? "border-cyan text-cyan"
+                  ? "border-cyan bg-blue-paper text-cyan"
                   : "border-transparent text-muted hoverable:hover:text-fg",
               )}
             >

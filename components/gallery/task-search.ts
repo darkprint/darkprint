@@ -8,8 +8,8 @@ export type TaskState =
   | { request: string; status: "ready"; data: TaskResults };
 
 const FILTERS = {
-  blueprints: ["tag", "cat", "phase", "autonomy"],
-  cards: ["type", "phase", "human", "risk"],
+  blueprints: ["tag", "cat"],
+  cards: ["type", "human", "risk"],
 } as const;
 
 /** Browse ordering would turn the service's vector channel off, so it stays in the URL only. */

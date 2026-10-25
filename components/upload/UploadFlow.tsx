@@ -1666,12 +1666,11 @@ export function UploadFlow({
 
             <div className="flex flex-col gap-5 border-t border-line pt-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                <span className="text-fg">Declared by your cards.</span> These agents and tools show what the workflow needs.
-                They are filled in from the card files.
+                Models and tool capabilities declared by the cards. You can choose other agents.
               </p>
 
               <DerivedChips
-                label="Required agents"
+                label="Suggested agents"
                 values={agents}
                 empty={
                   canAdvance

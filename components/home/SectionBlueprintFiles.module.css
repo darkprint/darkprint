@@ -2,13 +2,13 @@
   isolation: isolate;
   overflow: hidden;
   border: 1px solid var(--color-line);
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
   background: var(--color-void);
-  box-shadow: 0 24px 80px -40px color-mix(in oklab, var(--color-blueprint-deep) 65%, transparent);
+  border-top: 2px solid var(--color-cyan);
 }
 
 .graphPanel {
-  background: linear-gradient(150deg, color-mix(in oklab, var(--color-blueprint-deep) 22%, var(--color-void)), var(--color-void) 75%);
+  background: var(--color-surface);
 }
 
 .caption {
@@ -17,7 +17,8 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  border-bottom: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-blue-rule);
+  background: var(--color-blue-paper);
 }
 
 .fileIcon {
@@ -43,21 +44,21 @@
   position: relative;
   min-height: 15rem;
   padding-block: 1.5rem;
+  background-color: color-mix(in oklab, var(--color-blue-paper) 55%, var(--color-surface));
   background-image:
-    radial-gradient(ellipse at center, color-mix(in oklab, var(--color-blueprint-line) 8%, transparent), transparent 68%),
-    linear-gradient(color-mix(in oklab, var(--color-blueprint-line) 5%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 5%, transparent) 1px, transparent 1px);
-  background-size: auto, 32px 32px, 32px 32px;
+    linear-gradient(color-mix(in oklab, var(--color-cyan) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-cyan) 8%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px;
   background-position: center;
 }
 
 .graphField [data-viz-lit="on"] {
-  --viz-ink: var(--color-copper-ink);
+  --viz-ink: var(--color-cyan);
 }
 
 .cardPanel {
   border-top: 1px solid var(--color-line);
-  background: radial-gradient(ellipse at 50% 40%, color-mix(in oklab, var(--color-copper) 22%, transparent), transparent 75%);
+  background: var(--color-void);
 }
 
 .cardPanel .fileIcon {
@@ -67,10 +68,10 @@
 .card {
   position: relative;
   border: 1px solid color-mix(in oklab, var(--color-copper-line) 35%, var(--color-void));
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   padding: 1.25rem;
-  background: linear-gradient(135deg, color-mix(in oklab, var(--color-copper-deep) 35%, var(--color-surface)), var(--color-surface));
-  box-shadow: 0 20px 36px -24px var(--color-void), 0 1px 0 color-mix(in oklab, var(--color-copper-ink) 8%, transparent) inset;
+  background: var(--color-surface);
+  box-shadow: 3px 3px 0 var(--color-surface-2);
 }
 
 .card::before {
@@ -80,7 +81,7 @@
   width: 3rem;
   height: 2px;
   border-radius: 1px;
-  background: var(--color-copper-line);
+  background: var(--color-cyan);
   content: "";
 }
 
@@ -88,7 +89,7 @@
   margin: 1.25rem -1.25rem -1.25rem;
   padding: 0.75rem 1.25rem 1rem;
   border-top: 1px solid color-mix(in oklab, var(--color-signal) 20%, transparent);
-  border-radius: 0 0 0.75rem 0.75rem;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   background: color-mix(in oklab, var(--color-signal) 4%, transparent);
 }
 
@@ -106,5 +107,112 @@
   .cardPanel {
     border-top: 0;
     border-left: 1px solid var(--color-line);
+  }
+}
+
+.nodePin {
+  flex-shrink: 0;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid color-mix(in oklab, var(--color-cyan) 45%, var(--color-surface));
+  border-radius: var(--radius-md);
+  color: var(--color-cyan);
+  background: color-mix(in oklab, var(--color-cyan) 5%, var(--color-surface));
+}
+
+.cardLink {
+  position: relative;
+  flex: 1;
+  height: 1px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--color-cyan) 25%, transparent);
+}
+
+.cardLink::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--color-cyan), transparent);
+  transform: translateX(-100%);
+  content: "";
+}
+
+.port {
+  padding: 0.5rem;
+  margin: -0.5rem;
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .workbench[data-blueprint-motion="playing"] .graphField [data-viz="pulse"] {
+    stroke: var(--color-cyan);
+    animation: trace-work 2.4s ease-in-out 2;
+  }
+
+  .workbench[data-blueprint-motion="playing"] .graphField [data-viz="edge"]:nth-of-type(2n) [data-viz="pulse"] {
+    animation-delay: 0.3s;
+  }
+
+  .workbench[data-blueprint-motion="playing"] .graphField [data-viz-id="builder"] [data-viz="bloom"] {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: mark-node 1.8s ease-in-out 0.6s 2;
+  }
+
+  .workbench[data-blueprint-motion="playing"] .card {
+    animation: place-card 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s both;
+  }
+
+  .workbench[data-blueprint-motion="playing"] .cardLink::after {
+    animation: link-card 1.4s ease-in-out 0.5s 2;
+  }
+
+  .workbench[data-blueprint-motion="playing"] .port {
+    animation: mark-port 1.8s ease-in-out 1s 2;
+  }
+
+  .workbench[data-blueprint-motion="playing"] .port:last-child {
+    animation-delay: 1.4s;
+  }
+
+  .workbench[data-blueprint-motion="playing"] .portArrow {
+    animation: pass-port 1.8s ease-in-out 1.2s 2;
+  }
+
+  .card {
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+  }
+
+  .workbench:has([data-viz-id="builder"]:focus-visible) .card {
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-cyan) 10%, transparent);
+  }
+
+  @keyframes trace-work {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: -1; }
+  }
+
+  @keyframes mark-node {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+
+  @keyframes place-card {
+    from { transform: translate(10px, 8px) rotate(0.5deg); }
+    to { transform: translate(0) rotate(0); }
+  }
+
+  @keyframes link-card {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
+
+  @keyframes mark-port {
+    0%, 100% { background: transparent; }
+    50% { background: color-mix(in oklab, var(--color-cyan) 8%, transparent); }
+  }
+
+  @keyframes pass-port {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(4px); }
   }
 }

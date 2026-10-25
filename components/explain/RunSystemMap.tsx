@@ -60,7 +60,7 @@ export function RunSystemMap() {
           <section className="bp-grid rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60 p-4">
             <div className="flex items-baseline justify-between gap-3">
               <h3 className="label text-blueprint-line">Blueprint</h3>
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-blueprint-ink/65">
+              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-blueprint-ink">
                 specification
               </span>
             </div>

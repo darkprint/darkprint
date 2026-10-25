@@ -125,6 +125,8 @@ export function SideRail({
   ariaLabel,
   footer,
   compact = false,
+  layout = "rail",
+  header,
   children,
 }: {
   /** The rail's own heading. "Learn", "On this blueprint", "On this node". */
@@ -166,7 +168,27 @@ export function SideRail({
    * and does not take it.
    */
   compact?: boolean;
+  layout?: "rail" | "tabs";
+  header?: React.ReactNode;
 }) {
+  if (layout === "tabs") {
+    return (
+      <div className="min-w-0">
+        {header}
+        <div className="sticky top-16 z-30 border-b border-blue-rule bg-void/95 backdrop-blur-sm">
+          <RailScrollSpy threshold={128} />
+          <nav id={RAIL_NAV_ID} aria-label={ariaLabel ?? label} className="container-page flex gap-1 overflow-x-auto py-2">
+            {items.map((item) => (
+              <a key={item.href} href={item.href} className="shrink-0 rounded-md border-b-2 border-transparent px-3 py-2 text-xs text-muted transition-colors hoverable:hover:bg-blue-paper hoverable:hover:text-cyan data-[rail-active=true]:border-cyan data-[rail-active=true]:bg-blue-paper data-[rail-active=true]:text-cyan">
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+        {children}
+      </div>
+    );
+  }
   return (
     /* The rail and the page it belongs to are one object, and the PAGE is what gets centred.
        ------------------------------------------------------------
@@ -299,13 +321,13 @@ export function SideRail({
                       }`
                     ],
                     item.active === true
-                      ? "border-cyan bg-cyan/5 text-fg"
+                      ? "border-cyan bg-blue-paper text-cyan"
                       : item.tone === "signal"
                         ? /* A destructive row keeps its own colour when it is the one a
                              reader is in: lighting it cyan would say "interactive" about
                              the one section on the page that is not safe to poke. */
                           "border-transparent text-signal hoverable:hover:bg-surface-2 data-[rail-active=true]:border-signal data-[rail-active=true]:bg-signal/5"
-                        : "border-transparent text-muted hoverable:hover:bg-surface-2 hoverable:hover:text-fg data-[rail-active=true]:border-cyan data-[rail-active=true]:bg-cyan/5 data-[rail-active=true]:text-fg",
+                        : "border-transparent text-muted hoverable:hover:bg-blue-paper hoverable:hover:text-cyan data-[rail-active=true]:border-cyan data-[rail-active=true]:bg-blue-paper data-[rail-active=true]:text-cyan",
                     item.mark,
                   )}
                 >

@@ -513,57 +513,18 @@ export default async function Page({
      for a bundle being validated, which is a different reader at a different moment.
      §11.0 carries the row; nothing here should imply it is covered. */
 
-
-  return (
-    /* The rail wraps everything, band included.
-       ------------------------------------------------------------
-       The band was outside it for one pass, full-bleed above the rail the way the hand-off
-       draws it — and the result was a left column that began 310px down the page with the
-       band's own full-width rule cutting across the top of it, so the vertical line a
-       reader follows was broken into two pieces. The author read it as fragmentation and
-       asked for the node page's treatment, where the rail runs from the header to the
-       footer in one unbroken column and the page's own header sits in the right-hand one.
-
-       So the band keeps its `border-b bg-surface` and now spans the right column rather
-       than the viewport. Nothing else about it moves. */
-    <SideRail
-      label="On this blueprint"
-      meta={`${railSections.length} sections`}
-      items={railSections}
-      ariaLabel="On this blueprint"
-      compact
-    >
-    {/* ---------- The band, shared with `/u/<owner>/<slug>` ----------
-        Owner and name, the visibility pill, the four actions and the version line, in the
-        same component the owner's view of a bundle mounts. That is the whole restructure:
-        a published blueprint and a bundle somebody holds privately are one kind of thing
-        seen from two sides, and until this pass the two pages disagreed about what a
-        bundle even looks like at the top.
-
-        What did NOT move is the argument below it. The sections keep their scroll
-        order and are not tabs: they are one reading top to bottom, and tabbing them would
-        put the explainability panel — the thing that makes a score checkable — behind a
-        click. */}
+  const header = (
     <BundleHeader
       owner={ownerAuthor}
       slug={bp.slug}
-      /* The column, not a literal: `bundle.visibility` is what the pill states. An absent
-         record can only mean a bundle the gate above already let through, so `public` is
-         the honest default rather than a guess. */
+
       visibility={record?.visibility ?? "public"}
       validator={ownerAuthor.validator}
       title={bp.title}
       summary={bp.summary}
       forks={forkRows.length}
       saveId={`blueprint:${bp.slug}`}
-      /* No `support` any more: it read `bp.votes`, which was this page's stand-in for a
-         seeded star count before T280 wired a real one. `star` below is the live
-         replacement, and `bp.votes` is `EMPTY_COMMUNITY`'s `0` now — passing it through
-         would be printing an index figure with nothing behind it and no marker beside it,
-         which is `autonomy-surfaces.test.ts`'s own rule (`no surface prints a seeded
-         index figure as a fact`). `BundleHeader`'s `support === undefined` branch draws a
-         plain bookmark, which is the honest fallback for the one theoretical case below
-         where `star` itself is absent. */
+
       star={{
         api: `/api/blueprints/${owner}/${slug}/star`,
         // `signals` is undefined only in the theoretical race `record`'s own comment
@@ -583,17 +544,7 @@ export default async function Page({
         signedIn: actor.kind === "account",
         ...(viewerHandle !== undefined ? { viewerHandle } : {}),
       }}
-      /* THE DOWNLOAD, IN THE BAND, THIRD.
-         ------------------------------------------------------------
-         The owner: "remove the Code button and move on top right on the side right of the
-         Star; the order should be: star, fork, download blueprint." Two items, the way
-         GitHub's "Code" menu has them: the archive of this release, and the clone command.
 
-         Absent when there is no release. `folder` is `undefined` for a bundle whose files
-         this actor cannot fetch, and a control whose file names a version it does not have
-         would be a control that refuses. `folder.digest` pins the archive and
-         `folder.version` names the file, both off the release `releaseFiles` actually
-         resolved, so the download, the listing below and the hrefs all name one release. */
       download={
         folder === undefined ? undefined : (
           <CodeMenu
@@ -615,11 +566,7 @@ export default async function Page({
         </nav>
       }
       below={
-        /* The date joins the version line rather than being lost with `At a glance`.
-           Everything else that panel carried is drawn somewhere a reader is going anyway,
-           and this was the exception: nothing else on the page says when the bundle was
-           published. It belongs beside the digest, which is the other half of the same
-           question, how old is what I am about to take. */
+
         <span className="font-mono text-[11px] text-dim">
           {current !== undefined && (
             <>
@@ -628,32 +575,13 @@ export default async function Page({
           )}
           digest {shortDigest(bp.digest)} · {releases.length} release
           {releases.length === 1 ? "" : "s"}
-          {/* The release's own date, never the manifest's: the two differed by months on one
-              page. Omitted rather than invented when no release resolves. */}
+
           {current !== undefined && <> · published {prettyDate(isoDay(current.createdAt))}</>}
         </span>
       }
     >
-      {/* ONE ROW, everything left-aligned. Owner instruction, 2026-09-06: "set the blueprint
-          chip on the same row of the other chips all on the left."
 
-          It was a `flex-col` of two rows, and neither of them was a deliberate arrangement
-          any more. `AutonomyMeter` used to sit beside the kind badge carrying the class and
-          the per-node reading; the component itself was deleted on 2026-09-06, and
-          the per-node reading; the owner asked that reading off this page, off the gallery
-          tile and off the pinned card in the same pass, so a reader does not meet on a shelf
-          what the detail page no longer says. What was left was a row holding one chip,
-          stacked above a row of tags, with the column gap still spacing two things that no
-          longer needed separating. The registry still computes `autonomy`; nothing here
-          draws it.
-
-          The tags keep their own container rather than being flattened into the row. Two
-          rhythms are doing two jobs: `gap-3` separates the KIND from the tags because they
-          are different kinds of statement, and `gap-1.5` holds the tags to each other
-          because they are a list. Flattening would have had to pick one number and would
-          have changed tag spacing to satisfy an instruction about the badge. If the tags
-          wrap they wrap inside their own box, which keeps them reading as one group. */}
-      <div className="mt-2 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <KindBadge kind={bp.kind} />
         {bp.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
@@ -668,79 +596,29 @@ export default async function Page({
         )}
       </div>
     </BundleHeader>
+  );
 
-    <div className="container-page py-10 lg:py-12">
-      {/* ---------- Tool capabilities, directly under the band ----------
-          The owner: "move the tool scopes right below the section attached", the section
-          being the identity band — breadcrumb, `owner / slug`, the title, the summary, the
-          kind badge and the tags. So it opens the body.
+  return (
+    <SideRail
+      layout="tabs"
+      header={header}
+      label="On this blueprint"
+      meta={`${railSections.length} sections`}
+      items={railSections}
+      ariaLabel="On this blueprint"
+      compact
+    >
 
-          It reads as the first section rather than as a stray panel because of what it is:
-          what a graph is allowed to reach is the input to the security reading, so the union
-          of it is a fact about the blueprint and not a per-node one. A reader deciding
-          whether to take this folder is owed it before the drawing, not after.
+    <div className="container-page py-6 lg:py-8">
 
-          The long description block stood here until 2026-09-06 and came off with the same
-          instruction; see the `paragraphs` note above for what survives it.
+      <div id="blueprint-workspace" className="scroll-mt-32">
+        <SynchronisedPanes model={paneModel} graph={bp.graph} presentation="detail" />
+      </div>
 
-          "Suggested models" stood beside this under one heading called "Requirements". The
-          author: the model "should be listed in the node description as a entry", and it
-          already is — `model` is a Behaviour row in the card skeleton the graph below opens,
-          per node, read off the card it belongs to. */}
-      <section className="panel flex flex-col gap-3 p-5">
+      <section className="mt-6 border-b border-line pb-6">
         <ToolScopes tools={bp.requiredTools} />
       </section>
 
-      {/* ---------- The graph ----------
-          Doc 2 §5.1's pane 1 and pane 2 together: the drawing, and the card skeleton for
-          whichever node is selected. Clicking a node — or picking one from the dropdown
-          beside the skeleton — moves the same `selection` both panes share, and the card it
-          resolves opens its own page through the skeleton's "Open card" link.
-
-          FULL WIDTH, and that is the owner's instruction of 2026-09-06: "move on that part
-          the The graph panel (extend full horizontal length as the other elements)". It sat
-          in a two-thirds column of a three-column body grid, and the grid existed to put an
-          aside beside it. The aside's last panel was the visibility switch, which left this
-          page in the same instruction, so the grid had nothing left to hold and went with it
-          rather than being kept as an empty third track.
-
-          WHAT THAT BUYS, because the cost of the column was measured and written down and
-          the gain has to be too. Every archive drawing is width-bound at every viewport, so
-          the width of the box is the only lever on how large a schematic renders. What the
-          column cost, measured while it existed: a 729px canvas at 1440, a whole-graph fit
-          of 0.599, and `AgentNode`'s 11px kind row rendering at 6.6 CSS px. The site holds
-          its figures to 10 CSS px, and one blueprint out of nine cleared that line in this
-          column. At the container's full width most of them do.
-
-          The gain is deliberately NOT stated here as a number. It was, for a wave, and the
-          numbers were a canvas the page had already stopped drawing in: this comment is
-          downstream of a chain that has moved three times, most recently when `framing.ts`
-          picked up the side rail's own 256px track (`RAIL_WIDTH`, `RAIL_FROM`) that an
-          earlier re-derivation had missed. Every current figure belongs to
-          `components/panes/archive-labels.test.ts` and `canvasWidthAt`, both of which
-          measure; this file does not.
-
-          `components/panes/archive-labels.test.ts` computes every canvas it measures from
-          `canvasWidthAt`, which is what turns a viewport into a canvas width now that the
-          column is gone. `columnCanvasWidthAt` went with the column, along with
-          `BODY_GRID_GAP`, `BODY_GRID_COLUMNS`, `GRAPH_COLUMN_SPAN` and `COLUMN_FROM`, and
-          this sentence named it for a wave after it stopped existing. That file's own rule
-          ("any improvement fails too and gets celebrated") is what makes it the place the
-          figures live: it pins the achieved type size per blueprint and per width and names
-          the ones still under the 10px floor rather than rounding them away. The numbers are
-          its; nothing here should restate them, and a re-measure there is owed whenever the
-          chain from viewport to canvas moves. */}
-      <div id="blueprint-workspace" className="mt-10 scroll-mt-24">
-        <SynchronisedPanes model={paneModel} graph={bp.graph} />
-      </div>
-
-      {/* ---------- Files ----------
-          The folder, under the drawing. Over the same array the header's download control
-          builds its URLs from — `releaseFiles`' answer for this release — so the listing
-          here, the command in the band, the file links in the band and the files the server
-          will actually hand over are four renderings of one list. The owner's view is no
-          longer a second page to keep in step: it is this one, under a different actor
-          (D-261-08(1)). */}
       <div className="mt-10">
         <FileTree
           files={sections.files}
@@ -766,126 +644,21 @@ export default async function Page({
               </>
             )
           }
-          /* No `actions`. This row carried the `Code` control for one pass, GitHub's shape,
-             and the owner moved it into the header band on 2026-09-06 — see the `download`
-             prop on `BundleHeader` above. `FileTree`'s slot stays and is now unused; its own
-             docblock says so rather than implying a caller. */
+
         />
       </div>
 
-      {/* ---------- The README, GitHub's way ----------
-          The owner asked for GitHub's arrangement, in these words: "adopt the github
-          solution where the README is used to visualize in markdown the information about
-          the repository (adopt the same graphical approach)". So the file list is followed
-          by the bundle's own `README.md`, rendered — the same file the download ships,
-          generated by `bundleReadme`, not a second description this page writes and then
-          has to keep in step with the first.
-
-          Four panels came off the page in this pass and the README is what stands in their
-          place. It carries two things they carried, which is why the trade is not a
-          reduction: the full bundle digest with the instruction for recomputing it, printed
-          by the `Exact release` panel until today, and doc 1 §0.1.3's execution sentence
-          ("This runs on your machine … It executes nothing and holds none of your provider
-          keys") — in the bundle author's own file now rather than in this page's chrome.
-
-          Nothing at all when there is no README — see `readme` above for why no placeholder
-          prose goes here. */}
       {readme !== undefined && (
-        /* The anchor is on a wrapper, which is `#blueprint-workspace`'s idiom two sections
-           down and not a preference. `ReadmePanel` declares an `id="readme"` of its own for
-           its `aria-labelledby`, and `components/site/anchors.test.ts` requires the element
-           an anchor points AT to carry the header's scroll offset — that class belongs to
-           whoever owns the panel, and a caller cannot put it on a tag in another file. So
-           the rail points at a target this page declares, with the offset on it, and the
-           panel's own id stays what it was for: naming its heading. */
-        <div id="blueprint-readme" className="mt-8 scroll-mt-24">
+
+        <div id="blueprint-readme" className="mt-8 scroll-mt-32">
           <ReadmePanel source={readme} file={BUNDLE_README} />
         </div>
       )}
 
-      {/* ---------- WHAT THE BODY GRID TOOK WITH IT ----------
-          A `grid gap-8 lg:grid-cols-3` stood here, with the graph in a `lg:col-span-2`
-          column and a sticky `<aside>` beside it. The aside is gone and so is the grid: the
-          owner moved the graph to full width and moved the aside's last panel off this page,
-          and a two-column grid with one column is a third of a 1200px page left permanently
-          blank.
-
-          The visibility switch is the panel that moved rather than went. The owner: "remove
-          the panel visibility from the blueprint card; such option should be visible only on
-          the user account list of the blueprints." Neither branch of this route draws one,
-          the owner included. `components/profile/OwnedBundles.tsx` draws a `RowVisibility`
-          per row on `/u/[username]`, drafts included, over the same visibility route.
-
-          Four panels the aside had already lost are recorded here rather than being lost
-          with the container: `Forks` (the owner: "remove the fork panel from blueprint" —
-          the header's Fork button still makes one and prints how many exist), `Releases`
-          (`History` below still lists what changed and when), the Bundle panel, and the Score
-          card with `VoteControl` under it. The digest the Bundle panel printed survives in the
-          rendered README above.
-
-          ONE THING DID NOT SURVIVE, and it is a loss rather than a tidy. The Bundle panel was
-          the only surface on this page that drew the validator's diagnostics, and eight of
-          the nine shipped bundles carry `analysis/criteria-leak-unanchored`, which doc 3
-          §4.1 calls the most important check in the system. A reader of a published
-          blueprint sees no validation output here at all. `/upload` still renders them for a
-          bundle being validated, which is a different reader at a different moment, and
-          `#security-explained` and `#explainability-heading` now resolve only there. §11.0
-          records the gap. */}
-
-      {/* History and the community notes, at the same width as everything above them. */}
       <div className="mt-8 flex flex-col gap-8">
-        {/* `EvidenceLayers` opened this run: three columns headed Structural evidence,
-            Community assessment and Run evidence, the last two stating how thin the sample
-            behind a ballot and a run report was. It goes with the rest of the scoring
-            reading. Its three honesty statements went with it, and each one was about
-            something this page no longer shows: that a static risk-marker reading is not a
-            security audit (the reading is gone), that no eligible ballot closes a radar
-            polygon (there is no radar), and that DarkPrint does not watch a run happen and
-            reports no cost (no cost row is drawn). The last of those three is the claim
-            worth naming, because it is true of the product and not only of this page:
-            `/reading-the-radar` still makes it, over the same components. */}
 
         <History entries={sections.history} />
 
-        {/* `#use-this-blueprint` stood here: a `<details>` under the eyebrow `Exact release`
-            and the heading `Use this blueprint`, holding a fork explainer, the full digest
-            and a download panel. The owner asked it off the page, and chose where its
-            download goes — the `Code` control on the file list above, which lists every
-            file rather than the three the panel named. Where the other three things it
-            carried stand, re-checked rather than carried forward:
-
-              the full digest   the README below the listing prints it in full beside the
-                                instruction for recomputing it, and it is the only surface
-                                here that carries the digest now.
-              the fork explainer  an explanation of forking that pointed at the header's
-                                own Fork button. The button is live and unchanged, and the
-                                explainer's component is deleted: `/nodes/[...id]` was the
-                                last route that drew it, and that slot holds
-                                `components/nodes/CardForkButton.tsx` now.
-              the honesty line  "DarkPrint distributes these files. Your own harness decides
-                                how to execute them." The claim is doc 1 §0.1.3's and it is
-                                NOT dropped: the README this page now renders makes it in
-                                the bundle author's own words ("This runs on your machine.
-                                DarkPrint hands out the files and analyses them statically.
-                                It executes nothing and holds none of your provider keys").
-                                `/build` carried its own copy, and that route and the whole
-                                of `components/build/` are deleted, so the README is where
-                                the claim lives. */}
-
-        {/* `#blueprint-source` stood here: `DotBreakdown` over `bp.graph.dot`, the file
-            listed block by block at the full width of the body, with the rail beside it
-            lighting the part a reader clicks. The owner asked it off this page ("remove
-            ... the topology.dot panel at the bottom").
-
-            The component stays and so does every other mount of it: `/spec/topology` draws
-            the same figure over the specification's own example, and `BlueprintWalk` on the
-            home page draws it over a bundle's. The file itself is one click away in the
-            listing above and in the `Code` menu on it, which is what a GitHub repository
-            page offers for a file it does not render. */}
-
-        {/* `comments` still has to be passed — the frozen prop `Comments` always required —
-            even though `live` wins the render; `EMPTY_COMMUNITY` is what makes it `[]`
-            rather than a fixture this page no longer reads. */}
         <Comments
           comments={bp.comments}
           live={{

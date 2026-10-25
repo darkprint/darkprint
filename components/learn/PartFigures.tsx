@@ -330,7 +330,7 @@ export function GraphFigure({
             x={x}
             y={y}
             r={place.r}
-            tone={tone}
+            tone={n.id === highlightedNode ? "cyan" : "ink"}
             mark={nodeMark}
             lit={n.id === highlightedNode}
             label={label}

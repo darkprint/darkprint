@@ -26,7 +26,7 @@ export function Hero() {
   return (
     /* Keep the lockup centered in the first viewport while allowing the content to grow on
        short screens. */
-    <section className="relative flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-void">
+    <section className="rubric-hero relative flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-void">
       {/* `GridPaper` and not a bare `.tech-grid`, on the author's instruction of 2026-08-12:
           "can u adopt the same level of visibility also for the one in the hero section".
           The two registry shelves took the doubled ruling when 6% turned out to be

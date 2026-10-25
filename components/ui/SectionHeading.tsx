@@ -64,7 +64,7 @@ export function SectionHeading({
   return (
     <div
       className={cx(
-        "flex flex-col gap-3",
+        "rubric-heading flex flex-col gap-3",
         align === "center" && "items-center text-center",
         className,
       )}
@@ -72,7 +72,7 @@ export function SectionHeading({
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       <Title
         className={cx(
-          "font-display font-semibold text-fg",
+          "rubric-title font-display font-normal text-cyan",
           Title === "h1"
             ? "text-4xl leading-[1.05] tracking-[-0.02em] sm:text-5xl"
             : "text-[28px] leading-[1.15] tracking-[-0.015em] sm:text-[32px]",
@@ -156,7 +156,7 @@ export function PanelHeading({
   return (
     <Tag
       className={cx(
-        "font-display font-semibold leading-snug tracking-[-0.01em] text-fg",
+        "font-display font-normal leading-snug tracking-[-0.01em] text-fg",
         PANEL_HEADING_SIZE[size ?? (Tag === "h4" ? "base" : "xl")],
         className,
       )}

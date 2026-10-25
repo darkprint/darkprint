@@ -72,7 +72,7 @@ import { TagPill } from "./TagPill";
  * translate, scale, rotate` for the same reason; this is the explicit spelling of that.)
  */
 export const CARD_SHELL =
-  "group relative overflow-hidden rounded-lg border border-line bg-surface transition-[border-color,box-shadow,transform,scale] duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:hover:shadow-[0_12px_40px_-24px_var(--color-cyan)] hoverable:active:scale-[0.99]";
+  "rubric-entry group relative overflow-hidden rounded-lg border border-blue-rule border-t-2 border-t-cyan bg-surface transition-[border-color,box-shadow,transform,scale] duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-cyan hoverable:active:scale-[0.99]";
 
 /** Gallery / profile card for one blueprint: schematic, kind, autonomy and signals. */
 export function ContentCard({
@@ -144,7 +144,7 @@ export function ContentCard({
             forked from {lineage.owner} / {lineage.slug}
           </span>
         )}
-        <h3 className="pr-8 font-display text-lg font-semibold leading-snug text-fg transition-colors duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:text-cyan">
+        <h3 className="pr-8 font-display text-[22px] font-normal leading-snug text-fg transition-colors duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:text-cyan">
           {item.title}
         </h3>
         {/* What it is for, directly under the name and above the drawing.
@@ -193,7 +193,7 @@ export function ContentCard({
         <GraphThumbnail
           graph={item.graph}
           nodeLabels={false}
-          className="h-full w-full p-2 opacity-90 transition-transform duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:scale-[1.03]"
+          className="h-full w-full p-2 transition-transform duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:scale-[1.03]"
           ariaLabel={`${item.title} pipeline preview`}
         />
         {/* The soft landing into the card body, re-proportioned with the frame: it was
@@ -238,9 +238,7 @@ export function ContentCard({
               </>
             )}
           </span>
-          <span className="text-emerald">
-            {item.requiredTools.length} tool{item.requiredTools.length === 1 ? "" : "s"}
-          </span>
+
         </div>
       </div>
     </article>

@@ -10,12 +10,12 @@ export const contentType = "image/png";
  * Copies of the theme tokens in `app/globals.css`. An image is rendered with no stylesheet
  * behind it, so a `var()` resolves to nothing here; each hex names the token it copies.
  */
-const VOID = "#05060d"; // --color-void
-const LINE = "#222739"; // --color-line
-const FG = "#e9ebf5"; // --color-fg
-const MUTED = "#9aa1ba"; // --color-muted
-const CYAN = "#7dd3fc"; // --color-cyan-bright
-const BLUEPRINT_LINE = "#74b4ff"; // --color-blueprint-line
+const VOID = "#f7f5ef"; // --color-void
+const LINE = "#d8d2c7"; // --color-line
+const FG = "#22201d"; // --color-fg
+const MUTED = "#59554e"; // --color-muted
+const CYAN = "#194383"; // --color-cyan-bright
+const BLUEPRINT_LINE = "#3e474e"; // --color-blueprint-line
 
 /** The same split `components/hero/Wordmark.tsx` draws: "Dark" in the foreground, "Print" in cyan. */
 const TONE_SPLIT = 4;

@@ -84,15 +84,15 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 
 | Path | Rendering | Shows |
 | --- | --- | --- |
-| `/` | static | the wordmark hero, a task-to-MCP example with the published graph preview and a separately labelled local addition, a blue graph field with the Code Builder node visibly named and highlighted beside its copper-accented pinned card, ports and boundary, and a compact tutorial invitation; account guidance stays beside the actions |
-| `/blueprints` | dynamic | the registry index: browse filters and sorting; nonempty task queries call `/api/search/blueprints`, preserving relevance order and showing match evidence and encoder status |
+| `/` | static | the wordmark hero, a task-to-MCP example with the published graph preview and a separately labelled local addition, a paper graph field with the Code Builder node visibly named and highlighted in blue beside its pinned card, ports and boundary, and a compact tutorial invitation; account guidance stays beside the actions |
+| `/blueprints` | dynamic | the registry index: category and tag filters, sorting and graph previews without coverage, autonomy, agent or tool metadata; nonempty task queries call `/api/search/blueprints`, preserving relevance order and showing match evidence and encoder status |
 | `/blueprints/[owner]` | dynamic | a redirect only: a handle goes to its profile, a legacy slug to the owner that holds it |
-| `/blueprints/[owner]/[slug]` | dynamic | one blueprint: graph, files, releases, notes, downloads; the owner's controls when signed in |
+| `/blueprints/[owner]/[slug]` | dynamic | one blueprint: compact identity and download header, horizontal section navigation, graph and selected-node inspector before tool capabilities, then files, readme, releases and notes; the owner's controls when signed in |
 | `/capabilities` | static | operations grouped into Find, Create, Check, Publish and Use locally; CLI, MCP and Assisted Design tabs retain the complete command, tool and skill references |
 | `/mcp` | static | numbered panels for client selection and connection, a copyable task prompt, and result review; the complete seven-tool reference is expandable |
 | `/new` | dynamic | create a draft bundle: slug and visibility |
-| `/nodes` | dynamic | browse the node card library or search tasks through `/api/search/cards`; ranked results retain individual versions and disclose their detail-page destination |
-| `/nodes/[...id]` | dynamic | one card: every field, versions, blueprints that pin it, notes, YAML download |
+| `/nodes` | dynamic | browse the node card library with type, human-gate and risk filters, or search tasks through `/api/search/cards`; ranked results retain individual versions and disclose their detail-page destination |
+| `/nodes/[...id]` | dynamic | one card: compact identity and download header, inputs/outputs overview with visible checked-constraint and author-promise distinctions, a 72ch instruction column, interfaces, expandable full field reference, versions, blueprints that pin it, notes and YAML download |
 | `/ontology/[...term]` | dynamic | one vocabulary term: its place in the lattice and its usage |
 | `/settings` | dynamic | compact sections for profile, handle, email, default visibility, notifications, API keys and account deletion; email delivery remains unavailable |
 | `/skill` | static | three numbered panels for installation, a concrete task and the resulting folder; expandable interview guidance, source links and visible execution and sharing disclosures |
@@ -104,14 +104,47 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `/u/[username]` | dynamic | a profile |
 | `/u/[username]/[slug]` | dynamic | a permanent redirect to `/blueprints/[username]/[slug]` |
 | `/u/[username]/blueprints`, `/u/[username]/cards`, `/u/[username]/saved` | dynamic | the three shelves |
-| `/upload` | dynamic | the framed wizard precedes supporting explanations: choose files, describe, check and publish; separate unfinished, rejected and successful states, with Attractor import losses beside its action; folder checks run in the browser and single-card checks use `/api/validate/card` |
+| `/upload` | dynamic | the framed wizard precedes supporting explanations: choose files, describe with suggested agents and required tools, check and publish; separate unfinished, rejected and successful states, with Attractor import losses beside its action; folder checks run in the browser and single-card checks use `/api/validate/card` |
 | `/welcome` | dynamic | sign in and choose a handle |
 | `/what-a-blueprint-is` | static | a plain definition and real folder, paired graph, card and vocabulary examples, optional vocabulary extensions, and supporting runner and evaluation background |
 
+The site uses a light paper-and-ink rubrication theme in `app/globals.css`. Neutral
+surfaces, dark body text and fine rules set the hierarchy. Blue marks navigation, section
+numbers and primary actions. Blue paper tints mark command headers, navigation selections,
+profile tabs and the footer; blue top rules frame registry entries, source panels, account
+sections and homepage diagrams. Card and human-action panels keep their semantic border
+colours. Space Grotesk, the logo typeface, is used for body text and
+headings as well as the wordmark; technical source stays in JetBrains Mono. Graphs use
+charcoal ink, card details use warm ink, and human actions retain their violet pause mark.
+Focus rings and form boundaries remain distinct on the light surfaces. Avatar initials
+use a separate dark ink because their identity gradients stay light. Registry entries,
+source panels, account sections and guide panels share the flat, ruled presentation.
+Standalone favicon and social-image colours match the theme. The homepage graph animates
+its flow pulses, selected Code Builder node and matching card once on entering view through
+`BlueprintFilesMotion` and the shared motion gate. Labels and connections stay visible in
+all phases; reduced motion and disabled JavaScript show the complete static diagram. The web
+galleries ignore retired phase and autonomy query filters, including in task-search requests;
+API search filters remain available to other clients. The blueprint gallery requests all
+published forks and displays each as a separate row; the API’s default remains `rolled`
+for other callers.
+
 AI Tools and Learn share the server-compatible `components/ui/Guide.tsx` panels and
-`Guide.module.css`: blue graph frames, copper card frames, violet human actions and command
+`Guide.module.css`: ruled graph and card examples, violet human actions and command
 headers that keep copy controls above the source on phones. Diagrams expose their content
 without motion. Existing anchors, navigation groups and reference data remain shared.
+
+Blueprint and node detail pages use `SideRail`’s horizontal navigation mode beneath a compact
+header, sharing `DetailPage.module.css`. The default rail remains on Learn and account pages.
+Graph framing on detail pages uses the full page container without a lateral rail deduction;
+the graph/inspector split and whole-graph fit remain measured in `archive-labels.test.ts`.
+Published blueprints opt into the inspector presentation of `SynchronisedPanes`; live tutorial
+drafts keep the teaching presentation. Both share the same node/field/absence selection and
+exact card pin. The selected node shows its action, ports, model, constraints and instructions,
+with instructions and every field retained in named disclosures. Selecting a field or a
+field-level omission opens its reference. Graph nodes have an explicit keyboard focus ring
+that overrides React Flow's outline reset. `NodeOverview`
+renders published ports and constraints on card pages; the complete instructions and field values
+remain derived from the stored card, and downloadable source bytes are unchanged.
 
 `sitemap.xml` is dynamic; `robots.txt`, `manifest.webmanifest`, `opengraph-image` and
 `icon.svg` are static. Every response carries the security headers set in `next.config.ts`

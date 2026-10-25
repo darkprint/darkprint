@@ -280,11 +280,11 @@ describe("the favicon and the theme agree", () => {
 
   /** Each hex in the icon, against the token it is a copy of. */
   const COPIES: [token: string, hex: string][] = [
-    ["--color-void", "#05060d"],
-    ["--color-blueprint-deep", "#061c52"],
-    ["--color-blueprint-line", "#74b4ff"],
-    ["--color-cyan-bright", "#7dd3fc"],
-    ["--color-emerald", "#34d399"],
+    ["--color-void", "#f7f5ef"],
+    ["--color-blueprint-deep", "#eeeae2"],
+    ["--color-blueprint-line", "#3e474e"],
+    ["--color-cyan-bright", "#194383"],
+    ["--color-emerald", "#27624a"],
   ];
 
   it("names a token for every colour it hard-codes", () => {

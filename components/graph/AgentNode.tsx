@@ -86,10 +86,10 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
          width buys the guard. */
       className="group relative w-[150px] rounded-md border bg-surface-2/95 px-3 py-2 backdrop-blur-sm"
       style={{
-        borderColor: lit ? "var(--color-amber)" : "var(--color-line-bright)",
+        borderColor: lit ? "var(--color-cyan)" : "var(--color-line-bright)",
         boxShadow: lit
-          ? "0 0 0 2px var(--color-amber), 0 0 30px -6px var(--color-amber)"
-          : `0 0 0 1px color-mix(in oklab, ${meta.color} 18%, transparent), 0 8px 24px -12px ${meta.color}`,
+          ? "0 0 0 2px var(--color-cyan)"
+          : "none",
       }}
     >
       <span
@@ -117,7 +117,7 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
       {/* Its own row, and the reason is geometry rather than taste.
           ------------------------------------------------------------
           This badge is the *words* half of "never colour alone" — the one thing on a lit
-          node that says in language what the amber ring says in hue — so it stays, and at
+          node that says in language what the blue ring says in hue — so it stays, and at
           the site's 11px mono floor rather than the 9px it used to be.
 
           But at 11px with 0.18em tracking it is ~105px wide, and sitting `ml-auto` on the
@@ -133,7 +133,7 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
           and there is no longer a width for a long name to grow into. */}
       {lit && (
         <div className="mt-1.5">
-          <span className="inline-block whitespace-nowrap rounded-full border border-amber/60 bg-amber/10 px-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-amber">
+          <span className="inline-block whitespace-nowrap rounded-full border border-cyan/60 bg-blue-paper px-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan">
             ◎ highlighted
           </span>
         </div>

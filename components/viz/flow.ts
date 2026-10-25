@@ -193,12 +193,12 @@ export const FLOW = {
   edge: {
     /** The dim base curve every present edge is drawn as. */
     line: 1.1,
-    /** Its opacity. The curve is structure and the pulse travelling it is the subject. */
-    lineOpacity: 0.42,
+    /** Structural curves stay readable on paper without a travelling pulse. */
+    lineOpacity: 0.8,
     /** The short bright segment travelling along it. */
     pulse: 2.1,
     /** The arrowhead, which says which way a run goes and then gets out of the way. */
-    arrowOpacity: 0.7,
+    arrowOpacity: 0.9,
     /**
      * The dashed run an absence is drawn as.
      *

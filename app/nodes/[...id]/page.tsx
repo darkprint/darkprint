@@ -21,7 +21,8 @@ import { Comments, type NoteView } from "@/components/blueprint/Comments";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { CardForkButton } from "@/components/nodes/CardForkButton";
 import { Avatar } from "@/components/ui/Avatar";
-import { KindBadge } from "@/components/ui/Badge";
+import { NodeOverview } from "@/components/nodes/NodeOverview";
+import detailStyles from "@/components/ui/DetailPage.module.css";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { MetaPill } from "@/components/ui/MetaPill";
 import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
@@ -674,7 +675,7 @@ function Panel({
           `justify-between` the position is the whole problem. Left-aligned with a fixed
           gap, the pair reads as one line and wraps together. */}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line px-4 py-3">
-        <h2 id={`${id}-heading`} className="label-lead">
+        <h2 id={`${id}-heading`} className="font-display text-xl font-medium text-cyan">
           {label}
         </h2>
         {meta !== undefined && (
@@ -1057,9 +1058,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
      produce links no guard checks and marks that never compile, which is the failure
      mode both tools were written to catch. */
   const cardMap: readonly SideRailItem[] = [
+    { href: "#node-overview", label: "Overview" },
     {
       href: "#specification",
-      label: "Specification",
+      label: "Instructions",
       meta: `${specWords} words`,
     },
     {
@@ -1069,7 +1071,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     },
     {
       href: "#fields",
-      label: "Every field",
+      label: "Full card",
       meta: `${declared} declared`,
     },
     {
@@ -1079,117 +1081,17 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     },
   ];
 
-  return (
-    <SideRail label="On this node" items={cardMap} ariaLabel="On this node" compact>
-    <div className="container-page py-10 lg:py-12">
-      {/* ---------- Header ----------
-          The blueprint page's band, drawn for a card.
-
-          The author, 2026-09-05: "In the card, adopt the same top left part of the header
-          showed in a blueprint. The right part is nice, uniform the right part with the
-          one of the blueprint page." So the shape is `components/bundle/BundleHeader.tsx`'s
-          — a left column of breadcrumb, identity line, name, full-width summary and chips,
-          against a right column of actions with their figure beneath — and this file draws
-          it rather than mounting that component.
-
-          Why not mount it: `BundleHeader` takes an `owner`, a `slug` and a `visibility`. A
-          card has an author who may hold no account at all (`getPublicAuthor` answers
-          `undefined`) and no visibility of its own, so mounting it would mean feeding it
-          three values a card does not have. Its Watch control is the other half of the
-          reason: the only `watch` verb on this site is `/api/authors/{handle}/watch`, which
-          follows a PERSON, so a Watch labelled for the card would subscribe the reader to
-          its author instead. The author asked for the shape; the shape is what this copies.
-
-          The action row itself is that header's, control for control, since the owner set
-          its order on 2026-09-05: Star over `/api/cards/{id}/star`, Fork drawn and switched
-          off until a card fork route exists, and the download last. See the right column
-          below for what each one is and what it is waiting on. */}
-      <header className="flex flex-col gap-5">
-        {/* The identity and the actions share a row. The summary, the chips and the
-            usage line do NOT sit in it: they are below, at the band's full width. See
-            the note above the summary. */}
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex min-w-0 flex-col gap-3">
-          <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
-            {/* Amber on hover, not cyan: the card's register since 2026-09-06, and this
-                link goes back to the shelf of cards rather than out to a blueprint. */}
-            <Link href="/nodes" className="transition-colors hoverable:hover:text-amber">
-              ← Cards
-            </Link>
-            {/* `--color-faint` is 1.83:1 and `globals.css` allows it on decorative
-                separators only, always `aria-hidden`. The `<nav>` and its two entries
-                already carry the hierarchy, so the slash is decoration and is marked as
-                such rather than being lifted to `--color-dim` — a 5.4:1 slash would read
-                as the third item in a two-item trail. */}
-            <span aria-hidden className="mx-2 text-faint">
-              /
-            </span>
-            <span className="text-muted">{typeLabel}</span>
-          </nav>
-
-          {/* The identity line, in `BundleHeader`'s slot and at its measure: who wrote the
-              card, a decorative slash, and the address the card is fetched by. The last
-              slot holds a blueprint's visibility pill, which a card has no answer for, so
-              the version stands there instead — it is the other half of `record.ref`, and
-              the fact a reader needs before copying either download below. */}
-          <div className="flex flex-wrap items-center gap-3">
-            {author !== undefined ? (
-              <span className="flex items-center gap-2">
-                <Avatar author={author} size="sm" link />
-                <Link
-                  href={`/u/${author.username}`}
-                  className="font-display text-xl text-amber transition-colors hoverable:hover:text-amber-bright"
-                >
-                  {author.username}
-                </Link>
-              </span>
-            ) : (
-              /* No account holds this handle, so there is no profile to link and no avatar
-                 to draw. Same size, `text-dim`: the card still says who wrote it, and what
-                 is missing is the account rather than the attribution. */
-              <span className="font-display text-xl text-dim">
-                {card.author ?? "unattributed"}
-              </span>
-            )}
-            <span aria-hidden className="font-display text-xl text-faint">
-              /
-            </span>
-            <span className="font-display text-xl font-semibold text-fg">{card.id}</span>
-            <MetaPill tone="surface">{record.version}</MetaPill>
-          </div>
-
-          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
-            {card.name}
-          </h1>
-
+  const header = (
+    <header className="border-b border-blue-rule bg-surface">
+      <div className={`container-page ${detailStyles.header}`}>
+        <nav className={`${detailStyles.breadcrumb} font-mono text-xs text-dim`} aria-label="Breadcrumb"><Link href="/nodes" className="text-cyan hoverable:hover:underline">← Cards</Link><span aria-hidden className="mx-2 text-faint">/</span>{typeLabel}</nav>
+        <div className={detailStyles.identity}>
+          {author !== undefined ? <><Avatar author={author} size="sm" link /><Link href={`/u/${author.username}`} className="text-cyan hoverable:hover:underline">{author.username}</Link></> : <span className="text-dim">{card.author ?? "unattributed"}</span>}
+          <span aria-hidden className="text-faint">/</span><span className="min-w-0 break-words text-fg">{card.id}</span><MetaPill tone="surface">{record.version}</MetaPill>
         </div>
-
-        {/* The right column, at `BundleHeader`'s measure: one action row, and the figure
-            those actions move underneath them.
-
-            ── Star, Fork, Get card, in that order ──
-            Three controls. `CardForkButton` does the thing over `POST /api/cards/{id}/fork`
-            rather than explaining it, so no explainer sits beside it. The card document's
-            download is the first item inside `CloneMenu`, with the clone command as the
-            second: the row has room for one menu, not for two drawings of one idea.
-
-            The group's `download` anchor left with the fork explainer. Its own comment
-            recorded that it existed because that component's panel linked it, and nothing
-            on this page links it now. Spelled here without the
-            `id=` attribute form on purpose — `components/site/anchors.test.ts` walks the
-            source for that literal, so a comment writing it out is an anchor as far as
-            that guard is concerned, and it found this one.
-
-            `CloneMenu` stays last for the reason the blueprint page's copy of this comment
-            records: from `lg` only the final item is guaranteed to end at the group's right
-            edge on a wrapped line, which is what its `right-0` panel is anchored to. Below
-            `lg` the row is full width and positioned, and the panel hangs from its left. */}
-        <div className="flex shrink-0 flex-col items-start gap-2 lg:items-end">
-          <div className="relative flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-            {/* `star`, not `count`/`seeded`: T280's cross-agent pin on `FavoriteStar`
-                (`components/ui/FavoriteStar.tsx`) turns the count pill into a real toggle
-                over `POST /api/cards/{id}/star`. `id` is untouched — it still addresses
-                the SAVE bookmark, a private and unrelated concept the pin leaves alone. */}
+        <h1 className={detailStyles.title}>{card.name}</h1>
+        <p className={detailStyles.summary}>{card.action}</p>
+        <div className={detailStyles.actions}>
             <FavoriteStar
               id={`node:${card.id}@${card.version}`}
               star={{
@@ -1199,16 +1101,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 signedIn: actor.kind === "account",
               }}
             />
-            {/* `fork`, so this is live: `POST /api/cards/{id}/fork` copies this
-                version into the reader's own namespace. The URL carries the BARE card id,
-                one segment or two, and the version travels in the body because the URL has
-                no room for it and the route refuses to fork whatever is latest.
 
-                No count travels with it, and that is the honest reading rather than an
-                omission: `lib/server/counters` publishes stars, downloads and notes for a
-                card and no fork figure, and a card fork's lineage lives in the forked row's
-                `provenance` string, which no column indexes. A zero drawn beside a working
-                button would be true until the first click. */}
             <CardForkButton
               fork={{
                 api: `/api/cards/${card.id}/fork`,
@@ -1216,20 +1109,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 signedIn: actor.kind === "account",
               }}
             />
-            {/* The same two-item menu the blueprint page's header carries: Download is the
-                card document, Clone is the CLI line for it.
 
-                `download` is handed over as an element rather than as a URL: `CloneMenu`
-                is a client component and this link carries the whole card document in its
-                href, so passing the string would serialise the document into the client
-                payload on top of the markup it is already in. A plain `<a>` rather than a
-                `ButtonLink`, since the href is a `data:` URI `next/link` has no routing to
-                do for, and the class list is spelled out so the amber lands rather than
-                being decided by stylesheet order against `outline`'s `text-fg`.
-
-                The clone line carries the reference alone, which is the grammar the CLI's
-                card verb takes; `card.author` above is attribution inside the document and
-                names a person, not the address the command resolves. */}
             <CloneMenu
               kind="node"
               cloneCommand={cloneLine}
@@ -1246,240 +1126,43 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 ) : undefined
               }
             />
-          </div>
-          {/* Under the actions, where a blueprint puts its version line: this is the
-              counter the download control increments, so it belongs beside it rather than
-              in the identity meta on the left. No `◐ seeded` marker — T150's
-              `target.download_count` backs the figure and T280 wired the read, so marking
-              it would be printing a real counter as though nothing stood behind it. */}
-          <span className="font-mono text-[11px] text-emerald">
-            ↓ {compact(signals.downloadCount)} downloads
-          </span>
-          {/* Why one of the two download controls is missing, said where the missing one
-              would have been. `BundleHeader` puts the same kind of sentence in the same
-              slot ("nothing to fetch: this bundle is not published"), and it used to be
-              said on this page by the Card source panel, which stated that the archive
-              held the resolved card and not the document. That panel is gone, so the
-              sentence moves here rather than going with it. */}
-          {source === undefined && (
-            <span className="font-mono text-[11px] text-dim">
-              no stored document for {record.ref}, only the resolved card
-            </span>
-          )}
         </div>
+        <div className={detailStyles.meta}>
+          <Link href={typeHref} aria-label={`Ontology node type: ${typeLabel}`} className="text-cyan hoverable:hover:underline">{typeLabel}</Link>
+          {phases.map((phase) => <Link key={phase.id} href={phase.href} aria-label={`Ontology phase: ${phase.label}`} className="hoverable:hover:text-cyan hoverable:hover:underline">{phase.label}</Link>)}
+          {staffed && <span className="text-violet"><span aria-hidden>⏸</span> human in the loop</span>}
+          {risks.length > 0 && <a href="#fields" className="text-warn">△ {risks.length} risk marker{risks.length === 1 ? "" : "s"}</a>}
+          <span>used in {usedIn.length} blueprint{usedIn.length === 1 ? "" : "s"}</span>
+          <span>↓ {compact(signals.downloadCount)} downloads</span>
+          {source === undefined && <span>no stored document for {record.ref}, only the resolved card</span>}
         </div>
+      </div>
+    </header>
+  );
 
-        {/* THE SUMMARY IS NOT IN THE ROW ABOVE, and that is the whole point of the nesting.
-            Owner instruction, 2026-09-06: "make the description below the name of a card or a
-            blueprint occupy full horizontal space."
+  return (
+    <SideRail label="On this node" items={cardMap} ariaLabel="On this node" layout="tabs" header={header} compact>
+    <div className="container-page py-6 lg:py-8">
+      <div className="flex min-w-0 flex-col gap-8">
 
-            The comment that stood here said "Full width, no cap" and it was WRONG, in the way
-            that is hardest to catch: there genuinely was no cap, so anyone looking for one
-            found nothing and concluded the line was already full width. The constraint was
-            structural. While this paragraph sat in the left column of a `lg:justify-between`
-            row, the action pills set its right edge, so it measured 818px inside a 1152px band
-            and broke with 334px of empty band beside it.
+        <NodeOverview card={card} />
 
-            `components/bundle/BundleHeader.tsx` carries the same correction for the blueprint,
-            made in the same instruction, and the two bands stay the same shape as the owner
-            asked on 2026-09-05. The chips and the usage line travel with the summary so the
-            reading order is unchanged: name, summary, chips, usage. */}
-        <div className="flex flex-col gap-3">
-          <p className="text-lg leading-relaxed text-muted">
-            {card.action}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <KindBadge kind="node" />
-            {/* The two dimensions, side by side and each named. They are the same kind
-                of thing — a term in the vocabulary — so they wear the same chip, and
-                the word in front of each says which dimension it is rather than
-                leaving a colour to carry it.
-
-                One phase chip per declared phase, and no chip at all when the card
-                declares none: a chip reading "phase · —" would put a blank where the
-                other chips carry a value and make a complete card look half-filled.
-                The Behaviour panel below says it in a sentence instead. */}
-            <Link
-              href={typeHref}
-              aria-label={`Ontology node type: ${typeLabel}`}
-              className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}
-            >
-              <span className="text-muted">type ·</span>
-              {typeLabel}
-              <span aria-hidden>→</span>
-            </Link>
-            {phases.map((phase) => (
-              <Link
-                key={phase.id}
-                href={phase.href}
-                aria-label={`Ontology phase: ${phase.label}`}
-                className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}
-              >
-                <span className="text-muted">phase ·</span>
-                {phase.label}
-                <span aria-hidden>→</span>
-              </Link>
-            ))}
-            {/* The one violet chip in the row, and now the only violet on the page.
-                Doc 2 §1.1: this states where a person acts, which is a third fact read
-                off the card — not a warning about the card, so not the alarm pink it
-                used to wear either.
-
-                It used to be one of five violet chips, which meant the colour said
-                nothing: a reader could not tell the chip about a person from the chip
-                about a node type. The vocabulary links beside it are cyan now, because
-                they are links, and violet is left doing the one job
-                `lib/format.ts`'s `HUMAN_PRESENCE_MARK` reserves it for. */}
-            {staffed && (
-              <span className={cx(CHIP, "border-violet/40 bg-violet/10 text-violet")}>
-                <span aria-hidden>⏸</span> human in the loop
-              </span>
-            )}
-            {/* The negative half of the interface, named in the header so it is not
-                something a reader finds only by scrolling. Each chip lands on the Card
-                values table, whose `cannot` and `will_not` rows carry the entries and, one
-                click deeper, what the engine does about each.
-
-                Two chips, or one, or none. `cannot · 2 declared` was one number over two
-                different promises, and a reader above the fold had no way to tell how much
-                of it the engine was standing behind. Each half draws only when the card has
-                one, so a card that refuses a type and undertakes nothing shows one chip
-                rather than a chip and a zero. */}
-            {prohibitions.length > 0 && (
-              <a href="#fields" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
-                <span className="text-muted">cannot ·</span>
-                {prohibitions.length} checked
-              </a>
-            )}
-            {card.willNot.length > 0 && (
-              <a href="#fields" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
-                <span className="text-muted">will_not ·</span>
-                {card.willNot.length} promised
-              </a>
-            )}
-            {/* Risk, in the header, which is the one fact a reader deciding whether to
-                wire this node most needs and the one the header did not carry.
-
-                `merge-executor` is the case that makes it plain: a node whose job is
-                merging pull requests, declaring `secret-access` and `unchecked-write`,
-                whose header said `cannot · 2 declared` and nothing else. The count of
-                prohibitions is a second-order fact; the markers are the decision.
-
-                It lands on `#fields` now. It used to land on `#evaluation`, the aside's
-                "Risk and autonomy" panel, and the author asked that panel off with the
-                rest of the scoring reading (2026-09-05). The markers themselves are card
-                data and survive as the `risk_markers` row of the field table, which opens
-                onto each marker's own sentence — so the chip still lands on the markers,
-                one screen further down, and `components/site/anchors.test.ts` would have
-                caught it had it been left pointing at nothing.
-
-                `--color-warn`, and the reason has changed under it. It used to be that
-                amber was spent on two other claims and this was neither. Amber is the
-                card register now (2026-09-06), which makes the distinction more
-                load-bearing rather than less: this chip has to stand OUT of the register
-                it sits in, because it is the one chip in the row saying something is
-                risky rather than saying what the card declares. Warn is the darker, less
-                saturated tier the token exists for, still 6.7:1 on this ground, and it is
-                far enough off amber's own lightness to read as a different claim beside
-                the amber chips either side of it. Rendered only when there are markers,
-                so the quiet case stays quiet. */}
-            {risks.length > 0 && (
-              <a
-                href="#fields"
-                className={cx(
-                  CHIP,
-                  "border-warn/50 bg-warn/10 text-warn hoverable:hover:border-warn",
-                  CHIP_PRESS,
-                )}
-              >
-                <span aria-hidden>△</span>
-                {risks.length} risk marker{risks.length === 1 ? "" : "s"}
-              </a>
-            )}
-          </div>
-
-          {/* The count, and only the count. The list itself was asked off the sidebar
-              ("very unmanageable when a given node is used in a lot of blueprints") and
-              `VersionHistory` still names the blueprints pinning each specific version,
-              which is the bounded version of the same question. */}
-          <p className="font-mono text-[11px] text-dim">
-            used in {usedIn.length} blueprint{usedIn.length === 1 ? "" : "s"}
-          </p>
-        </div>
-      </header>
-
-      {/* ---------- Body ----------
-          One column, full width. This was a `lg:grid-cols-3` with the panels on two
-          tracks and an aside on the third, and the aside held exactly two panels: "Risk
-          and autonomy" and "Identity". The author asked both off (2026-09-05), so the
-          third track had nothing left in it and a two-thirds main column would have left
-          a third of a 1200px page permanently blank. Text and panels run full width here,
-          which is the site's rule anyway; the grid was the exception the aside paid for.
-
-          `gap-10`, not `gap-8`. 32px is off the eight-point ladder this redesign holds
-          the site to — block↔block is 40 — and it was the gap between every panel on the
-          page, so the one value the reader meets most often was the one furthest from
-          the scale.
-
-          `min-w-0` stays. It was written for a grid item refusing to shrink below its own
-          min-content, and the 783px that set that min-content was the source panel's
-          `<pre>`, now deleted with the panel. What is left is the port table's
-          `min-w-[520px]`, which has its own `overflow-x-auto` and needs the container to
-          resolve to the viewport rather than to the table. Removing it would be trading a
-          measured fix for a guess about a case nobody has re-measured. */}
-      <div className="mt-10 flex min-w-0 flex-col gap-10">
-        {/* What the node actually does, and the first thing on the page after the
-            header, because it is the only field that answers the question the page
-            exists for.
-
-            It was not rendered at all. `card.spec` is, in the schema's own words, "the
-            payload delivered to Claude Code, or an equivalent agent, when the graph is
-            instantiated" — and it appeared exactly once in the whole app, in
-            `components/panes/build.ts`, where a blueprint pane counts its *words*. The
-            page drew every wire around the work and never the work.
-
-            That absence made the page contradict its own source. The prohibition panel
-            below glossed a free-text entry as "nothing checks it", while on
-            `maintainer-approval` the spec three panels down says "do not summarise the
-            change for them and do not recommend an outcome" — the prohibition is
-            carried, addressed to the agent, in the field that was not on the page. The
-            gloss is gone and the panel's footnote states the mechanism instead; the
-            reason the spec is rendered here at all is unchanged.
-
-            Rendered whole rather than clamped: every spec in the archive is a single
-            paragraph of 71–169 words (median 117), so there is nothing here that a
-            "show more" would spare a reader, and clamping the field the page was just
-            reorganised to promote would be an odd thing to do. `Ticked` renders the
-            backtick spans the specs use, the same way the author's notes are drawn. */}
         <Panel
           id="specification"
-          className="scroll-mt-24"
-          label="Specification"
+          className="scroll-mt-32"
+          label="Instructions"
           meta={`${specWords} words · handed to the agent`}
           lead
         >
-          {/* 16px against the 15px the other panels' prose uses. One step, not a
-              display size: this is the paragraph a reader came to read, and it should
-              feel like the body text of the page rather than like another field.
 
-              FULL WIDTH. This was `max-w-[68ch]`, which stopped the specification around
-              680px inside a 1200px band while every other panel on the page ran to the
-              edge — the one paragraph the page exists to carry was the one narrowest
-              column on it. The owner asked it out on 2026-09-05 ("the text of the
-              specification should occupy the full horizontal length"), and `app/globals.css`
-              already records the same correction being made four times over: the blueprint
-              summary, the release message in `History`, every panel in
-              `components/ontology/**`, and the glosses in `ReachList`. The default is the
-              full container; a measure is the exception and this was not one of them. */}
-          <p className="text-base leading-relaxed text-fg">
+          <p className={`${detailStyles.prose} text-base text-fg`}>
             <Ticked text={card.spec} />
           </p>
         </Panel>
 
         <Panel
           id="interfaces"
-          className="scroll-mt-24"
+          className="scroll-mt-32"
           label="Interfaces"
           meta={`${card.inputs.length} in · ${card.outputs.length} out`}
         >
@@ -1490,95 +1173,21 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           />
         </Panel>
 
-        {/* One panel where two stood, and no prose in it.
-            ------------------------------------------------------------
-            The author, reviewing this page: "non mi è chiaro affatto che cosa significhi
-            la sezione model skill e servers", and on the explanations beside each field,
-            "questa roba qua non serve, non dobbiamo dire all'utente perché tanto deve
-            essere autoesplicativa". On the panel below it: "la parte dei behaviour box
-            non ho assolutamente capito di cosa serva". And what he wants instead: the
-            section should list "tutti i campi che sono presenti all'interno della
-            descrizione di una card, in modo tale che un utente le possa vedere al volo".
-
-            `Model, skill and servers` was three `ReachRow`s whose glosses explained what
-            `model`, `skill` and `mcp` mean. `Behaviour` was a grab bag: phases with a
-            paragraph each, the agent label, tools, params, and the author's notes, under
-            a heading that named none of them.
-
-            So: every field the card declares, in the schema's own order, name beside
-            value. A reader who wants to know what `mcp` is has the word and the value,
-            which is what "self-explanatory" means here; a reader who wants the argument
-            has `/what-a-blueprint-is#the-words`, which carries what `/concepts`
-            used to and is linked below.
-
-            Two limit statements came off with the prose and are not lost. That a
-            `model` is a default a graph's `model_stylesheet` can override, and that a
-            `skill` is a pointer with no document in the bundle, are both said on
-            `/what-a-blueprint-is#the-words` in the `skill` and `model` rows of
-            `WhatACardReaches`. The
-            footnote under this table points there rather than restating them per card,
-            53 times over. */}
         <Panel
           id="fields"
-          className="scroll-mt-24"
-          label="Card values"
+          className="scroll-mt-32"
+          label="Full card"
           meta={`${declared} declared`}
         >
+          <details className="group">
+            <summary className="cursor-pointer py-1 text-sm text-cyan">Show all {FIELD_ROWS.length} fields</summary>
           <div className="flex flex-col gap-5">
             {CARD_BLOCKS.map((block) => {
               const rows = FIELD_ROWS.filter((row) => row.block === block.id);
               if (rows.length === 0) return null;
               return (
                 <section key={block.id} className="flex flex-col gap-2">
-                  {/* The block title, in the skeleton's own words.
-                      ------------------------------------------------------------
-                      `--color-amber`, on the owner's ruling of 2026-09-06: "the amber
-                      should be the dominant color on the cards sections. So that an
-                      user in a glance can know wheter they are on a blueprint or in a
-                      card." Five block titles and eighteen field names is the largest
-                      block of accent on this page, so this is the call site that
-                      decides what the ruling actually means.
 
-                      ── What it replaces ──
-                      `--color-copper-line`, which this took on 2026-09-05 to match the
-                      landing figure's YAML keys, and `--color-key` before that. The
-                      copper note argued at length that amber must never land here:
-                      amber carried two meanings sitewide, "not built yet" and "this box
-                      leaves the page", and twenty amber items in one viewport was the
-                      largest dilution of a semantic colour the site had. Half of that
-                      argument was about COUNT and it still binds — see the shape rule
-                      below. The other half asserted that only those two meanings may
-                      ever spend the hue, and the owner has now overruled it twice, in
-                      September's own words both times.
-
-                      ── The shape rule, which is what keeps the honesty signals alive ──
-                      An honesty claim on this site is a FILLED amber rectangle with a
-                      heavy rule down its leading edge and the claim written inside it.
-                      An accent is amber line weight on a word. Nothing on this page
-                      wears a filled amber ground, so nothing here can be mistaken for
-                      the claim the shape carries. `components/blueprint/CloneMenu.tsx`
-                      holds the other end of the same rule, where a register accent and a
-                      not-built-yet fence sit inside one panel.
-
-                      It is still not `text-cyan`: cyan says a thing can be clicked and a
-                      block title cannot. That argument, which the `--color-key` repoint
-                      was built on, survives every repoint since.
-
-                      Measured for THIS hue rather than carried across from copper's. The
-                      ground is unchanged: the panel's
-                      `color-mix(oklab, --color-surface 92%, transparent)` composited
-                      over `--color-void`, sampled off a canvas at rgb(9, 11, 21).
-                      `#ffb020` on it reads **10.73:1**, up from copper's 8.40:1. AAA at
-                      the 12px `<dt>` and at the 14px `.label-lead`, against a 4.5:1
-                      requirement. Flat token only: `amber/70` lands at 5.57:1 and
-                      `amber/80` at 7.07:1, both legal, and neither is worth a second
-                      spelling of one register on one page.
-
-                      `.label-lead` rather than an `<h3>`, for the reason `globals.css`
-                      writes down: a mono uppercase run is a label, and a label is not
-                      a heading level. The panel's own `<h2>` is the outline position
-                      this group sits under; five sibling `<h3>`s at 12px underneath a
-                      13px `<h2>` were claiming a level the type never drew. */}
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
                     <span className="label-lead text-amber">{block.label}</span>
                     <Link
@@ -1596,32 +1205,14 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                       const note = FIELD_NOTE[row.wire ?? row.name];
                       const detail = row.detail?.(card, fieldView);
                       const measure = row.measure?.(card);
-                      /* Whether this row is a `<details>` at all, which is what decides
-                         whether a clamp on it can ever be undone. Every key of doc 1 §3
-                         has a note, so in practice it is always true; a row that somehow
-                         opened onto nothing must not also be a row that hides half its
-                         value behind a fold nobody can lift. */
+
                       const opens = false;
                       const head = (
                         <>
-                          {/* `text-amber`, the same token as the block title above and
-                              for the same reason: this is a card's field name and the
-                              card register is amber since the owner ruled it on
-                              2026-09-06. Not `text-cyan`: cyan says a thing can be
-                              clicked and a field name cannot, so the key tier carries no
-                              underline and no hover. The value beside it stays
-                              `text-fg`/`text-dim`, which is also what `YamlListing` does
-                              with its scalars — the key is what the register marks, not
-                              the whole row. Flat token, no ground: a filled amber
-                              rectangle is the shape an honesty claim wears, and
-                              eighteen of them down a table would take that shape away
-                              from the claims that need it. */}
+
                           <dt className="font-mono text-[12px] text-amber">
                             {row.name}
-                            {/* The meta slot: how long a prose field is, under its name
-                                where the clamp cannot reach it. Beside the name on a
-                                phone, where the grid is one column and the `dt` is its
-                                own row. */}
+
                             {measure !== undefined && (
                               <span className="label ml-2 sm:ml-0 sm:mt-1 sm:block">
                                 {measure}
@@ -1634,29 +1225,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                               value.empty ? "text-dim" : "text-fg",
                             )}
                           >
-                            {/* The value, clamped to three lines and unclamped by the
-                                row's own open state. `group` is on the `<details>`
-                                inside `FieldDisclosure`, so this is CSS and nothing
-                                else: the whole value is in the prerendered HTML, in the
-                                accessible tree, and findable by find-in-page whether the
-                                row is open or shut.
 
-                                Three rather than the skeleton pane's two, because this
-                                panel has no height cap and 22 rows do not share a
-                                `max-h-[26rem]` box here. Lines rather than characters
-                                because this column measures 534px on a desktop and 290px
-                                on a phone, and one character budget cannot be right at
-                                both widths.
-
-                                `Ticked` because a card's `spec` and `notes` are written
-                                with `backticked` port and parameter names, and the note
-                                this row opens onto renders its own ticks as chips. */}
-                            {/* `line-clamp-3` alone, never beside a `block`: the clamp
-                                works by setting `display:-webkit-box`, and Tailwind
-                                emits the two display declarations in an order that let
-                                `block` win. Measured, not assumed — the first version of
-                                this row carried both and rendered a `spec` at its full
-                                196px with the clamp inert. */}
                             <span
                               className={
                                 opens ? "line-clamp-3 group-open:line-clamp-none" : "block"
@@ -1664,9 +1233,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                             >
                               <Ticked text={value.text} />
                             </span>
-                            {/* Where a field has a panel of its own, the row points at
-                                it as well. Outside the clamp, so the pointer is never
-                                the thing that gets folded away. */}
+
                             {row.seeHref !== undefined && !value.empty && (
                               <a
                                 href={row.seeHref}
@@ -1679,11 +1246,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         </>
                       );
 
-                      /* A row with nothing more to say stays a plain row. A summary
-                         that opens onto nothing is a worse offer than no affordance,
-                         which is the same rule the vocabulary chips follow. Every key
-                         of doc 1 §3 has a note, so in practice this branch is the
-                         guard for a row added here before its note was written. */
                       if (!opens) {
                         return (
                           <div
@@ -1695,12 +1257,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         );
                       }
 
-                      /* The marker's placement, its 11px size and the `pl` that
-                         reserves its gutter all moved into `FieldDisclosure`, which
-                         the blueprint page's card skeleton now draws its own rows
-                         with. The reasoning went with them; the short of it is that a
-                         browser's native triangle sits outside this grid and pushes
-                         the first column out of line with the rows that have none. */
                       return (
                         <FieldDisclosure
                           key={row.name}
@@ -1709,8 +1265,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                           bodyClassName="flex flex-col gap-3 pb-3 pl-[1.15rem] sm:pl-[10.15rem]"
                           summary={head}
                         >
-                          {/* What the field is for, first and the same on every card,
-                              then what this card in particular put in it. */}
+
                           {note !== undefined && (
                             <Detail>
                               <Ticked text={note} />
@@ -1727,13 +1282,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           </div>
 
           <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed text-dim">
-            {/* Amber, the card register, since the owner ruled it on 2026-09-06. This
-                line used to argue the opposite — that amber marks a BOX which leaves the
-                page, never an inline sentence link. The shape half of that argument
-                survives and is the reason the honesty boxes on this site are still
-                legible: a claim is a filled rectangle with a rule down its leading edge,
-                and an accent is line weight on a word. What did not survive is the claim
-                that only two meanings may spend the hue. */}
+
             <Link
               href="/spec/card"
               className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hoverable:hover:decoration-amber"
@@ -1742,31 +1291,14 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             </Link>
           </p>
 
+          </details>
         </Panel>
 
-        {/* Wrapped only to give the card map something to land on. `VersionHistory`
-            renders its own `<section>` and its own `<h2>` and takes no `id`, so the
-            scroll target and its offset have to live on a box around it. */}
-        <div id="version-history" className="scroll-mt-24">
+        <div id="version-history" className="scroll-mt-32">
           <VersionHistory versions={history} />
         </div>
       </div>
 
-      {/* Community notes, under the panels, the same component and the same position the
-          blueprint pages use. The author asked for it here too, and the
-          asymmetry was real: a blueprint could be discussed and a card could not, though
-          a card is the thing somebody lifts on its own.
-
-          `live` mode (T280's pin on `Comments`): the first page comes off `listNotes` above
-          rather than `lib/data/node-community`'s always-empty fixture, and posting, editing,
-          deleting and voting all reach `/api/cards/{id}/notes`. The "posting is not built"
-          sentence and the seeded marker retire with it — there is a form and a runner
-          behind it now. `comments={[]}` stays: `comments` is the frozen surface's own
-          existing required prop, and `Comments` renders `live` in its place when it is
-          present rather than reading the empty array. */}
-      {/* `subject`, because the empty state's sentence was hard-coded to "blueprint" and
-          this is a node card — so all 53 of these pages closed on the wrong noun, in the
-          last sentence a reader meets. */}
       <div className="mt-10">
         <Comments
           comments={[]}

@@ -110,7 +110,7 @@ export function activeRailIndex(
   return onScreen > passed ? onScreen : passed;
 }
 
-export function RailScrollSpy() {
+export function RailScrollSpy({ threshold = THRESHOLD }: { threshold?: number } = {}) {
   useEffect(() => {
     const nav = document.getElementById(RAIL_NAV_ID);
     if (nav === null) return;
@@ -164,7 +164,7 @@ export function RailScrollSpy() {
       const index = activeRailIndex(
         targets.map((target) => target.el.getBoundingClientRect().top),
         {
-          threshold: THRESHOLD,
+          threshold,
           viewport: window.innerHeight,
           atBottom:
             window.scrollY + window.innerHeight >=
@@ -193,7 +193,7 @@ export function RailScrollSpy() {
       window.removeEventListener("resize", onScroll);
       mark(null);
     };
-  }, []);
+  }, [threshold]);
 
   return null;
 }

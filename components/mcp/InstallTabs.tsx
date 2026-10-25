@@ -97,7 +97,7 @@ export function InstallTabs({ className }: { className?: string } = {}) {
                 // clients are unavailable rather than unshown.
                 "rounded-md border px-2.5 py-1.5 font-mono text-xs transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
                 isActive
-                  ? "border-transparent bg-blueprint-ink text-void"
+                  ? "border-transparent bg-cyan text-void"
                   : "border-line text-muted hoverable:hover:text-fg",
               )}
             >

@@ -6,22 +6,11 @@ type Variant = "primary" | "outline" | "ghost" | "card";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
-  /* Every hover below is gated behind `hoverable` (app/globals.css declares
-     `@custom-variant hoverable (@media (hover: hover) and (pointer: fine))`). A phone has no
-     hover, but it still MATCHES `:hover` on tap and then holds it until the next tap lands
-     somewhere else — so an ungated button keeps its hover colour all the way to the route
-     change, which reads as "still loading" on the one control the reader just used.
-
-     The primary wore `shadow-[0_0_24px_-6px_var(--color-cyan)]` — a zero-offset coloured
-     halo, which is a glow rather than a shadow: it says "this element is emitting light",
-     which is decoration, and it reads as a focus or active state on a control that is
-     neither. A shadow carries an offset because a light source is somewhere. This one is
-     cast downward and tinted with the button's own hue instead of grey, which is what
-     keeps it from going muddy on the dark ground. */
+  /* Fine-pointer hover avoids a latched hover colour after a phone tap. */
   primary:
-    "bg-cyan text-void font-medium hoverable:hover:bg-cyan-bright shadow-[0_6px_16px_-8px_var(--color-cyan)]",
+    "bg-cyan text-void font-medium hoverable:hover:bg-cyan-bright",
   outline:
-    "border border-line-bright text-fg hoverable:hover:border-cyan hoverable:hover:text-cyan bg-transparent",
+    "border border-cyan text-cyan bg-blue-paper hoverable:hover:border-cyan-bright hoverable:hover:text-cyan-bright hoverable:hover:bg-cyan/10",
   ghost: "text-muted hoverable:hover:text-fg bg-transparent",
   /* `outline`'s shape in the card register (globals.css, amber job 3): the hue answers WHICH
      document this control is about, and the affordance still comes from the shape, the height
@@ -68,17 +57,10 @@ const SIZES: Record<Size, string> = {
    still happens — it just snaps down and snaps back with no ramp, which is the one thing a
    120ms curve exists to prevent. Any component copying this pattern needs `scale` too.
 
-   DISABLED. `opacity-50` put `text-void` on `bg-cyan` under the readable band, so a disabled
-   primary could not be read at all — 60% is dimmer than enabled and still legible. And
-   `pointer-events-none` is gone: the `disabled` attribute already blocks activation on a
-   `<button>`, so all that rule bought was making the control invisible to the pointer, which
-   is precisely what stopped a disabled button from showing a cursor change or a `title`
-   saying why it is off (BundleDropzone's "Add to the selection" is the live case).
-   The utilities compile to `&:disabled`, a pseudo-class no `<a>` can ever match, so they are
-   inert on ButtonLink and correct on Button; `disabled` is not in ButtonLink's prop type
-   either, so it cannot be passed there. */
+   Disabled buttons keep readable ink on a neutral face. The native disabled attribute
+   blocks activation while preserving the cursor and any explanation in the title. */
 const base =
-  "inline-flex items-center justify-center rounded-md whitespace-nowrap select-none transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center rounded-md whitespace-nowrap select-none transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97] disabled:border disabled:border-line-bright disabled:bg-surface-2 disabled:text-dim disabled:shadow-none disabled:cursor-not-allowed";
 
 type CommonProps = {
   variant?: Variant;

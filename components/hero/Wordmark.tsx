@@ -418,7 +418,7 @@ export function Wordmark() {
           <span
             data-mark="mark"
             suppressHydrationWarning
-            className="block font-display font-semibold leading-[0.92] tracking-[-0.035em] text-fg"
+            className="block font-brand font-semibold leading-[0.92] tracking-[-0.035em] text-fg"
             style={{
               /* The lower bound is what a 390-pixel phone gets, and it is set from the word
                  rather than from a scale: nine characters of the display face at 15vw fill
@@ -431,8 +431,6 @@ export function Wordmark() {
                  7.2:1 step that made the sentence the fourth read. 112px against a 30px
                  claim in `text-fg` is 3.7:1, and the sentence becomes the second. */
               fontSize: "clamp(3.4rem, 11vw, 7.5rem)",
-              textShadow:
-                "0 0 32px color-mix(in oklab, var(--color-cyan) 32%, transparent), 0 0 120px color-mix(in oklab, var(--color-blueprint-line) 22%, transparent)",
             }}
           >
             {/* Two tones, one text node's worth of characters.
@@ -495,7 +493,7 @@ export function Wordmark() {
 
         <span
           data-mark="claim"
-          className="block max-w-2xl text-balance font-sans text-xl leading-snug text-fg sm:text-[2rem]"
+          className="block max-w-2xl text-balance font-display text-xl leading-snug text-fg sm:text-[2rem]"
         >
           {CLAIM}
         </span>

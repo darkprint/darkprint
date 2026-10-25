@@ -136,8 +136,8 @@ export function ProfileFields({
         <span
           className={
             validator
-              ? "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-void ring-2 ring-cyan/70 ring-offset-2 ring-offset-void"
-              : "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-void"
+              ? "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-avatar-ink ring-2 ring-cyan/70 ring-offset-2 ring-offset-void"
+              : "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-avatar-ink"
           }
           style={{
             width: AVATAR_PX,

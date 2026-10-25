@@ -12,11 +12,11 @@
     the rule exists to prevent. components/site/logo.test.ts reads this file and
     app/globals.css and fails if they stop agreeing.
 
-      #05060d  color-void             the ground
-      #061c52  color-blueprint-deep   the flap
-      #74b4ff  color-blueprint-line   the folder edge and the graph edge
-      #7dd3fc  color-cyan-bright      the trigger node
-      #34d399  color-emerald          the ship node
+      #f7f5ef  color-void             the ground
+      #eeeae2  color-blueprint-deep   the flap
+      #3e474e  color-blueprint-line   the folder edge and the graph edge
+      #194383  color-cyan-bright      the trigger node
+      #27624a  color-emerald          the ship node
 
     The token names above are written WITHOUT their leading pair of hyphens, and that is
     not a typo. XML forbids a double hyphen inside a comment, and this file shipped with
@@ -25,15 +25,13 @@
     other icon in the head. It is a comment, so nothing type-checked it and no test that
     read the file as a string could see it. logo.test.ts parses it as XML now.
 
-    The ground is painted rather than left transparent. A browser composites this file
-    onto its own tab strip, which is light in most of them, and every colour below is drawn
-    for the void; on white the flap loses its edge and the two nodes float.
+    The paper ground is painted so the mark keeps its contrast on any tab-strip colour.
 
     No back plate and no tab at this rung: at 16px they are two grey pixels. Two solid
     discs and one edge, per the reduction ladder. The mark sheds nodes rather than
     shrinking them.
   -->
-  <rect width="64" height="64" fill="#05060d"/>
+  <rect width="64" height="64" fill="#f7f5ef"/>
   <!--
     Lifted to centre the ink. The drawing inherits its y from the full mark, where the back
     plate sits above the flap and holds the balance; this rung drops the plate, so on a
@@ -41,9 +39,9 @@
     stroke, so -9 puts its midpoint on 32.
   -->
   <g transform="translate(0 -9)">
-  <path d="M8 26h46a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V28a2 2 0 0 1 2-2z" fill="#061c52" stroke="#74b4ff" stroke-width="4.5" stroke-linejoin="round"/>
-  <path d="M30 41L36 41" fill="none" stroke="#74b4ff" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="24" cy="41" r="5" fill="#7dd3fc"/>
-  <circle cx="42" cy="41" r="5" fill="#34d399"/>
+  <path d="M8 26h46a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V28a2 2 0 0 1 2-2z" fill="#eeeae2" stroke="#3e474e" stroke-width="4.5" stroke-linejoin="round"/>
+  <path d="M30 41L36 41" fill="none" stroke="#3e474e" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="24" cy="41" r="5" fill="#194383"/>
+  <circle cx="42" cy="41" r="5" fill="#27624a"/>
   </g>
 </svg>

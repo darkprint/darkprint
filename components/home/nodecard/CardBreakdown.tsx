@@ -231,7 +231,7 @@ export function CardBreakdown({
               scrollbar at rest, and the cut then reads as a bug rather than as an edge.
               `aria-hidden` because the region below announces itself and its length, and
               an arrow read aloud is noise. */}
-          <span aria-hidden className="shrink-0 whitespace-nowrap text-dim/70">
+          <span aria-hidden className="shrink-0 whitespace-nowrap text-dim">
             scroll →
           </span>
         </span>

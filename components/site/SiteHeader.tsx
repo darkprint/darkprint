@@ -389,7 +389,7 @@ export function SiteHeader() {
   }, [mobileOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line/70 bg-void/88 backdrop-blur-md">
+    <header className="rubric-header sticky top-0 z-50 border-b border-blue-rule border-t-[3px] border-t-cyan bg-void/88 backdrop-blur-md">
       <div className="container-page flex h-16 items-center gap-3">
         {/* The lockup: mark left of the wordmark, and the wordmark unchanged.
             ------------------------------------------------------------
@@ -401,12 +401,8 @@ export function SiteHeader() {
             site, and a mark announcing itself next to the word it stands for reads out
             "DarkPrint DarkPrint". The link's accessible name is the wordmark's text.
 
-            The wordmark itself is untouched — `font-display`, `font-semibold`,
-            `tracking-tight`, `Dark` in `--color-fg` and `Print` in `--color-cyan`. The
-            letterforms agree with the hero by construction:
-            `scripts/generate-wordmark-paths.ts` traces it out of Space Grotesk SemiBold,
-            which `@theme inline` maps to `--font-display`, so one set of letterforms is
-            drawn as outlines there and set as live type here. */}
+            The small lockup uses the document serif. The hero keeps its traced Space
+            Grotesk lettering through the separate font-brand token. */}
         {/* `items-baseline`, not `items-center`. A lockup is a mark standing on the
             wordmark's baseline, and centring aligns the mark's BOX against the type's LINE
             BOX instead: the box carries empty room under the drawing, the line box carries
@@ -428,7 +424,7 @@ export function SiteHeader() {
               href={item.href}
               className={cx(
                 "rounded-md px-2.5 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
+                isActive(item.href) ? "bg-blue-paper text-cyan" : "text-cyan hoverable:hover:bg-blue-paper",
               )}
             >
               {item.label}
@@ -450,14 +446,14 @@ export function SiteHeader() {
               className={cx(
                 "flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2.5 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm [&::-webkit-details-marker]:hidden",
                 BUILD.some((item) => isActive(item.href))
-                  ? "text-cyan"
-                  : "text-muted hoverable:hover:text-fg",
+                  ? "bg-cyan/10 text-cyan"
+                  : "text-cyan hoverable:hover:bg-blue-paper",
               )}
             >
               AI Tools
               <Caret />
             </summary>
-            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
+            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-blue-rule bg-blue-paper shadow-[0_12px_28px_-16px_rgb(34_32_29/0.2)]">
               <div className="flex flex-col py-2">
                 {BUILD.map((item) => (
                   <Link
@@ -497,14 +493,14 @@ export function SiteHeader() {
               className={cx(
                 "flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2.5 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm [&::-webkit-details-marker]:hidden",
                 LEARN.some((item) => isActive(item.href))
-                  ? "text-cyan"
-                  : "text-muted hoverable:hover:text-fg",
+                  ? "bg-cyan/10 text-cyan"
+                  : "text-cyan hoverable:hover:bg-blue-paper",
               )}
             >
               Learn
               <Caret />
             </summary>
-            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 py-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
+            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-blue-rule bg-blue-paper py-2 shadow-[0_12px_28px_-16px_rgb(34_32_29/0.2)]">
               {LEARN_GROUPS.map((group) => (
                 <section key={group.title} className="py-1">
                   <p className="px-4 pb-1 pt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
@@ -573,7 +569,7 @@ export function SiteHeader() {
                   <Caret />
                 </span>
               </summary>
-              <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
+              <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-blue-rule bg-blue-paper shadow-[0_12px_28px_-16px_rgb(34_32_29/0.2)]">
                 <div className="flex items-center gap-3 border-b border-line p-4">
                   <Avatar author={authorFor(account.author)} size="md" />
                   <span className="flex min-w-0 flex-col">

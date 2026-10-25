@@ -114,7 +114,7 @@ export function SurfaceTabs({
               className={cx(
                 "-mb-px border-b-2 px-4 py-2.5 text-[15px] transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
                 on
-                  ? "border-cyan text-cyan"
+                  ? "border-cyan bg-blue-paper text-cyan"
                   : "border-transparent text-muted hoverable:hover:text-fg",
               )}
             >

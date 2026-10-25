@@ -1,41 +1,3 @@
-/* ============================================================
-   T260 — the reader `/blueprints` waits on, held from this side
-
-   The orchestrator owes T080 a batch reader,
-   `graphsOf(db, actor, keys)`, answering
-   `{ graph, requiredAgents, requiredTools }` per key. It is not
-   built: the registry barrel exports thirteen readers and none of
-   them is it, and `grep -rn 'graphsOf\\|graphForBlueprint\\|
-   requiredAgents\\|requiredTools' lib/server/` returns nothing at
-   all — those three live only on the build-time side
-   (`lib/graph-seed.ts`, `lib/content/view.ts`).
-
-   ── why a blind author holds someone else's signature ──
-   Because `/blueprints` cannot be cut over without it, and because
-   the failure mode if it never lands is not a missing import. It is
-   a route that computes the three itself, which is available
-   (`lib/graph-seed.ts` is not Forbidden to T260) and which
-   re-implements a projection T080 owns. `lib/server/search/
-   blueprints.ts` names that exact temptation and refuses it in as
-   many words: *"deriving the scorecard myself would re-implement
-   D-80-03's current-release rule, which is the defect this run has
-   charged more than any other."*
-
-   So the cells below are two different criteria. One says the
-   reader exists. The other says the route did not route around it —
-   and that one is T260's own, it can fail independently, and it is
-   the one that stays useful after the reader lands.
-
-   ── what this file DOES NOT assert ──
-   The per-key SHAPE of what `graphsOf` returns. Calling it needs a
-   database and a seeded store, and a cell that pinned the shape
-   without calling it would be a type assertion, which erases —
-   green against a module that does not exist. The source cell below
-   is what distinguishes *the export is absent* from *an assertion
-   about it failed*, and it is the only honest instrument available
-   from here until the reader is real.
-   ============================================================ */
-
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
@@ -57,7 +19,7 @@ import {
 
 const REGISTRY_BARREL = "lib/server/registry/index.ts";
 
-/** Fields the shelf must display, including through its row component. */
+/** Fields preserved by the batch projection, including metadata used outside the shelf. */
 const OWED = ["graph", "requiredAgents", "requiredTools"] as const;
 
 /** Every name the registry barrel re-exports, read from the barrel rather than imported. */
@@ -80,10 +42,9 @@ function barrelExports(): Set<string> {
 }
 
 describe("T260's dependency: the batch graph reader `/blueprints` needs", () => {
-  // Rendering follows the component boundary; a search haystack or type declaration cannot
-  // stand in for fields the reader must actually see on both kinds of shelf row.
+  // Render both featured and ordinary entries so neither can reintroduce removed metadata.
   it.each(["starter-software-factory", "ordinary-blueprint"])(
-    "`GalleryBrowser` renders all three fields for %s",
+    "`GalleryBrowser` renders the graph without agent or tool metadata for %s",
     (slug) => {
       const base = allBlueprints()[0];
       expect(base.graph.nodes.length).toBeGreaterThanOrEqual(2);
@@ -110,8 +71,9 @@ describe("T260's dependency: the batch graph reader `/blueprints` needs", () => 
       ] as const) {
         expect(
           html,
-          `the shelf must display ${field} under its visible label`,
-        ).toContain(`>${label}</dt><dd>${blueprint[field].join(", ")}</dd>`);
+          `the shelf must omit ${field} metadata`,
+        ).not.toContain(label);
+        for (const value of blueprint[field]) expect(html).not.toContain(value);
       }
     },
   );

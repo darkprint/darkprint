@@ -1,0 +1,18 @@
+.header {
+  display: grid;
+  grid-template-areas: "breadcrumb" "identity" "title" "summary" "actions" "meta";
+  gap: 0.625rem;
+  padding-block: 1.25rem;
+}
+.breadcrumb { grid-area: breadcrumb; }
+.identity { grid-area: identity; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0; font-family: var(--font-mono), monospace; font-size: 0.75rem; }
+.title { grid-area: title; min-width: 0; color: var(--color-cyan); font-family: var(--font-display), sans-serif; font-size: 2rem; font-weight: 600; line-height: 1.15; letter-spacing: -0.025em; overflow-wrap: anywhere; }
+.summary { grid-area: summary; color: var(--color-muted); font-size: 1rem; line-height: 1.65; }
+.actions { grid-area: actions; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding-top: 0.25rem; }
+.meta { grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; color: var(--color-dim); font-size: 0.75rem; }
+.prose { max-width: 72ch; font-size: 1rem; line-height: 1.8; }
+@media (min-width: 64rem) {
+  .header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "breadcrumb breadcrumb" "identity actions" "title actions" "summary summary" "meta meta"; gap: 0.5rem 2rem; padding-block: 1.5rem; }
+  .title { font-size: 2.25rem; }
+  .actions { align-self: center; padding-top: 0; }
+}

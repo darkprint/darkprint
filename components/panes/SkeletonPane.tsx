@@ -9,125 +9,10 @@ import { Ticked } from "@/components/ui/Ticked";
 import { FIELD_NOTE } from "./field-notes";
 import { CARD_BLOCKS, type PaneAbsence, type PaneFocus, type PaneModel } from "./model";
 
-/* ============================================================
-   Pane 2: the skeleton of the selected node's card.
-   ------------------------------------------------------------
-   Doc 1 §3's blocks, drawn as labelled slots and filled in from
-   the card the selected node pins. Doc 2 §5.1 puts this pane
-   second on purpose: "una card vista a freddo è un file YAML con
-   dei campi; non significa nulla finché non si sa in cosa si
-   incastra". The slots are the template, and the drawing next to
-   them is what the template is for.
-
-   Two things this pane has to get right.
-
-   The fifth group is drawn apart because doc 1 §3 closes on the
-   distinction: identity, behaviour and interfaces are read when
-   the graph **runs**, the evaluation metadata is read by
-   DarkPrint's **static analysis**, and the service fields are
-   read by neither. One document, two audiences, and the split is
-   the most useful thing a skeleton can teach.
-
-   An empty slot is an answer. A card with no tools and no risk
-   markers has said what it needed to say, and nothing here draws
-   it as a form left half-filled: the slot states what the card
-   says instead of counting what it does not.
-
-   `linkToCard` turns the header's ref into a real link out to that
-   card's own page, for the blueprint detail page's merged panel —
-   see the prop's own doc comment for who leaves it off and why.
-
-   ── Every row opens, and why it is a `<details>` ──
-   The author, of this pane: "when clicking on the fields listed
-   for a node, it opens the field providing more information (like
-   in the node webpage card)". `/nodes/<id>` had it already, and
-   the two now share both halves: the disclosure chrome is
-   `components/ui/FieldDisclosure.tsx`, and the paragraph behind
-   each key is `./field-notes.ts` — so the sentence about what
-   `cannot` enforces is written once for the whole site instead of
-   drifting between two pages that both claim to list every field.
-
-   These rows were a roving-tabindex listbox until then: one tab
-   stop, arrow keys inside it, selection following focus, the
-   pattern `./listbox.ts` still runs pane 3 on. It could not carry
-   a disclosure. A `role="option"` may not hold an interactive
-   descendant, the listbox's own Enter and Space handler claims
-   the two keys a `<summary>` needs, and the detail was rendered
-   only for the row the client had selected — so it was in no
-   prerendered document, and reachable by neither find-in-page nor
-   a reader without script. A native `<details>` is all of that
-   for free, and announces its own open state.
-
-   What it costs is the single tab stop: the list is one stop per
-   field now. That is the trade `/nodes/<id>`'s field table
-   already made, and it buys the property the author asked for.
-   Absences keep a control of their own, because an absence is not
-   a field of the card and opens onto nothing.
-
-   ── The row shows the value, and the clamp is the only cut ──
-   The author again, at the `spec` row: "I expected the content of
-   the spec there and if this does not fit within the available
-   space, on click it shows the details." Three rows used to answer
-   with a description of themselves instead, and `params` printed
-   its keys and dropped every value. They print what the card wrote
-   now; `./build.ts` says what changed and why per field.
-
-   The cut that is left is a CSS `line-clamp-2`, undone by
-   `group-open:line-clamp-none` when the row is opened. It costs
-   nothing at build time, it needs no measurement in the browser,
-   and it does not decide anything: the whole value is in the
-   prerendered HTML, in the accessible tree, and findable by
-   find-in-page whether the row is open or closed. The line count
-   is deliberately not a character count, because the value column
-   is 720px wide here on a desktop and 304px on a phone, and one
-   budget cannot be honest at both.
-
-   The consequence to know about is that a `<summary>` is a button
-   and its whole content is its accessible name, so the `spec` row
-   names itself with the spec. That is why `PaneField.measure`
-   exists and why `announce` reads it instead of the value: the
-   live region stays one sentence while the row stays whole.
-   ============================================================ */
-
-/* ── Why this pane is copper and not cyan, and no longer amber ──
-   The author's call, 2026-08-04: "I want also identity, behaviour and the subfield all in
-   orange like Open card."
-
-   It started with `Open card →` alone, on the rule `app/globals.css` records: amber marks
-   the things that leave the page. The first version stopped there and said so, because on
-   the rest of the site amber also means "not built yet" and the field marks should not
-   read as warnings. The author looked at the result and wanted the block whole — so the
-   whole block became amber, with a note conceding the tension rather than resolving it.
-
-   It is resolved now. `--color-copper-line` exists (globals.css), introduced for the node
-   card figure precisely so a warm register could exist that is NOT the "not built yet"
-   colour: oklch hue 46 against amber's 75, close enough to read as the same family and far
-   enough that nothing here can be mistaken for a `ComingSoonBadge`. The author asked for
-   orange; copper is the orange, and it costs none of amber's meaning.
-
-   The reason the block is warm at all is unchanged and worth stating so nobody quietly
-   re-blues it: this pane is *about* a node, and everything in it points at one. The section
-   labels name the card's blocks, the `▪`/`◌` marks say which fields that card writes, and
-   the link opens the card's own page. One warm block reads as one subject, where a warm
-   link inside a cool panel read as an exception.
-
-   `/nodes/[...id]` paints its field names from the same token, so a reader moving between
-   the pane and the card's own page meets one colour for one idea. Changing either without
-   the other reopens a split that took two passes to close.
-
-   ── The one thing still amber, and why ──
-   `Open card →` keeps `text-amber`. It is the single control in this block that LEAVES the
-   page, and amber-with-an-arrow is the site's signal for exactly that — `.route-box`'s rule
-   at inline scale, which is one of amber's two sanctioned jobs. The author's instruction was
-   about identity, behaviour and the subfields; a departure link is none of those.
-
-   So the block now says two things with two colours instead of one colour with a footnote:
-   copper is *this describes the node*, amber is *this takes you somewhere*. The select above
-   it stays cool for the same reason it always did — it says "Jump to a node" but jumps
-   within these panes, so a departure colour on it would promise a trip that never happens. */
 export function SkeletonPane({
   paneNumber,
   showNumber = true,
+  inspector = false,
   model,
   focus,
   onSelectField,
@@ -136,52 +21,20 @@ export function SkeletonPane({
   className,
 }: {
   paneNumber: number;
-  /**
-   * Draw the pane's ordinal beside its title.
-   *
-   * True for the archive's four-pane view, where the numbers are the view's own vocabulary
-   * and nothing competes with them. No caller sets this to `false` today: `/build`'s stage
-   * stopped mounting this pane once it collapsed to a tablist (see `linkToCard`'s own doc
-   * comment below, on the prop that recorded the same departure), so the archive is the
-   * only place this renders now and the number is always on. It had the same standing as
-   * `ChoiceGraphPane.tsx`'s `choice` slot, which is no longer readable: that file went with
-   * `/build` and `components/build` when the owner deleted the tree on 2026-09-06. The prop
-   * is kept rather than dropped, because a caller that needs the ordinal off — one drawing
-   * this pane behind a tablist that already names it, the way `/build`'s did — has nowhere
-   * else to say so. The id stays either way, because `aria-labelledby` points at it.
-   */
+
   showNumber?: boolean;
+  inspector?: boolean;
   model: PaneModel;
   focus: PaneFocus;
-  /**
-   * A field row was opened, or the open one was closed — `undefined` for the close.
-   *
-   * This pane never says which **node** is selected, and that is the contract the
-   * signature carries: opening a field narrows the shared selection inside the node the
-   * reader is already on, and closing it widens back to that same node.
-   * `SynchronisedPanes` holds both branches to it by rebuilding from `held.nodeId`.
-   */
+
   onSelectField: (key: string | undefined) => void;
   onSelectAbsence: (absenceId: string) => void;
-  /**
-   * Blueprint detail page's merged panel: the focused card's ref becomes a real
-   * `<Link>` to that card's own `/nodes/<id>` page, via the shared `nodeHref` helper.
-   * Off by default, because a card is only
-   * linkable when it is published: `SynchronisedPanes` switches it on for the archive's
-   * merged panel, where every card has its own `/nodes/<id>` page, and the default is what
-   * any caller drawing cards that are not in the registry needs. `/build` was that caller
-   * until its stage stopped mounting this pane — the cards there were generated in the
-   * reader's own browser from three choices and a link would have pointed at a 404 every
-   * time. The route was deleted on 2026-09-06, so the default is now unexercised and the
-   * reason for it is recorded here rather than demonstrable by opening a page. There is nothing to link to for an absence-focused state either way, `card` being
-   * `undefined` covers that.
-   */
+
   linkToCard?: boolean;
   className?: string;
 }) {
   const card = focus.card;
 
-  /** The gaps this node declares against a card field, by the wire key each hangs under. */
   const absencesByKey = useMemo(() => {
     const out = new Map<string, PaneAbsence[]>();
     for (const absence of model.absences) {
@@ -198,16 +51,9 @@ export function SkeletonPane({
     return out;
   }, [card]);
 
+  const read = (key: string) => fieldsByKey.get(key);
   const openKey = focus.absence === undefined ? focus.field?.key : undefined;
 
-  /**
-   * The browser toggled a row. Selection follows it, and the node never moves.
-   *
-   * Both directions arrive here, including the ones nobody clicked: opening row B makes
-   * React close row A, and the browser fires `toggle` on A for that too. The guard is the
-   * key — by the time A's event lands the selection already says B, so the close is read
-   * as the consequence it is rather than as a reader asking to see the whole node again.
-   */
   const onToggleRow = (key: string, open: boolean) => {
     if (open) onSelectField(key);
     else if (openKey === key) onSelectField(undefined);
@@ -217,6 +63,7 @@ export function SkeletonPane({
     <section
       className={cx(
         "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-surface",
+        inspector && "border-copper-line/35 border-t-2 border-t-cyan",
         className,
       )}
       aria-labelledby={`pane-${paneNumber}-heading`}
@@ -229,23 +76,13 @@ export function SkeletonPane({
           <span className="text-copper-line" aria-hidden>
             ▦
           </span>
-          {showNumber && <span className="text-dim">{paneNumber}</span>} The card skeleton
+          {showNumber && !inspector && <span className="text-dim">{paneNumber}</span>} {inspector ? "Selected node" : "The card skeleton"}
         </h3>
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] text-dim">
+          {!inspector && <span className="font-mono text-[11px] text-dim">
             {card === undefined ? focus.node.nodeId : card.ref}
-          </span>
-          {/* Amber, not cyan. This is the one control in the block that leaves the page:
-              it goes to the node's own route. `app/globals.css` records the rule the
-              `.route-box` boxes follow, and this is the same rule at inline scale, so a
-              reader who has learned that amber-with-an-arrow means "you are leaving"
-              reads it the same way here.
+          </span>}
 
-              Deliberately the only thing recoloured. The select above it says "Jump to a
-              node" but jumps *within* these panes, so amber on it would promise a
-              departure that never happens. The `▪` and `◌` marks on the field rows encode
-              whether the card writes a value, which is a fact about the card and not a
-              destination. */}
           {linkToCard && card !== undefined && (
             <Link
               href={nodeHref(card.id)}
@@ -266,9 +103,26 @@ export function SkeletonPane({
         </p>
       ) : (
         <>
-          {/* No `role="listbox"` any more, and the header of this file says what that
-              cost and bought. What is left is a scroll box with the blocks inside it;
-              each block names itself, and every row is its own disclosure. */}
+          {inspector && (
+            <div className="flex flex-col gap-4 p-4">
+              <div>
+                <p className="font-display text-xl font-semibold text-copper-ink">{card.name}</p>
+                <p className="mt-1 font-mono text-xs text-cyan">{focus.node.nodeId} · {card.ref}</p>
+                <p className="mt-3 text-sm leading-relaxed text-fg"><Ticked text={read("action")?.value ?? ""} /></p>
+              </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-md border border-blue-rule bg-blue-paper p-3">
+                <div className="min-w-0"><p className="font-mono text-[11px] text-cyan">INPUTS</p><p className="mt-1 break-words font-mono text-xs text-fg">{read("inputs")?.value}</p></div>
+                <span aria-hidden className="text-cyan">→</span>
+                <div className="min-w-0"><p className="font-mono text-[11px] text-cyan">OUTPUTS</p><p className="mt-1 break-words font-mono text-xs text-fg">{read("outputs")?.value}</p></div>
+              </div>
+              {read("model")?.filled && <p className="font-mono text-xs text-muted">model <span className="text-copper-ink">{read("model")?.value}</span></p>}
+              {read("cannot")?.filled && <div className="border-l-2 border-copper-line pl-3"><p className="text-xs text-muted">Cannot receive</p><p className="mt-1 break-words font-mono text-xs text-copper-ink">{read("cannot")?.value}</p></div>}
+              {read("will_not")?.filled && <div className="border-l-2 border-line-bright pl-3"><p className="text-xs text-muted">Author promises. Nothing checks these automatically.</p><p className="mt-1 text-sm leading-relaxed text-fg">{read("will_not")?.value}</p></div>}
+              {read("spec")?.filled && <details><summary className="cursor-pointer text-sm text-cyan">Instructions</summary><p className="mt-2 text-sm leading-relaxed text-fg"><Ticked text={read("spec")?.value ?? ""} /></p></details>}
+            </div>
+          )}
+          <details key={card.ref} open={!inspector || focus.field !== undefined || focus.absence?.field !== undefined ? true : undefined} className="group/reference">
+            <summary className={inspector ? "cursor-pointer border-t border-line px-4 py-3 text-sm text-cyan" : "hidden"}>All card fields and source lines</summary>
           <div className="max-h-[26rem] flex-1 overflow-auto">
             {CARD_BLOCKS.map((block, blockIndex) => (
               // The group is named in two words rather than by its header element: the
@@ -342,31 +196,11 @@ export function SkeletonPane({
                             >
                               {field.key}
                             </code>
-                            {/* What the card wrote, clamped to two lines and unclamped by
-                                the row's own open state. `group` is on the `<details>`
-                                inside `FieldDisclosure`, so this is pure CSS: no measure
-                                pass, no second copy of the text in the body, and the
-                                whole value is in the prerendered HTML either way.
 
-                                Two lines rather than a character budget, because a
-                                character budget cannot be right twice: this column is
-                                720px on a desktop and 304px on a phone, so the 88
-                                characters the `action` slot used to be cut at were one
-                                line on one and two on the other. A line count is the same
-                                promise at both widths. Two rather than three because 22
-                                rows share a `max-h-[26rem]` box.
-
-                                `Ticked` for the same reason the note below it gets one:
-                                specs and notes are written with `backticked` port and
-                                parameter names, and rendering the note's ticks as chips
-                                while the card's own prose kept literal backticks put both
-                                spellings in one open row. */}
                             <span className="line-clamp-2 min-w-0 text-[12px] leading-snug text-muted group-open:line-clamp-none">
                               <Ticked text={field.value} />
                             </span>
-                            {/* The meta slot, and the word count lives here now rather
-                                than standing in for the spec. Under a clamp it is the one
-                                thing that says how much is behind the fold. */}
+
                             <span className="ml-auto flex shrink-0 items-baseline gap-2 font-mono text-[11px] text-dim">
                               {field.measure !== undefined && <span>{field.measure}</span>}
                               <span>
@@ -383,20 +217,13 @@ export function SkeletonPane({
                           </>
                         }
                       >
-                        {/* What the field is FOR, the same paragraph `/nodes/<id>`
-                            opens onto. In the markup whether or not the row is open,
-                            which is the whole reason this is a `<details>`: a reader
-                            without script, a printer and find-in-page all reach it. */}
+
                         {note !== undefined && (
                           <p className="border-l-2 border-copper-line/40 pl-3 text-[12px] leading-relaxed text-muted">
                             <Ticked text={note} />
                           </p>
                         )}
-                        {/* And the part of this card's value that the row itself cannot
-                            hold: `inputs` and `outputs` only, where the line shows
-                            `name: type` and each port's description is a sentence of its
-                            own. Every other field's value is on the row above, clamped,
-                            and this row unclamps it rather than reprinting it. */}
+
                         {field.detail !== undefined && (
                           <p className="whitespace-pre-wrap border-l-2 border-line-bright pl-3 text-[12px] leading-relaxed text-muted">
                             {field.detail}
@@ -456,6 +283,7 @@ export function SkeletonPane({
             ))}
           </div>
 
+          </details>
           <p className="border-t border-line px-3 py-2 text-[11px] leading-relaxed text-dim">
             <span className="font-mono text-copper-line" aria-hidden>
               ▪
@@ -464,7 +292,7 @@ export function SkeletonPane({
             <span className="font-mono" aria-hidden>
               ◌
             </span>{" "}
-            left empty; both are valid. The skeleton is the card&rsquo;s fields with what
+            left empty; both are valid. The reference lists the card&rsquo;s fields with what
             each one is for: open a row to read it. Long values are cut at two lines until
             the row is opened. This card is pinned by{" "}
             <Pins model={model} ref_={card.ref} />.
@@ -475,14 +303,6 @@ export function SkeletonPane({
   );
 }
 
-/**
- * Which nodes of this graph pin the card on screen, and where the DOT says so.
- *
- * The join the whole pane rests on: a field belongs to a card, a card is pinned by a
- * node, and the node is a line of the DOT. Usually one node. A card reused twice in one
- * graph gives two, and saying so is the honest answer to "where does this field show up
- * in the drawing".
- */
 function Pins({ model, ref_ }: { model: PaneModel; ref_: string }) {
   const pins = model.nodes.filter((node) => node.card?.ref === ref_);
   if (pins.length === 0) return <span className="text-muted">no node in this graph</span>;

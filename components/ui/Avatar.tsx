@@ -43,12 +43,9 @@ export function Avatar({
   const px = SIZES[size];
   const inner = (
     <span
-      /* `text-void`, not `text-white`. The initials are small text at every size the
-         scale offers — 8.6px at `sm`, 11.5px at `md`, 15.8px at `lg` — so they owe
-         4.5:1, and bold does not buy the large-text exemption below 18.66px. See
-         `avatarGradient` for why the ink is dark and the ground is light. */
+      /* Initials use a dedicated dark ink because identity gradients stay light. */
       className={cx(
-        "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-void",
+        "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-avatar-ink",
         author.validator && "ring-2 ring-cyan/70 ring-offset-2 ring-offset-void",
         className,
       )}

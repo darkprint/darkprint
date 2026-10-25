@@ -139,7 +139,7 @@ const PICK_RULE = "border-blueprint-line";
 
 /* A step number IS a word, so the resting weight is 80% (6.10:1 at rest, 5.53:1 on a
    picked row) rather than the rule's 60%. Below 80 the register stops clearing AA at 11px. */
-const STEP_MARKED = "text-blueprint-line/80";
+const STEP_MARKED = "text-blueprint-line";
 const PICK_STEP = "text-blueprint-line";
 
 interface LineMark {
@@ -377,7 +377,7 @@ export function DotBreakdown({
 
               `aria-hidden` because the region below announces itself and its length,
               and an arrow read aloud is noise. */}
-          <span aria-hidden className="shrink-0 whitespace-nowrap text-dim/70 xl:hidden">
+          <span aria-hidden className="shrink-0 whitespace-nowrap text-dim xl:hidden">
             scroll →
           </span>
           {downloadName !== undefined && (
@@ -472,7 +472,7 @@ export function DotBreakdown({
                   </span>
                   <span
                     aria-hidden
-                    className="shrink-0 select-none pr-3 pl-1 text-right text-dim/80"
+                    className="shrink-0 select-none pr-3 pl-1 text-right text-dim"
                     /* `select-none` on both margins for the reason `YamlListing` gives:
                        a reader dragging across ten lines wants ten lines of DOT on the
                        clipboard, not ten lines with a number welded to the front. */

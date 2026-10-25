@@ -242,7 +242,7 @@ export function GraphThumbnail({
       preserveAspectRatio="xMidYMid meet"
     >
       {/* edges */}
-      <g fill="none" strokeWidth={1.6}>
+      <g fill="none" strokeWidth={2.4}>
         {drawn.map((e) => (
           <path
             key={e.edge.id}
